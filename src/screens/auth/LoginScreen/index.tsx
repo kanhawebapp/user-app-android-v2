@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, {useState, useCallback} from 'react';
 import {
   View,
   StyleSheet,
@@ -7,28 +7,29 @@ import {
   Platform,
   Text,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../../../theme';
-import { BackgroundLayout } from '../../../components/BackgroundLayout';
-import { OTPModal } from '../../../components/OTPModal';
-import { Button } from '../../../components/Button';
-import { getBackgroundImageSource } from '../../../assets/images';
-import { useBackgroundImageUrl } from '../../../stores/config.store';
-import { usePhoneValidation, useLogin } from './hooks';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {useTheme} from '../../../theme';
+import {BackgroundLayout} from '../../../components/BackgroundLayout';
+import {OTPModal} from '../../../components/OTPModal';
+import {Button} from '../../../components/Button';
+import {getBackgroundImageSource} from '../../../assets/images';
+import {useBackgroundImageUrl} from '../../../stores/config.store';
+import {usePhoneValidation, useLogin} from './hooks';
+import {useToast} from '../../../context/ToastContext';
 import {
   LogoSection,
   PhoneInputSection,
   TermsAndConditions,
   GuestSkipButton,
 } from './components';
-import { loginScreenStyles } from './loginStyle';
-import { LoginScreenProps } from './loginType';
+import {loginScreenStyles} from './loginStyle';
+import {LoginScreenProps} from './loginType';
 import {
   AUTH_LABELS,
   COUNTRY_CODES,
   CountryCode,
 } from '../../../constants/app.constants';
-import { Card } from '../../../components';
+import {Card} from '../../../components';
 
 // Default country (India)
 const DEFAULT_COUNTRY = COUNTRY_CODES[0];
@@ -43,6 +44,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
   const theme = useTheme();
   const colors = theme.colors;
   const insets = useSafeAreaInsets();
+  const {showError} = useToast();
 
   // Get background image from config
   const backgroundImageUrl = useBackgroundImageUrl();
@@ -85,7 +87,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     phoneNumber,
     onLoginSuccess,
     onLoginError: error => {
-      console.log('Login error:', error);
+      if (error.message.includes('Too many OTP requests')) {
+        showError(error.message);
+      } else {
+        console.log('Login error:', error);
+      }
     },
   });
 
@@ -147,7 +153,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     // statusBarStyle={theme.isDark ? 'light-content' : 'light-content'}
     >
       <KeyboardAvoidingView
-        style={[styles.container, { backgroundColor: colors.background.primary }]}
+        style={[styles.container, {backgroundColor: colors.background.primary}]}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -198,13 +204,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
             {/* OR */}
             <View style={styles.orContainer}>
               <View
-                style={[styles.line, { backgroundColor: colors.primary.light }]}
+                style={[styles.line, {backgroundColor: colors.primary.light}]}
               />
 
-              <Text style={[styles.orText, { color: '#A5A5B8' }]}>OR</Text>
+              <Text style={[styles.orText, {color: '#A5A5B8'}]}>OR</Text>
 
               <View
-                style={[styles.line, { backgroundColor: colors.primary.light }]}
+                style={[styles.line, {backgroundColor: colors.primary.light}]}
               />
             </View>
 

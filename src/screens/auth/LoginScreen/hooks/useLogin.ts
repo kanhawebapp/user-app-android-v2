@@ -1,4 +1,4 @@
-import {useState, useCallback} from 'react';
+import {useState, useCallback, useRef} from 'react';
 import {useAppStore} from '../../../../stores/app.store';
 import {useAuthStore} from '../../../../stores/auth.store';
 import {loggingService} from '../../../../services/logging';
@@ -54,6 +54,8 @@ export const useLogin = ({
   const [isOTPVerifying, setIsOTPVerifying] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
 
+  const otpRequestInFlight = useRef(false);
+
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isFacebookLoading, setIsFacebookLoading] = useState(false);
   const [isGuestLoading, setIsGuestLoading] = useState(false);
@@ -82,6 +84,10 @@ export const useLogin = ({
   );
 
   const requestOTP = useCallback(async () => {
+    if (otpRequestInFlight.current) {
+      return;
+    }
+
     if (!phoneNumber || phoneNumber.length < 10) {
       const error = new Error('Please enter a valid phone number');
       onLoginError?.(error);
@@ -90,14 +96,15 @@ export const useLogin = ({
 
     try {
       setIsOTPRequested(true);
+      otpRequestInFlight.current = true;
       setOtpError(null);
       loggingService.info('[Login] Requesting OTP for:', {phoneNumber});
 
-     const response = await sendOTP(phoneNumber);
-       
+      const response = await sendOTP(phoneNumber);
+
       loggingService.info('[Login] OTP sent successfully', {phoneNumber});
       onOTPRequested?.();
-      return response; 
+      return response;
     } catch (error) {
       const err =
         error instanceof Error ? error : new Error('Failed to send OTP');
@@ -106,6 +113,7 @@ export const useLogin = ({
       onLoginError?.(err);
     } finally {
       setIsOTPRequested(false);
+      otpRequestInFlight.current = false;
     }
   }, [phoneNumber, onOTPRequested, onLoginError]);
 

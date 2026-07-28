@@ -110,7 +110,7 @@ export interface UseLoginReturn {
   isGuestLoading: boolean;
 
   // Actions
-  requestOTP: () => Promise<void>;
+  requestOTP: () => Promise<{message: string} | undefined>;
   verifyOTP: (otp: string) => Promise<void>;
   resendOTP: () => Promise<void>;
   loginWithGoogle: () => Promise<void>;
