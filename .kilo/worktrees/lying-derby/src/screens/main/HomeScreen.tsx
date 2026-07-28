@@ -1,0 +1,381 @@
+import React, {useCallback, useState} from 'react';
+import {View, StyleSheet, ScrollView, StatusBar} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {useTheme} from '../../theme';
+import {
+  LoginRequiredModal,
+  ChatRequestModal,
+  ChatRequestData,
+} from '../../components/Modal';
+import {useHomeData} from './home/hooks/useHomeData';
+import {
+  HeroBanner,
+  // AstrologyGuidance,
+  // ServiceActions,
+  OngoingLive,
+  UpcomingLive,
+  ProblemCategories,
+  FeatureHealings,
+  Shop,
+  Blog,
+  Testimonials,
+  TrustSection,
+} from './home/components';
+import useScreenTracking from '../../services/analytics/hooks/useScreenTracking';
+import {HomeScreenProps} from './home/types';
+import HomeAstrologers from './home/components/RecommendedAstrologers';
+import AstrologerProfileScreen from './astrologerProfile';
+import type {Astrologer} from '../../services/api/recomandedAstrologer/astrologer.types';
+import {useChatStore} from '../../services/chat/chat.store';
+
+const HomeScreen: React.FC<HomeScreenProps> = ({
+  onNavigateToTab,
+  onNavigateToLogin,
+  onNavigateToSignup,
+  onNavigateToChat,
+  onNavigateToCall: _onNavigateToCall,
+  onNavigateToLive,
+  onNavigateToRemedies,
+  onNavigateToAstrologerProfile: _onNavigateToAstrologerProfile,
+  onNavigateToCategory,
+  onNavigateToProduct,
+  onNavigateToTestimonial,
+  onNavigateToShopWebView,
+  onNavigateToBlogPost,
+  onNavigateToAstrologerList,
+}) => {
+  const theme = useTheme();
+  const colors = theme.colors;
+  const insets = useSafeAreaInsets();
+  useScreenTracking('home_screen');
+
+  const {
+    // Auth
+    handleRestrictedAction,
+
+    // Data
+    heroBanners,
+    ongoingLives,
+    upcomingLives,
+    problemCategories,
+    remedies,
+    testimonials,
+    trustFeatures,
+    shopItems,
+    blogPosts,
+
+    // Modal state
+    showLoginModal,
+    modalMessage,
+    setShowLoginModal,
+  } = useHomeData();
+
+  // Astrologer profile overlay state
+  const [selectedAstrologer, setSelectedAstrologer] =
+    useState<Astrologer | null>(null);
+
+  // Chat request modal state
+  const [showChatRequestModal, setShowChatRequestModal] = useState(false);
+  const [chatTargetAstrologer, setChatTargetAstrologer] =
+    useState<Astrologer | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // --- Handlers ---
+
+  const handleCtaPress = useCallback(
+    (action?: string) => {
+      if (action === 'explore') {
+        onNavigateToTab?.('explore');
+      } else {
+        handleRestrictedAction('Please login to explore', () => {
+          onNavigateToTab?.('home');
+        });
+      }
+    },
+    [handleRestrictedAction, onNavigateToTab],
+  );
+
+  const handleLiveSessionPress = useCallback(
+    (session: any) => {
+      handleRestrictedAction('Please login to join live session', () => {
+        onNavigateToLive?.(session.id);
+      });
+    },
+    [handleRestrictedAction, onNavigateToLive],
+  );
+
+  const handleViewAllLive = useCallback(() => {
+    onNavigateToTab?.('live');
+  }, [onNavigateToTab]);
+
+  // Astrologer card handlers
+  const handleAstrologerCardPress = useCallback(
+    (astrologer: Astrologer) => {
+      handleRestrictedAction('Please login to view astrologer profile', () => {
+        setSelectedAstrologer(astrologer);
+      });
+    },
+    [handleRestrictedAction],
+  );
+
+  const handleAstrologerChatPress = useCallback(
+    (astrologer: Astrologer) => {
+      handleRestrictedAction('Please login to start a chat', () => {
+        setChatTargetAstrologer(astrologer);
+        setShowChatRequestModal(true);
+      });
+    },
+    [handleRestrictedAction],
+  );
+
+  const handleAstrologerAddPress = useCallback(
+    (astrologer: Astrologer) => {
+      handleRestrictedAction('Please login to follow astrologer', () => {
+        console.log('Add/Follow astrologer:', astrologer.name);
+      });
+    },
+    [handleRestrictedAction],
+  );
+
+  const handleBackFromProfile = useCallback(() => {
+    setSelectedAstrologer(null);
+  }, []);
+
+  const handleProfileChatPress = useCallback((astrologer: Astrologer) => {
+    setSelectedAstrologer(null);
+    setChatTargetAstrologer(astrologer);
+    setShowChatRequestModal(true);
+  }, []);
+
+  const handleChatRequestSubmit = useCallback(
+    async (_data: ChatRequestData) => {
+      if (!chatTargetAstrologer) {
+        return;
+      }
+
+      setIsSubmitting(true);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setIsSubmitting(false);
+      setShowChatRequestModal(false);
+
+      // Store selected astrologer globally for ChatScreen
+      useChatStore.getState().setSelectedAstrologer({
+        id: chatTargetAstrologer.id,
+        name: chatTargetAstrologer.name,
+        image: chatTargetAstrologer.profilePic,
+        rating: chatTargetAstrologer.rating,
+        experience: String(chatTargetAstrologer.experience),
+        skills: chatTargetAstrologer.skills,
+        isAvailableForChat: true,
+      });
+
+      // Navigate to chatCall tab to show queue status
+      onNavigateToTab?.('chatCall');
+      setChatTargetAstrologer(null);
+    },
+    [chatTargetAstrologer, onNavigateToTab, setShowChatRequestModal],
+  );
+
+  const handleViewAllAstrologers = useCallback(() => {
+    onNavigateToAstrologerList?.();
+  }, [onNavigateToAstrologerList]);
+
+  const handleCategoryPress = useCallback(
+    (category: any) => {
+      onNavigateToCategory?.(category.id);
+    },
+    [onNavigateToCategory],
+  );
+
+  const handleRemedyPress = useCallback(
+    (remedy: any) => {
+      onNavigateToProduct?.(remedy.id);
+    },
+    [onNavigateToProduct],
+  );
+
+  const handleViewAllRemedies = useCallback(() => {
+    onNavigateToRemedies?.();
+  }, [onNavigateToRemedies]);
+
+  const handleTestimonialPress = useCallback(
+    (testimonial: any) => {
+      onNavigateToTestimonial?.(testimonial.id);
+    },
+    [onNavigateToTestimonial],
+  );
+
+  const handleShopPress = useCallback(
+    (item: any) => {
+      onNavigateToShopWebView?.(item.webUrl);
+    },
+    [onNavigateToShopWebView],
+  );
+
+  const handleViewAllShop = useCallback(() => {
+    onNavigateToTab?.('shop');
+  }, [onNavigateToTab]);
+
+  const handleBlogPress = useCallback(
+    (post: any) => {
+      onNavigateToBlogPost?.(post.id);
+    },
+    [onNavigateToBlogPost],
+  );
+
+  const handleViewAllBlog = useCallback(() => {
+    onNavigateToTab?.('blog');
+  }, [onNavigateToTab]);
+
+  // Modal handlers
+  const handleCloseModal = useCallback(() => {
+    setShowLoginModal(false);
+  }, [setShowLoginModal]);
+
+  const handleLoginPress = useCallback(() => {
+    setShowLoginModal(false);
+    onNavigateToLogin?.();
+  }, [setShowLoginModal, onNavigateToLogin]);
+
+  const handleSignupPress = useCallback(() => {
+    setShowLoginModal(false);
+    onNavigateToSignup?.();
+  }, [setShowLoginModal, onNavigateToSignup]);
+
+  // If astrologer profile is open, render it as overlay
+  if (selectedAstrologer) {
+    return (
+      <AstrologerProfileScreen
+        astrologer={selectedAstrologer}
+        onBack={handleBackFromProfile}
+        onChatPress={handleProfileChatPress}
+      />
+    );
+  }
+
+  return (
+    <View
+      style={[styles.container, {backgroundColor: colors.background.primary}]}>
+      <StatusBar
+        barStyle={theme.isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.background.primary}
+      />
+
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          {paddingBottom: insets.bottom + 70},
+        ]}
+        showsVerticalScrollIndicator={false}>
+        {/* 1. Hero Banner */}
+        <HeroBanner
+          data={heroBanners}
+          onCtaPress={handleCtaPress}
+          style={styles.section}
+        />
+
+        {/* 4. Ongoing Live Sessions */}
+        <OngoingLive
+          sessions={ongoingLives}
+          onSessionPress={handleLiveSessionPress}
+          onViewAllPress={handleViewAllLive}
+          style={styles.section}
+        />
+
+        {/* 5. Upcoming Live Sessions */}
+        <UpcomingLive
+          sessions={upcomingLives}
+          onSessionPress={handleLiveSessionPress}
+          onViewAllPress={handleViewAllLive}
+          style={styles.section}
+        />
+
+        {/* 6. Recommended Astrologers */}
+        <HomeAstrologers
+          onViewAllPress={handleViewAllAstrologers}
+          onAstrologerPress={handleAstrologerCardPress}
+          onChatPress={handleAstrologerChatPress}
+          onAddPress={handleAstrologerAddPress}
+        />
+
+        {/* 7. Problem Based Categories */}
+        <ProblemCategories
+          categories={problemCategories}
+          onCategoryPress={handleCategoryPress}
+          style={styles.section}
+        />
+
+        {/* 8. Feature Healings (Remedies) */}
+        <FeatureHealings
+          remedies={remedies}
+          onRemedyPress={handleRemedyPress}
+          onViewAllPress={handleViewAllRemedies}
+          style={styles.section}
+        />
+
+        {/* 9. Shop Section (WebView) */}
+        <Shop
+          items={shopItems}
+          onShopPress={handleShopPress}
+          onViewAllPress={handleViewAllShop}
+          style={styles.section}
+        />
+
+        {/* 10. Blog Section */}
+        <Blog
+          posts={blogPosts.map(post => ({...post, image: post.image || ''}))}
+          onPostPress={handleBlogPress}
+          onViewAllPress={handleViewAllBlog}
+          style={styles.section}
+        />
+
+        {/* 11. Testimonials */}
+        <Testimonials
+          testimonials={testimonials}
+          onTestimonialPress={handleTestimonialPress}
+          style={styles.section}
+        />
+
+        {/* 12. Trust and Authority */}
+        <TrustSection features={trustFeatures} style={styles.lastSection} />
+      </ScrollView>
+
+      {/* Login Required Modal */}
+      <LoginRequiredModal
+        visible={showLoginModal}
+        onClose={handleCloseModal}
+        onLoginPress={handleLoginPress}
+        onSignupPress={handleSignupPress}
+        message={modalMessage}
+      />
+
+      {/* Chat Request Modal */}
+      <ChatRequestModal
+        visible={showChatRequestModal}
+        onClose={() => {
+          setShowChatRequestModal(false);
+          setChatTargetAstrologer(null);
+        }}
+        onSubmit={handleChatRequestSubmit}
+        astrologer={chatTargetAstrologer ?? undefined}
+        loading={isSubmitting}
+      />
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    marginTop: 8,
+  },
+  section: {},
+  lastSection: {
+    marginBottom: 0,
+  },
+});
+
+export default HomeScreen;

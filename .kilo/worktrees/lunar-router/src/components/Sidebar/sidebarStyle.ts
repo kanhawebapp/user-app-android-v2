@@ -1,0 +1,153 @@
+import {Dimensions, StyleSheet} from 'react-native';
+import {colors} from '../../theme';
+const {width: SCREEN_WIDTH} = Dimensions.get('window');
+const SIDEBAR_WIDTH = SCREEN_WIDTH * 0.75;
+
+export const sidebarStyle = StyleSheet.create({
+  container: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1,
+  },
+  sidebar: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: SIDEBAR_WIDTH,
+    zIndex: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 2, height: 0},
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  sidebarHeader: {
+    padding: 20,
+    paddingTop: 16,
+    borderBottomWidth: 1,
+  },
+  closeButtonWrapper: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    zIndex: 10,
+  },
+  closeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  avatarWrapper: {
+    position: 'relative',
+    width: 64,
+    height: 64,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarBorder: {
+    position: 'absolute',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+  },
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  userDetails: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  guestInfo: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  guestIconWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuContainer: {
+    flex: 1,
+    paddingTop: 8,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  menuIconWrapper: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuLabel: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    minWidth: 24,
+    alignItems: 'center',
+  },
+  footer: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: 16,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
+  socialMediaContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  socialIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 8,
+  },
+  versionText: {
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+});

@@ -1,0 +1,646 @@
+// import React, {useState, useMemo} from 'react';
+// import {View, StyleSheet, TouchableOpacity, TextInput} from 'react-native';
+// import {useTheme} from '../../theme';
+// import {Modal} from '../Modal';
+// import {Button} from '../Button';
+// import {Icon} from '../Icon';
+// import {Text} from '../Text';
+// import {RatingModalProps} from './modalType';
+
+// const MAX_RATING = 5;
+
+// export const RatingModal: React.FC<RatingModalProps> = ({
+//   visible,
+//   onClose,
+//   onSubmit,
+//   astrologerName = 'Astrologer',
+// }) => {
+//   const theme = useTheme();
+//   const colors = theme.colors;
+//   const [rating, setRating] = useState(0);
+//   const [hoverRating, setHoverRating] = useState(0);
+//   const [feedback, setFeedback] = useState('');
+
+//   const handleRatingPress = (value: number) => {
+//     setRating(value);
+//   };
+
+//   const handleSubmit = () => {
+//     if (rating > 0) {
+//       onSubmit(rating, feedback.trim() || undefined);
+//       setRating(0);
+//       setFeedback('');
+//     }
+//   };
+
+//   const handleClose = () => {
+//     setRating(0);
+//     setFeedback('');
+//     onClose();
+//   };
+
+//   const getStarColor = (index: number) => {
+//     const currentRating = hoverRating || rating;
+//     return index <= currentRating ? colors.warning.main : colors.text.disabled;
+//   };
+
+//   const renderStars = () => {
+//     return (
+//       <View style={styles.starsContainer}>
+//         {Array.from({length: MAX_RATING}, (_, index) => {
+//           const starIndex = index + 1;
+//           return (
+//             <TouchableOpacity
+//               key={index}
+//               onPress={() => handleRatingPress(starIndex)}
+//               onPressIn={() => setHoverRating(starIndex)}
+//               onPressOut={() => setHoverRating(0)}
+//               style={styles.starButton}
+//               accessibilityLabel={`Rate ${starIndex} stars`}
+//               accessibilityRole="button">
+//               <Icon
+//                 name={
+//                   starIndex <= (hoverRating || rating) ? 'star' : 'star-border'
+//                 }
+//                 size={40}
+//                 color={getStarColor(starIndex)}
+//                 library="MaterialIcons"
+//               />
+//             </TouchableOpacity>
+//           );
+//         })}
+//       </View>
+//     );
+//   };
+
+//   const ratingLabels = useMemo(() => {
+//     const labels = ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+//     return labels[rating] || '';
+//   }, [rating]);
+
+//   return (
+//     <Modal
+//       visible={visible}
+//       onClose={handleClose}
+//       animationType="slide"
+//       dismissOnBackdropPress={false}
+//       showCloseButton={true}
+//       contentStyle={styles.modalContent}>
+//       <View style={styles.container}>
+//         <Text
+//           variant="h5"
+//           weight="bold"
+//           style={[styles.title, {color: colors.text.primary}]}>
+//           Rate Your Experience
+//         </Text>
+
+//         <Text
+//           variant="body"
+//           style={[styles.subtitle, {color: colors.text.secondary}]}>
+//           Share your feedback (optional)
+//         </Text>
+
+//         {renderStars()}
+
+//         {rating > 0 && (
+//           <Text
+//             variant="body"
+//             weight="medium"
+//             style={[styles.ratingLabel, {color: colors.primary.main}]}>
+//             {ratingLabels}
+//           </Text>
+//         )}
+
+//         <View style={styles.feedbackContainer}>
+//           <TextInput
+//             style={[
+//               styles.feedbackInput,
+//               {
+//                 backgroundColor: colors.background.secondary,
+//                 color: colors.text.primary,
+//                 borderColor: colors.border.default,
+//               },
+//             ]}
+//             placeholder="Tell us about your experience..."
+//             placeholderTextColor={colors.text.tertiary}
+//             multiline
+//             numberOfLines={4}
+//             value={feedback}
+//             onChangeText={setFeedback}
+//             textAlignVertical="top"
+//           />
+//         </View>
+
+//         <View style={styles.buttonContainer}>
+//           <Button
+//             title="Submit"
+//             variant="primary"
+//             size="large"
+//             onPress={handleSubmit}
+//             disabled={rating === 0}
+//             style={styles.submitButton}
+//           />
+//         </View>
+//       </View>
+//     </Modal>
+//   );
+// };
+
+// const styles = StyleSheet.create({
+//   modalContent: {
+//     marginHorizontal: 16,
+//     marginVertical: 40,
+//   },
+//   container: {
+//     alignItems: 'center',
+//     paddingVertical: 24,
+//     paddingHorizontal: 16,
+//   },
+//   title: {
+//     textAlign: 'center',
+//     marginBottom: 8,
+//   },
+//   subtitle: {
+//     textAlign: 'center',
+//     marginBottom: 24,
+//   },
+//   starsContainer: {
+//     flexDirection: 'row',
+//     justifyContent: 'center',
+//     marginBottom: 12,
+//   },
+//   starButton: {
+//     padding: 4,
+//   },
+//   ratingLabel: {
+//     marginBottom: 16,
+//   },
+//   feedbackContainer: {
+//     width: '100%',
+//     marginBottom: 20,
+//   },
+//   feedbackInput: {
+//     borderWidth: 1,
+//     borderRadius: 12,
+//     padding: 16,
+//     minHeight: 100,
+//     fontSize: 16,
+//   },
+//   buttonContainer: {
+//     width: '100%',
+//   },
+//   submitButton: {
+//     width: '100%',
+//   },
+// });
+
+// export default RatingModal;
+
+// import React, {useState, useMemo} from 'react';
+// import {View, StyleSheet, TouchableOpacity, TextInput} from 'react-native';
+// import {useTheme} from '../../theme';
+// import {Modal} from '../Modal';
+// import {Button} from '../Button';
+// import {Icon} from '../Icon';
+// import {Text} from '../Text';
+// import {RatingModalProps} from './modalType';
+
+// const MAX_RATING = 5;
+
+// export const RatingModal: React.FC<RatingModalProps> = ({
+//   visible,
+//   onClose,
+//   onSubmit,
+//   astrologerName = 'Astrologer',
+// }) => {
+//   const theme = useTheme();
+//   const colors = theme.colors;
+
+//   const [rating, setRating] = useState(0);
+//   const [hoverRating, setHoverRating] = useState(0);
+//   const [feedback, setFeedback] = useState('');
+
+//   const resetState = () => {
+//     setRating(0);
+//     setFeedback('');
+//     setHoverRating(0);
+//   };
+
+//   const handleSubmit = () => {
+//     if (!rating) return;
+
+//     onSubmit(rating, feedback.trim() || undefined);
+//     resetState();
+//   };
+
+//   const handleCancel = () => {
+//     resetState();
+//     onClose();
+//   };
+
+//   const currentRating = hoverRating || rating;
+
+//   const ratingLabels = useMemo(() => {
+//     return ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+//   }, []);
+
+//   const renderStars = () => (
+//     <View style={styles.starsContainer}>
+//       {Array.from({length: MAX_RATING}, (_, i) => {
+//         const index = i + 1;
+//         const active = index <= currentRating;
+
+//         return (
+//           <TouchableOpacity
+//             key={index}
+//             onPress={() => setRating(index)}
+//             onPressIn={() => setHoverRating(index)}
+//             onPressOut={() => setHoverRating(0)}
+//             activeOpacity={0.7}
+//             style={styles.starButton}>
+//             <Icon
+//               name={active ? 'star' : 'star-border'}
+//               size={42}
+//               color={active ? colors.warning.main : colors.text.disabled}
+//               library="MaterialIcons"
+//             />
+//           </TouchableOpacity>
+//         );
+//       })}
+//     </View>
+//   );
+
+//   return (
+//     <Modal
+//       visible={visible}
+//       onClose={() => {}} // ❌ disable default close
+//       dismissOnBackdropPress={false}
+//       showCloseButton={false}
+//       animationType="fade"
+//       contentStyle={styles.modalContent}>
+//       <View
+//         style={[
+//           styles.container,
+//           {backgroundColor: colors.background.primary},
+//         ]}>
+//         {/* HEADER */}
+//         <Text
+//           variant="h4"
+//           weight="bold"
+//           style={[styles.title, {color: colors.text.primary}]}>
+//           Rate your experience
+//         </Text>
+
+//         <Text
+//           variant="body"
+//           style={[styles.subtitle, {color: colors.text.secondary}]}>
+//           How was your session with {astrologerName}?
+//         </Text>
+
+//         {/* STARS */}
+//         {renderStars()}
+
+//         {/* LABEL */}
+//         {currentRating > 0 && (
+//           <Text
+//             variant="body"
+//             weight="semibold"
+//             style={[styles.ratingLabel, {color: colors.primary.main}]}>
+//             {ratingLabels[currentRating]}
+//           </Text>
+//         )}
+
+//         {/* FEEDBACK */}
+//         <View style={styles.feedbackContainer}>
+//           <TextInput
+//             placeholder="Write your feedback (optional)"
+//             placeholderTextColor={colors.text.tertiary}
+//             multiline
+//             value={feedback}
+//             onChangeText={setFeedback}
+//             style={[
+//               styles.feedbackInput,
+//               {
+//                 backgroundColor: colors.background.secondary,
+//                 borderColor: colors.border.default,
+//                 color: colors.text.primary,
+//               },
+//             ]}
+//           />
+//         </View>
+
+//         {/* ACTION BUTTONS */}
+//         <View style={styles.actionsRow}>
+//           <Button
+//             title="Cancel"
+//             variant="outline"
+//             size="medium"
+//             onPress={handleCancel}
+//             style={styles.cancelBtn}
+//           />
+
+//           <Button
+//             title="Submit"
+//             variant="primary"
+//             size="medium"
+//             onPress={handleSubmit}
+//             disabled={!rating}
+//             style={styles.submitBtn}
+//           />
+//         </View>
+//       </View>
+//     </Modal>
+//   );
+// };
+
+// export default RatingModal;
+
+// const styles = StyleSheet.create({
+//   modalContent: {
+//     marginHorizontal: 20,
+//     borderRadius: 20,
+//   },
+
+//   container: {
+//     borderRadius: 20,
+//     paddingVertical: 28,
+//     paddingHorizontal: 20,
+//     alignItems: 'center',
+//   },
+
+//   title: {
+//     marginBottom: 6,
+//     textAlign: 'center',
+//   },
+
+//   subtitle: {
+//     marginBottom: 24,
+//     textAlign: 'center',
+//   },
+
+//   starsContainer: {
+//     flexDirection: 'row',
+//     marginBottom: 14,
+//   },
+
+//   starButton: {
+//     marginHorizontal: 6,
+//   },
+
+//   ratingLabel: {
+//     marginBottom: 16,
+//   },
+
+//   feedbackContainer: {
+//     width: '100%',
+//     marginBottom: 20,
+//   },
+
+//   feedbackInput: {
+//     borderWidth: 1,
+//     borderRadius: 14,
+//     padding: 14,
+//     minHeight: 100,
+//     fontSize: 15,
+//   },
+
+//   actionsRow: {
+//     flexDirection: 'row',
+//     width: '100%',
+//     gap: 12,
+//   },
+
+//   cancelBtn: {
+//     flex: 1,
+//   },
+
+//   submitBtn: {
+//     flex: 1,
+//   },
+// });
+
+import React, {useState, useMemo} from 'react';
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  Modal,
+} from 'react-native';
+import {BlurView} from '@react-native-community/blur';
+import {useTheme} from '../../theme';
+import {Button} from '../Button';
+import {Icon} from '../Icon';
+import {Text} from '../Text';
+import {RatingModalProps} from './modalType';
+
+const MAX_RATING = 5;
+
+export const RatingModal: React.FC<RatingModalProps> = ({
+  visible,
+  onClose,
+  onSubmit,
+  astrologerName = 'Astrologer',
+}) => {
+  const theme = useTheme();
+  const colors = theme.colors;
+
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [feedback, setFeedback] = useState('');
+
+  const resetState = () => {
+    setRating(0);
+    setFeedback('');
+    setHoverRating(0);
+  };
+
+  const handleSubmit = () => {
+    if (!rating) return;
+    onSubmit(rating, feedback.trim() || undefined);
+    resetState();
+  };
+
+  const handleCancel = () => {
+    resetState();
+    onClose();
+  };
+
+  const currentRating = hoverRating || rating;
+
+  const ratingLabels = useMemo(
+    () => ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+    [],
+  );
+
+  const renderStars = () => (
+    <View style={styles.starsContainer}>
+      {Array.from({length: MAX_RATING}, (_, i) => {
+        const index = i + 1;
+        const active = index <= currentRating;
+
+        return (
+          <TouchableOpacity
+            key={index}
+            onPress={() => setRating(index)}
+            onPressIn={() => setHoverRating(index)}
+            onPressOut={() => setHoverRating(0)}
+            activeOpacity={0.7}
+            style={styles.starButton}>
+            <Icon
+              name={active ? 'star' : 'star-border'}
+              size={44}
+              color={active ? colors.warning.main : colors.text.disabled}
+              library="MaterialIcons"
+            />
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent>
+      {/* 🔥 BACKGROUND BLUR */}
+      <BlurView
+        style={StyleSheet.absoluteFill}
+        blurType={theme.isDark ? 'dark' : 'light'}
+        blurAmount={12}
+      />
+
+      {/* 🔥 OVERLAY CENTER */}
+      <View style={styles.overlay}>
+        <View
+          style={[styles.card, {backgroundColor: colors.background.primary}]}>
+          {/* TITLE */}
+          <Text
+            variant="h4"
+            weight="bold"
+            style={[styles.title, {color: colors.text.primary}]}>
+            Rate your experience
+          </Text>
+
+          <Text
+            variant="body"
+            style={[styles.subtitle, {color: colors.text.secondary}]}>
+            How was your session with {astrologerName}?
+          </Text>
+
+          {/* STARS */}
+          {renderStars()}
+
+          {/* LABEL */}
+          {currentRating > 0 && (
+            <Text
+              variant="body"
+              weight="semibold"
+              style={[styles.ratingLabel, {color: colors.primary.main}]}>
+              {ratingLabels[currentRating]}
+            </Text>
+          )}
+
+          {/* INPUT */}
+          <TextInput
+            placeholder="Write your feedback (optional)"
+            placeholderTextColor={colors.text.tertiary}
+            multiline
+            value={feedback}
+            onChangeText={setFeedback}
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.background.secondary,
+                borderColor: colors.border.default,
+                color: colors.text.primary,
+              },
+            ]}
+          />
+
+          {/* ACTIONS */}
+          <View style={styles.actions}>
+            <Button
+              title="Cancel"
+              variant="outline"
+              onPress={handleCancel}
+              style={{flex: 1}}
+            />
+
+            <Button
+              title="Submit"
+              variant="primary"
+              onPress={handleSubmit}
+              disabled={!rating}
+              style={{flex: 1}}
+            />
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+export default RatingModal;
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+
+  card: {
+    width: '100%',
+    borderRadius: 24,
+    padding: 24,
+
+    // 🔥 Premium Shadow
+    elevation: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    shadowOffset: {width: 0, height: 10},
+  },
+
+  title: {
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+
+  subtitle: {
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+
+  starsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+
+  starButton: {
+    marginHorizontal: 6,
+  },
+
+  ratingLabel: {
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+
+  input: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
+    minHeight: 100,
+    marginBottom: 20,
+  },
+
+  actions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+});

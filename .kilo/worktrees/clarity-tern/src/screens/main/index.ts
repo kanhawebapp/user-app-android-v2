@@ -1,0 +1,17 @@
+// export { default as MainNavigator } from '../../navigation/mainNavigation/MainNavigator';
+export { default as MainNavigator } from '../../navigation/mainNavigation/index';
+// export { default as MainNavigator } from './MainNavigator';
+export { default as HomeScreen } from './HomeScreen';
+// export { default as ChatCallScreen } from './chatcall';
+export { default as LiveScreen } from './LiveScreen';
+export { default as ShopScreen } from './ShopScreen';
+export { default as RemediesScreen } from './RemediesScreen';
+export { default as ProfileScreen } from './ProfileScreen';
+export { default as WalletScreen } from './wallet/WalletScreen';
+export { default as SessionHistoryScreen } from './SessionHistoryScreen';
+// Moved to src/features/my-following/\nexport { default as MyFollowingScreen } from '../features/my-following';
+// Moved to src/features/free-services/\nexport { default as FreeServicesScreen } from '../features/free-services';
+export { default as SupportScreen } from './SupportScreen';
+export { default as SettingsScreen } from './SettingsScreen';
+// Moved to src/features/about/\nexport { default as AboutScreen } from '../features/about';
+

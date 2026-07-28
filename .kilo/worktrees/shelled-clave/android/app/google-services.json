@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "34150780780",
+    "project_id": "dhwaniastro-c3460",
+    "storage_bucket": "dhwaniastro-c3460.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:34150780780:android:530c4af6ed66e2053aed49",
+        "android_client_info": {
+          "package_name": "com.dhwaniastro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDKwijCDCy24iBu6MmtC-FngqxOJh2m_zQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

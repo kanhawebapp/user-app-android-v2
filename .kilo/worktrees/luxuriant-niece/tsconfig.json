@@ -1,0 +1,25 @@
+// {
+//   "extends": "@react-native/typescript-config/tsconfig.json",
+//   "compilerOptions": {
+//     "module": "esnext"
+//   },
+//   "exclude": [
+//     "ios/Pods/**/*",
+//     "android/**/*",
+//     "**/*.js",
+//     "**/*.bundle/*"
+//   ]
+// }
+
+{
+  "extends": "@react-native/typescript-config/tsconfig.json",
+  "compilerOptions": {
+    "module": "esnext"
+  },
+  "exclude": [
+    "ios/Pods/**/*",
+    "android/**/*",
+    "**/*.js",
+    "**/*.bundle/*"
+  ]
+}

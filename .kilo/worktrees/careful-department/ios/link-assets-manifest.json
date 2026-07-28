@@ -1,0 +1,17 @@
+{
+  "migIndex": 1,
+  "data": [
+    {
+      "path": "ios/DhwaniAstro/sounds/aarti.mp3",
+      "sha1": "47f6e30515b158960f35219e9e21521566b0d097"
+    },
+    {
+      "path": "ios/DhwaniAstro/sounds/shankh.mp3",
+      "sha1": "f2897f430b68e8b78a8b7c37f1b2edc8cb578d9a"
+    },
+    {
+      "path": "ios/DhwaniAstro/sounds/bell.mp3",
+      "sha1": "774685aa9575818982f319d80204ff2e734a88a6"
+    }
+  ]
+}
