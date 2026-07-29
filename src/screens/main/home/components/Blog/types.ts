@@ -4,22 +4,21 @@
  */
 
 import {ViewStyle} from 'react-native';
+import {BlogCategory} from '../../../../../services/api/blogs/blog.types';
 
 export interface BlogPost {
-  createdAt(createdAt: any): import("react").ReactNode;
-  featuredImage(featuredImage: any): string | undefined;
-  image: string | undefined;
   id: string;
   title: string;
-  excerpt: string;
-  imageUrl?: any;
-  author?: string;
-  date?: string;
-  readTime?: string;
+  slug: string;
+  featuredImage: string;
+  createdAt: string;
+  categories: BlogCategory[];
 }
 
 export interface BlogProps {
-  posts?: any[];
+  posts?: BlogPost[];
+  loading?: boolean;
+  error?: any;
   onPostPress?: (post: BlogPost) => void;
   onViewAllPress?: () => void;
   style?: ViewStyle;

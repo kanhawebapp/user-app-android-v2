@@ -1,45 +1,33 @@
-import {
-  useCallback,
-  useEffect,
-  useState,
-} from 'react';
+import {useCallback, useEffect, useState} from 'react';
 
 import {getBlogs} from './blog.api';
 
 import {Blog} from './blog.types';
 
 export const useBlogs = () => {
-  const [blogs, setBlogs] =
-    useState<Blog[]>([]);
+  const [blogs, setBlogs] = useState<Blog[]>([]);
 
-  const [loading, setLoading] =
-    useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const [error, setError] =
-    useState<any>(null);
+  const [error, setError] = useState<any>(null);
 
-  const fetchBlogs =
-    useCallback(async () => {
-      try {
-        setLoading(true);
+  const fetchBlogs = useCallback(async () => {
+    try {
+      setLoading(true);
 
-        setError(null);
+      setError(null);
 
-        const response =
-          await getBlogs();
+      const response = await getBlogs();
 
-        setBlogs(response || []);
-      } catch (err: any) {
-        console.log(
-          'BLOGS HOOK ERROR:',
-          err,
-        );
+      setBlogs(response || []);
+    } catch (err: any) {
+      console.log('BLOGS HOOK ERROR:', err);
 
-        setError(err);
-      } finally {
-        setLoading(false);
-      }
-    }, []);
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchBlogs();

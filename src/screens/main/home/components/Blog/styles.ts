@@ -87,4 +87,60 @@ export const blogStyles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
+
+  categoryContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 6,
+  },
+
+  categoryChip: {
+    backgroundColor: 'rgba(124, 58, 237, 0.85)',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginRight: 6,
+    marginBottom: 4,
+  },
+
+  categoryText: {
+    fontSize: 10,
+    color: '#FFF',
+    fontWeight: '600',
+  },
+
+  loadingContainer: {
+    paddingHorizontal: 16,
+    marginTop: 8,
+  },
+
+  loadingCard: {
+    width: 240,
+    height: 220,
+    marginHorizontal: 6,
+    borderRadius: 14,
+    backgroundColor: '#E0E0E0',
+  },
+
+  errorContainer: {
+    paddingHorizontal: 16,
+    marginTop: 12,
+    alignItems: 'center',
+  },
+
+  errorText: {
+    fontSize: 14,
+    color: '#FF4D4F',
+    marginBottom: 8,
+  },
+
+  emptyContainer: {
+    paddingHorizontal: 16,
+    marginTop: 12,
+  },
+
+  emptyText: {
+    fontSize: 14,
+    color: '#888',
+  },
 });

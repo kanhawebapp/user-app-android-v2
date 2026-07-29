@@ -21,3 +21,23 @@ export interface Blog {
 export interface GetBlogsResponse {
   blogs: Blog[];
 }
+
+export interface BlogDetail {
+  id: string;
+
+  title: string;
+
+  slug: string;
+
+  content: string;
+
+  featuredImage: string;
+
+  createdAt: string;
+
+  categories: BlogCategory[];
+}
+
+export interface GetBlogBySlugResponse {
+  blogBySlug: BlogDetail;
+}

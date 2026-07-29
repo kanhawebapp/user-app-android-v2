@@ -63,6 +63,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   const {
     blogs,
     loading,
+    error,
     refresh: refreshBlogs,
   } = useBlogs();
 
@@ -399,7 +400,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         {/* 10. Blog Section */}
         <Blog
           posts={blogs}
-          // posts={blogPosts.map(post => ({ ...post, image: post.image || '' }))}
+          loading={loading}
+          error={error}
           onPostPress={handleBlogPress}
           onViewAllPress={handleViewAllBlog}
           style={styles.section}
