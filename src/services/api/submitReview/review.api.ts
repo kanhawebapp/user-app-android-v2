@@ -25,7 +25,7 @@ export const createReview = async (input: CreateReviewInput) => {
       },
     );
 
-    console.log('CREATE REVIEW RESPONSE:', response);
+    // console.log('CREATE REVIEW RESPONSE:', response);
 
     return response.createReview;
   } catch (error: any) {

@@ -40,7 +40,7 @@ export const createReview = async (input: CreateReviewInput) => {
       {input},
     );
 
-    console.log('CREATE REVIEW RESPONSE:', JSON.stringify(response, null, 2));
+    // console.log('CREATE REVIEW RESPONSE:', JSON.stringify(response, null, 2));
 
     return response.createReview;
   } catch (error: any) {
