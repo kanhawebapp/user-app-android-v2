@@ -88,6 +88,20 @@ const ChatCallScreen: React.FC<ChatCallScreenProps> = ({
   const [showFilters, setShowFilters] = useState(false);
   const hasNavigatedRef = useRef(false);
 
+
+  useEffect(() => {
+  if (
+    chatStatus === 'completed' ||
+    chatStatus === 'rejected' ||
+    chatStatus === 'cancelled'
+  ) {
+    console.log('[ChatCallScreen] Reset navigation');
+
+    hasNavigatedRef.current = false;
+    setShowChatScreen(false);
+  }
+}, [chatStatus]);
+
   useEffect(() => {
     const roomIdStr = roomId ? String(roomId) : null;
 
