@@ -39,7 +39,7 @@ export const getBanners = async (language = 'en') => {
       },
     );
 
-    console.log('BANNERS RESPONSE:', response);
+    // console.log('BANNERS RESPONSE:', response);
 
     return response.getBanners;
   } catch (error: any) {

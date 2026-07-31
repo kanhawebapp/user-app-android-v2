@@ -53,7 +53,7 @@ export const getBlogs = async (): Promise<Blog[]> => {
       {},
     );
 
-    console.log('GET BLOGS RESPONSE:', JSON.stringify(response, null, 2));
+    // console.log('GET BLOGS RESPONSE:', JSON.stringify(response, null, 2));
 
     return response?.blogs || [];
   } catch (error: any) {

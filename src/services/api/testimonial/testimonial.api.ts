@@ -94,7 +94,7 @@ export const getTestimonials = async () => {
       {},
     );
 
-    console.log('TESTIMONIAL RESPONSE:', JSON.stringify(response, null, 2));
+    // console.log('TESTIMONIAL RESPONSE:', JSON.stringify(response, null, 2));
 
     return response.getTestimonials;
   } catch (error: any) {

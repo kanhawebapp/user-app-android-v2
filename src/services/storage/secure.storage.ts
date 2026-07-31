@@ -73,11 +73,11 @@ class SecureStorageService {
       await this.initialize();
 
       if (this.memoryCache[key]) {
-        console.log(
-          `[SecureStorage] Token found in cache: ${key}, value: ${this.memoryCache[
-            key
-          ].substring(0, 20)}...`,
-        );
+        // console.log(
+        //   `[SecureStorage] Token found in cache: ${key}, value: ${this.memoryCache[
+        //     key
+        //   ].substring(0, 20)}...`,
+        // );
         loggingService.info(`[SecureStorage] Token read from cache: ${key}`);
         return this.memoryCache[key];
       }

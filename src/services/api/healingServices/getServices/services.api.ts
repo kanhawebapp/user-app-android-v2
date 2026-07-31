@@ -34,14 +34,14 @@ export const getServices =
           GET_SERVICES,
         );
 
-      console.log(
-        'GET SERVICES RESPONSE:',
-        JSON.stringify(
-          response,
-          null,
-          2,
-        ),
-      );
+      // console.log(
+      //   'GET SERVICES RESPONSE:',
+      //   JSON.stringify(
+      //     response,
+      //     null,
+      //     2,
+      //   ),
+      // );
 
       return response?.getServices || [];
     } catch (error: any) {

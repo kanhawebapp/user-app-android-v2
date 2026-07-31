@@ -25,14 +25,14 @@ export const getCategories =
           GET_CATEGORIES,
         );
 
-      console.log(
-        'GET CATEGORIES RESPONSE:',
-        JSON.stringify(
-          response,
-          null,
-          2,
-        ),
-      );
+      // console.log(
+      //   'GET CATEGORIES RESPONSE:',
+      //   JSON.stringify(
+      //     response,
+      //     null,
+      //     2,
+      //   ),
+      // );
 
       return response?.getCategories || [];
     } catch (error: any) {

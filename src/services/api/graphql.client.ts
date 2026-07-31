@@ -254,16 +254,16 @@ export const createGraphQLClient = (): AxiosInstance => {
 
   client.interceptors.request.use(async config => {
     const accessToken = await secureStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-    console.log(
-      '[GraphQL] Access Token for request:',
-      accessToken ? `Token: ${accessToken.substring(0, 20)}...` : 'NO TOKEN',
-    );
+    // console.log(
+    //   '[GraphQL] Access Token for request:',
+    //   accessToken ? `Token: ${accessToken.substring(0, 20)}...` : 'NO TOKEN',
+    // );
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
-      console.log(
-        '[GraphQL] Authorization header set:',
-        config.headers.Authorization.substring(0, 30) + '...',
-      );
+      // console.log(
+      //   '[GraphQL] Authorization header set:',
+      //   config.headers.Authorization.substring(0, 30) + '...',
+      // );
     } else {
       console.log('[GraphQL] WARNING: No access token found!');
     }
@@ -297,13 +297,13 @@ export const createGraphQLClient = (): AxiosInstance => {
 
   client.interceptors.response.use(
     response => {
-      console.log('====================');
-      console.log('HTTP STATUS =>', response.status);
+      // console.log('====================');
+      // console.log('HTTP STATUS =>', response.status);
 
-      console.log(
-        'HTTP RESPONSE =>',
-        JSON.stringify(response.data, null, 2),
-      );
+      // console.log(
+      //   'HTTP RESPONSE =>',
+      //   JSON.stringify(response.data, null, 2),
+      // );
 
       console.log('====================');
 
@@ -412,10 +412,10 @@ export const graphqlRequest = async <T>(
       payload,
     );
 
-    console.log(
-      'GRAPHQL RESPONSE =>',
-      JSON.stringify(response.data, null, 2),
-    );
+    // console.log(
+    //   'GRAPHQL RESPONSE =>',
+    //   JSON.stringify(response.data, null, 2),
+    // );
 
     if (response.data.errors?.length) {
       console.log(
