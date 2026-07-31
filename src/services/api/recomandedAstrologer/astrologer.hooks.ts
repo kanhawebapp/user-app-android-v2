@@ -54,12 +54,12 @@ export const useAstrologers = () => {
       try {
         const res = await getAstrologers(searchInput);
 
-        console.log(
-          'ASTROLOGER PAGE:',
-          pageNumber,
-          'TOTAL PAGES:',
-          res.totalPages,
-        );
+        // console.log(
+        //   'ASTROLOGER PAGE:',
+        //   pageNumber,
+        //   'TOTAL PAGES:',
+        //   res.totalPages,
+        // );
 
         if (pageNumber === 1) {
           setData(res.data || []);

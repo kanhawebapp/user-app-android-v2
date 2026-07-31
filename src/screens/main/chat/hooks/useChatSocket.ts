@@ -218,7 +218,7 @@ export const useChatSocket = ({
       return;
     }
 
-    console.log('[Socket] Listening for recharge events');
+    // console.log('[Socket] Listening for recharge events');
 
     const RECHARGE_SUCCESS_EVENTS = [
       'recharge_complted',
