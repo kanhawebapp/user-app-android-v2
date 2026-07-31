@@ -50,6 +50,8 @@ export const SOCKET_EVENTS = {
   PEER_JOINED: 'peer_joined',
   CALL_ENDED_BY_ASTROLOGER: 'call_ended_by_astrologer',
   CALL_CANCEL_BY_USER: 'call_ended_by_user',
+  AUTO_DISCONNECT: 'autodisconnect',
+
 } as const;
 
 export type SocketEvent = (typeof SOCKET_EVENTS)[keyof typeof SOCKET_EVENTS];

@@ -1,9 +1,9 @@
-import {useEffect, useRef, useCallback} from 'react';
-import {Socket} from 'socket.io-client';
-import {useChatStore} from './chat.store';
-import {SOCKET_EVENTS} from '../socket/socket.events';
-import {socketService} from '../socket/socket.service';
-import {ChatMessage} from '../socket/socket.types';
+import { useEffect, useRef, useCallback } from 'react';
+import { Socket } from 'socket.io-client';
+import { useChatStore } from './chat.store';
+import { SOCKET_EVENTS } from '../socket/socket.events';
+import { socketService } from '../socket/socket.service';
+import { ChatMessage } from '../socket/socket.types';
 
 const generateId = (): string => {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
@@ -52,7 +52,7 @@ export const useChatSocket = (socket: Socket | null) => {
       }
 
       const storeState = useChatStore.getState();
-      const {chatStatus, isChatTimerStarted} = storeState;
+      const { chatStatus, isChatTimerStarted } = storeState;
 
       // Ignore if chat is already in a terminal/active state
       if (chatStatus === 'active' || isChatTimerStarted) {
@@ -161,8 +161,7 @@ export const useChatSocket = (socket: Socket | null) => {
       console.log('[ChatSocket] User disconnected:', data);
       if (data.roomId === roomId) {
         setError(
-          `${
-            data.userType === 'astrologer' ? 'Astrologer' : 'User'
+          `${data.userType === 'astrologer' ? 'Astrologer' : 'User'
           } disconnected`,
         );
       }
@@ -213,11 +212,11 @@ export const useChatSocket = (socket: Socket | null) => {
     };
   }, [socket, registerListeners]);
 
-  return {registerListeners};
+  return { registerListeners };
 };
 
 export const useSendMessage = () => {
-  const {roomId, chatStatus, addMessage} = useChatStore();
+  const { roomId, chatStatus, addMessage } = useChatStore();
 
   const sendMessage = useCallback(
     (text: string): boolean => {
@@ -254,11 +253,11 @@ export const useSendMessage = () => {
     [roomId, chatStatus, addMessage],
   );
 
-  return {sendMessage};
+  return { sendMessage };
 };
 
 export const useTypingIndicator = () => {
-  const {roomId, chatStatus} = useChatStore();
+  const { roomId, chatStatus } = useChatStore();
 
   const handleTyping = useCallback(
     (isTyping: boolean) => {
@@ -270,11 +269,11 @@ export const useTypingIndicator = () => {
         clearTimeout(typingTimeout);
       }
 
-      socketService.emit(SOCKET_EVENTS.TYPING, {roomId, isTyping});
+      socketService.emit(SOCKET_EVENTS.TYPING, { roomId, isTyping });
 
       if (isTyping) {
         typingTimeout = setTimeout(() => {
-          socketService.emit(SOCKET_EVENTS.TYPING, {roomId, isTyping: false});
+          socketService.emit(SOCKET_EVENTS.TYPING, { roomId, isTyping: false });
         }, 3000);
       }
     },
@@ -289,7 +288,7 @@ export const useTypingIndicator = () => {
     handleTyping(false);
   }, [handleTyping]);
 
-  return {startTyping, stopTyping};
+  return { startTyping, stopTyping };
 };
 
 // export const autoCallReject = useCallback((room_id: any, astro_id: any) => {
@@ -309,7 +308,7 @@ export const useTypingIndicator = () => {
 // };
 
 export const useChatActions = () => {
-  const {roomId} = useChatStore();
+  const { roomId } = useChatStore();
 
   const joinChat = useCallback((): boolean => {
     if (!roomId) {
@@ -318,7 +317,7 @@ export const useChatActions = () => {
     }
 
     console.log('[ChatActions] Joining chat:', roomId);
-    return socketService.emit(SOCKET_EVENTS.JOIN_CHAT, {roomId});
+    return socketService.emit(SOCKET_EVENTS.JOIN_CHAT, { roomId });
   }, [roomId]);
 
   // const cancelCallRequest = useCallback(
@@ -346,7 +345,7 @@ export const useChatActions = () => {
     }
 
     console.log('[ChatActions] Cancelling chat request:', roomId);
-    return socketService.emit(SOCKET_EVENTS.CANCEL_CHAT_REQUEST, {roomId});
+    return socketService.emit(SOCKET_EVENTS.CANCEL_CHAT_REQUEST, { roomId });
   }, [roomId]);
 
   const leaveChat = useCallback((): boolean => {
@@ -356,7 +355,7 @@ export const useChatActions = () => {
     }
 
     console.log('[ChatActions] Leaving chat:', roomId);
-    return socketService.emit(SOCKET_EVENTS.LEAVE_CHAT, {roomId});
+    return socketService.emit(SOCKET_EVENTS.LEAVE_CHAT, { roomId });
   }, [roomId]);
 
   // const completeChat = useCallback((): boolean => {
@@ -375,7 +374,9 @@ export const useChatActions = () => {
 
     const currentRoomId = store.roomId;
     const astroId =
-      store.queueData?.astrologerId || store.chatRoom?.astrologerId;
+      store.queueData?.astrologerId ||
+      store.chatRoom?.astrologerId ||
+      store.userPayload?.astro_id;
 
     const userId = store.userPayload?.user_id || store.userPayload?.id;
 
@@ -420,7 +421,7 @@ export const useChatActions = () => {
 };
 
 export const useChatTimer = () => {
-  const {chatStatus, timer, decrementTimer} = useChatStore();
+  const { chatStatus, timer, decrementTimer } = useChatStore();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -445,5 +446,5 @@ export const useChatTimer = () => {
       .padStart(2, '0')}`;
   }, []);
 
-  return {timer, formattedTime: formatTime(timer)};
+  return { timer, formattedTime: formatTime(timer) };
 };

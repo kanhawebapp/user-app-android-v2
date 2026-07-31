@@ -5,6 +5,8 @@ import type {
   ChatRequestPayload,
   CallRequestPayload,
 } from '../socket/socket.types';
+import { socketService } from '../socket/socket.service';
+import { SOCKET_EVENTS } from '../socket/socket.events';
 
 // Minimal astrologer info for chat flow
 export interface AstrologerInfo {
@@ -174,19 +176,41 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     console.log('[ChatTimer] Starting queue timer with', seconds, 'seconds');
 
-    const interval = setInterval(() => {
-      const current = get().queueTimeLeft;
-      if (current <= 1) {
-        clearInterval(interval);
-        console.log('[ChatTimer] Timer ended - keeping in queued state');
-        set({
-          queueTimeLeft: 0,
-          queueTimerRef: null,
-        });
-      } else {
-        set({queueTimeLeft: current - 1});
-      }
-    }, 1000);
+  const interval = setInterval(() => {
+  const current = get().queueTimeLeft;
+
+  // console.log('[ChatTimer] Current:', current);
+
+  if (current <= 1) {
+    console.log('[ChatTimer] Timer completed');
+
+    const { roomId, userPayload } = get();
+
+    console.log('[ChatTimer] Auto disconnect payload', {
+      roomId,
+      astroId: userPayload?.astro_id,
+    });
+
+    const emitted = socketService.emit(SOCKET_EVENTS.AUTO_DISCONNECT, {
+      room_id: roomId,
+      astroid: userPayload?.astro_id,
+      type: 'chat',
+    });
+
+    console.log('[ChatTimer] AUTO_DISCONNECT emitted:', emitted);
+
+    clearInterval(interval);
+
+    set({
+      queueTimeLeft: 0,
+      queueTimerRef: null,
+    });
+  } else {
+    set({
+      queueTimeLeft: current - 1,
+    });
+  }
+}, 1000);
 
     set({
       queueTimeLeft: seconds,
