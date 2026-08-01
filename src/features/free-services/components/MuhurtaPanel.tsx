@@ -21,7 +21,10 @@ import {
 } from '../../../services/api/astrologyApi/astrology.api';
 import {PlaceOfBirthInput} from '../../../components/Modal/ChatRequestModal/components/PlaceOfBirthInput';
 import {getMuhurtaServiceKind} from '../utils/muhurtaService';
-import {getMuhurtaDetailsViewModel} from '../utils/muhurtaResponse';
+import {
+  getMuhurtaDetailsViewModel,
+  getAbhijeetStatus,
+} from '../utils/muhurtaResponse';
 import {getMuhurtaStyle} from '../utils/muhurtaColors';
 
 type MuhurtaPanelProps = {
@@ -418,7 +421,10 @@ const MuhurtaPanel: React.FC<MuhurtaPanelProps> = ({
                                   return (
                                     <View
                                       key={`day-${index}`}
-                                      style={[styles.resultItem, itemStyle]}>
+                                      style={[
+                                        styles.resultItemCenter,
+                                        itemStyle,
+                                      ]}>
                                       <Text
                                         variant="bodySmall"
                                         weight="bold"
@@ -426,10 +432,15 @@ const MuhurtaPanel: React.FC<MuhurtaPanelProps> = ({
                                         {item.muhurta || 'No name'}
                                       </Text>
                                       <Text
-                                        style={{
-                                          color: '#ffffff',
-                                          marginTop: 4,
-                                        }}>
+                                        style={[
+                                          styles.resultTimeText,
+                                          {
+                                            color:
+                                              nameColor === '#ffffff'
+                                                ? '#ffffff'
+                                                : colors.text.secondary,
+                                          },
+                                        ]}>
                                         {item.time || 'Not available'}
                                       </Text>
                                     </View>
@@ -470,7 +481,10 @@ const MuhurtaPanel: React.FC<MuhurtaPanelProps> = ({
                                   return (
                                     <View
                                       key={`night-${index}`}
-                                      style={[styles.resultItem, itemStyle]}>
+                                      style={[
+                                        styles.resultItemCenter,
+                                        itemStyle,
+                                      ]}>
                                       <Text
                                         variant="bodySmall"
                                         weight="bold"
@@ -478,10 +492,15 @@ const MuhurtaPanel: React.FC<MuhurtaPanelProps> = ({
                                         {item.muhurta || 'No name'}
                                       </Text>
                                       <Text
-                                        style={{
-                                          color: '#ffffff',
-                                          marginTop: 4,
-                                        }}>
+                                        style={[
+                                          styles.resultTimeText,
+                                          {
+                                            color:
+                                              nameColor === '#ffffff'
+                                                ? '#ffffff'
+                                                : colors.text.secondary,
+                                          },
+                                        ]}>
                                         {item.time || 'Not available'}
                                       </Text>
                                     </View>
@@ -508,7 +527,7 @@ const MuhurtaPanel: React.FC<MuhurtaPanelProps> = ({
                         styles.resultItem,
                         {backgroundColor: colors.background.secondary},
                       ]}>
-                      <View style={styles.cardHeader}>
+                      <View style={styles.cardHeaderCenter}>
                         <Icon
                           name="access-time"
                           size={18}
@@ -524,69 +543,159 @@ const MuhurtaPanel: React.FC<MuhurtaPanelProps> = ({
                           }}>
                           Abhijeet Muhurta
                         </Text>
+                        {abhijeetData.start && abhijeetData.end ? (
+                          <View
+                            style={[
+                              styles.statusBadge,
+                              {
+                                backgroundColor:
+                                  getAbhijeetStatus(
+                                    abhijeetData.start,
+                                    abhijeetData.end,
+                                    payload.tzone,
+                                  ).variant === 'success'
+                                    ? colors.success.background
+                                    : colors.warning.background,
+                              },
+                            ]}>
+                            <Text
+                              style={[
+                                styles.statusBadgeText,
+                                {
+                                  color:
+                                    getAbhijeetStatus(
+                                      abhijeetData.start,
+                                      abhijeetData.end,
+                                      payload.tzone,
+                                    ).variant === 'success'
+                                      ? colors.success.main
+                                      : colors.warning.main,
+                                },
+                              ]}>
+                              {
+                                getAbhijeetStatus(
+                                  abhijeetData.start,
+                                  abhijeetData.end,
+                                  payload.tzone,
+                                ).label
+                              }
+                            </Text>
+                          </View>
+                        ) : null}
                       </View>
 
-                      <View style={styles.abhijeetSingleCard}>
-                        <View style={styles.abhijeetRow}>
-                          <View style={styles.abhijeetIconWrap}>
-                            <Icon
-                              name="play-circle-outline"
-                              size={18}
-                              color={colors.primary.main}
-                              library="MaterialIcons"
-                            />
-                          </View>
-                          <View style={styles.abhijeetContent}>
+                      <View style={styles.abhijeetCenterCard}>
+                        <View style={styles.abhijeetTimeRow}>
+                          <View style={styles.abhijeetTimeBlock}>
                             <Text
                               variant="captionSmall"
                               weight="bold"
                               style={{
                                 color: colors.text.secondary,
                                 textTransform: 'uppercase',
+                                marginBottom: 4,
                               }}>
                               Start Time
                             </Text>
                             <Text
                               variant="h6"
                               weight="bold"
-                              style={{
-                                color: colors.text.primary,
-                                marginTop: 2,
-                              }}>
+                              style={{color: colors.text.primary}}>
                               {abhijeetData.start || 'Not available'}
                             </Text>
                           </View>
-                        </View>
 
-                        <View style={styles.abhijeetDivider} />
-
-                        <View style={styles.abhijeetRow}>
-                          <View style={styles.abhijeetIconWrap}>
+                          <View style={styles.abhijeetSeparator}>
                             <Icon
-                              name="stop-circle-outline"
-                              size={18}
+                              name="schedule"
+                              size={20}
                               color={colors.primary.main}
                               library="MaterialIcons"
                             />
                           </View>
-                          <View style={styles.abhijeetContent}>
+
+                          <View style={styles.abhijeetTimeBlock}>
                             <Text
                               variant="captionSmall"
                               weight="bold"
                               style={{
                                 color: colors.text.secondary,
                                 textTransform: 'uppercase',
+                                marginBottom: 4,
                               }}>
                               End Time
                             </Text>
                             <Text
                               variant="h6"
                               weight="bold"
-                              style={{
-                                color: colors.text.primary,
-                                marginTop: 2,
-                              }}>
+                              style={{color: colors.text.primary}}>
                               {abhijeetData.end || 'Not available'}
+                            </Text>
+                          </View>
+                        </View>
+
+                        {abhijeetData.start && abhijeetData.end ? (
+                          <>
+                            <View style={styles.abhijeetDivider} />
+                            <View style={styles.abhijeetDurationRow}>
+                              <Text
+                                variant="captionSmall"
+                                weight="bold"
+                                style={{
+                                  color: colors.text.secondary,
+                                  textTransform: 'uppercase',
+                                  marginBottom: 4,
+                                }}>
+                                Duration
+                              </Text>
+                              <Text
+                                variant="h6"
+                                weight="bold"
+                                style={{color: colors.text.primary}}>
+                                {getMuhurtaDetailsViewModel('abhijeet', {
+                                  abhijit_muhurta: abhijeetData,
+                                })?.duration || 'Not available'}
+                              </Text>
+                            </View>
+                          </>
+                        ) : null}
+
+                        <View style={styles.abhijeetStatusRow}>
+                          <View
+                            style={[
+                              styles.statusBadge,
+                              {
+                                backgroundColor:
+                                  getAbhijeetStatus(
+                                    abhijeetData.start,
+                                    abhijeetData.end,
+                                    payload.tzone,
+                                  ).variant === 'success'
+                                    ? colors.success.background
+                                    : colors.warning.background,
+                              },
+                            ]}>
+                            <Text
+                              style={[
+                                styles.statusBadgeText,
+                                {
+                                  color:
+                                    getAbhijeetStatus(
+                                      abhijeetData.start,
+                                      abhijeetData.end,
+                                      payload.tzone,
+                                    ).variant === 'success'
+                                      ? colors.success.main
+                                      : colors.warning.main,
+                                },
+                              ]}>
+                              {
+                                getAbhijeetStatus(
+                                  abhijeetData.start,
+                                  abhijeetData.end,
+                                  payload.tzone,
+                                ).label
+                              }
                             </Text>
                           </View>
                         </View>
@@ -674,37 +783,86 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(15,23,42,0.08)',
   },
+  resultItemCenter: {
+    borderRadius: 12,
+    padding: 12,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,42,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resultTimeText: {
+    marginTop: 4,
+    fontSize: 12,
+  },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
   },
-  abhijeetSingleCard: {
+  cardHeaderCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  abhijeetCenterCard: {
     borderRadius: 12,
     backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: 'rgba(15,23,42,0.08)',
-    padding: 14,
+    padding: 16,
+    alignItems: 'center',
   },
-  abhijeetRow: {
+  abhijeetTimeRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
   },
-  abhijeetIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: 'rgba(59,130,246,0.08)',
+  abhijeetTimeBlock: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  abhijeetSeparator: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
-  },
-  abhijeetContent: {
-    flex: 1,
+    marginHorizontal: 12,
   },
   abhijeetDivider: {
     height: 1,
     backgroundColor: 'rgba(15,23,42,0.08)',
     marginVertical: 10,
+  },
+  abhijeetDurationRow: {
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  abhijeetStatusRow: {
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  statusBadge: {
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,42,0.06)',
+  },
+  statusBadgeText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+  },
+  timeValueChip: {
+    alignSelf: 'flex-start',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: 'rgba(15,23,42,0.04)',
+    marginTop: 2,
   },
 });
 

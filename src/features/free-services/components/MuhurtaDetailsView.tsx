@@ -6,6 +6,7 @@ import {Icon} from '../../../components/Icon';
 import {Text} from '../../../components/Text';
 import {useTheme} from '../../../theme';
 import {getMuhurtaStyle} from '../utils/muhurtaColors';
+import {getAbhijeetStatus} from '../utils/muhurtaResponse';
 
 type MuhurtaDetailsViewProps = {
   result: any;
@@ -100,14 +101,23 @@ const MuhurtaDetailsView: React.FC<MuhurtaDetailsViewProps> = ({
                 return (
                   <View
                     key={`day-${index}`}
-                    style={[styles.resultItem, itemStyle]}>
+                    style={[styles.resultItemCenter, itemStyle]}>
                     <Text
                       variant="bodySmall"
                       weight="bold"
                       style={{color: nameColor}}>
                       {item.muhurta || 'No name'}
                     </Text>
-                    <Text style={{color: '#ffffff', marginTop: 4}}>
+                    <Text
+                      style={[
+                        styles.resultTimeText,
+                        {
+                          color:
+                            nameColor === '#ffffff'
+                              ? '#ffffff'
+                              : colors.text.secondary,
+                        },
+                      ]}>
                       {item.time || 'Not available'}
                     </Text>
                   </View>
@@ -137,14 +147,23 @@ const MuhurtaDetailsView: React.FC<MuhurtaDetailsViewProps> = ({
                 return (
                   <View
                     key={`night-${index}`}
-                    style={[styles.resultItem, itemStyle]}>
+                    style={[styles.resultItemCenter, itemStyle]}>
                     <Text
                       variant="bodySmall"
                       weight="bold"
                       style={{color: nameColor}}>
                       {item.muhurta || 'No name'}
                     </Text>
-                    <Text style={{color: '#ffffff', marginTop: 4}}>
+                    <Text
+                      style={[
+                        styles.resultTimeText,
+                        {
+                          color:
+                            nameColor === '#ffffff'
+                              ? '#ffffff'
+                              : colors.text.secondary,
+                        },
+                      ]}>
                       {item.time || 'Not available'}
                     </Text>
                   </View>
@@ -197,10 +216,23 @@ const MuhurtaDetailsView: React.FC<MuhurtaDetailsViewProps> = ({
       return null;
     }
 
+    const status = getAbhijeetStatus(
+      normalizedData.start,
+      normalizedData.end,
+      payload?.tzone,
+    );
+
+    const statusColors =
+      status.variant === 'success'
+        ? {bg: colors.success.background, text: colors.success.main}
+        : status.variant === 'warning'
+        ? {bg: colors.warning.background, text: colors.warning.main}
+        : {bg: colors.background.primary, text: colors.text.secondary};
+
     return (
       <View
         style={[styles.card, {backgroundColor: colors.background.secondary}]}>
-        <View style={styles.cardHeader}>
+        <View style={styles.cardHeaderCenter}>
           <Icon
             name="access-time"
             size={20}
@@ -215,109 +247,86 @@ const MuhurtaDetailsView: React.FC<MuhurtaDetailsViewProps> = ({
           </Text>
         </View>
 
-        <View style={styles.abhijeetSingleCard}>
-          <View style={styles.abhijeetRow}>
-            <View
-              style={[
-                styles.abhijeetIconWrap,
-                {backgroundColor: colors.primary.main + '14'},
-              ]}>
-              <Icon
-                name="play-circle-outline"
-                size={18}
-                color={colors.primary.main}
-                library="MaterialIcons"
-              />
-            </View>
-            <View style={styles.abhijeetContent}>
+        <View style={styles.abhijeetCenterCard}>
+          <View style={styles.abhijeetTimeRow}>
+            <View style={styles.abhijeetTimeBlock}>
               <Text
                 variant="captionSmall"
                 weight="bold"
                 style={{
                   color: colors.text.secondary,
                   textTransform: 'uppercase',
+                  marginBottom: 4,
                 }}>
                 Start Time
               </Text>
               <Text
                 variant="h6"
                 weight="bold"
-                style={{color: colors.text.primary, marginTop: 2}}>
+                style={{color: colors.text.primary}}>
                 {normalizedData.start || 'Not available'}
               </Text>
             </View>
-          </View>
 
-          <View style={styles.abhijeetDivider} />
-
-          <View style={styles.abhijeetRow}>
-            <View
-              style={[
-                styles.abhijeetIconWrap,
-                {backgroundColor: colors.primary.main + '14'},
-              ]}>
+            <View style={styles.abhijeetSeparator}>
               <Icon
-                name="stop-circle-outline"
-                size={18}
+                name="schedule"
+                size={20}
                 color={colors.primary.main}
                 library="MaterialIcons"
               />
             </View>
-            <View style={styles.abhijeetContent}>
+
+            <View style={styles.abhijeetTimeBlock}>
               <Text
                 variant="captionSmall"
                 weight="bold"
                 style={{
                   color: colors.text.secondary,
                   textTransform: 'uppercase',
+                  marginBottom: 4,
                 }}>
                 End Time
               </Text>
               <Text
                 variant="h6"
                 weight="bold"
-                style={{color: colors.text.primary, marginTop: 2}}>
+                style={{color: colors.text.primary}}>
                 {normalizedData.end || 'Not available'}
               </Text>
             </View>
           </View>
 
           {normalizedData.duration ? (
-            <>
-              <View style={styles.abhijeetDivider} />
-              <View style={styles.abhijeetRow}>
-                <View
-                  style={[
-                    styles.abhijeetIconWrap,
-                    {backgroundColor: colors.primary.main + '14'},
-                  ]}>
-                  <Icon
-                    name="hourglass-empty"
-                    size={18}
-                    color={colors.primary.main}
-                    library="MaterialIcons"
-                  />
-                </View>
-                <View style={styles.abhijeetContent}>
-                  <Text
-                    variant="captionSmall"
-                    weight="bold"
-                    style={{
-                      color: colors.text.secondary,
-                      textTransform: 'uppercase',
-                    }}>
-                    Duration
-                  </Text>
-                  <Text
-                    variant="h6"
-                    weight="bold"
-                    style={{color: colors.text.primary, marginTop: 2}}>
-                    {normalizedData.duration}
-                  </Text>
-                </View>
-              </View>
-            </>
+            <View style={styles.abhijeetDurationRow}>
+              <Text
+                variant="captionSmall"
+                weight="bold"
+                style={{
+                  color: colors.text.secondary,
+                  textTransform: 'uppercase',
+                  marginBottom: 4,
+                }}>
+                Duration
+              </Text>
+              <Text
+                variant="h6"
+                weight="bold"
+                style={{color: colors.text.primary}}>
+                {normalizedData.duration}
+              </Text>
+            </View>
           ) : null}
+
+          <View style={styles.abhijeetStatusRow}>
+            <View
+              style={[styles.statusBadge, {backgroundColor: statusColors.bg}]}>
+              <Text
+                style={[styles.statusBadgeText, {color: statusColors.text}]}>
+                {status.label}
+              </Text>
+            </View>
+          </View>
         </View>
       </View>
     );
@@ -480,6 +489,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
+  cardHeaderCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
   summaryCard: {
     borderRadius: 16,
     shadowColor: '#000',
@@ -519,78 +534,67 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(15,23,42,0.06)',
   },
-  timeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-  },
-  timeBlockGradient: {
-    borderRadius: 14,
-    padding: 16,
-    width: '48%',
-    minWidth: 140,
-    marginBottom: 10,
-  },
-  timeBlockHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  timeValueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  additionalSection: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(15,23,42,0.08)',
-  },
-  additionalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 6,
-  },
-  abhijeetSingleCard: {
-    borderRadius: 12,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: 'rgba(15,23,42,0.08)',
-    padding: 14,
-  },
-  abhijeetRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  abhijeetIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  abhijeetContent: {
-    flex: 1,
-  },
-  abhijeetDivider: {
-    height: 1,
-    backgroundColor: 'rgba(15,23,42,0.08)',
-    marginVertical: 10,
-  },
   resultSection: {
     marginBottom: 12,
   },
   resultList: {
     gap: 8,
   },
-  resultItem: {
+  resultItemCenter: {
     borderRadius: 12,
-    padding: 10,
+    padding: 12,
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: 'rgba(15,23,42,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resultTimeText: {
+    marginTop: 4,
+    fontSize: 12,
+  },
+  abhijeetCenterCard: {
+    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,42,0.08)',
+    padding: 16,
+    alignItems: 'center',
+  },
+  abhijeetTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  abhijeetTimeBlock: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  abhijeetSeparator: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 12,
+  },
+  abhijeetDurationRow: {
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  abhijeetStatusRow: {
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  statusBadge: {
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,42,0.06)',
+  },
+  statusBadgeText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
   },
 });
 

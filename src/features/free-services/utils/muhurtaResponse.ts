@@ -13,6 +13,11 @@ export interface MuhurtaDetailsViewModel {
   duration?: string;
 }
 
+export type AbhijeetStatus = {
+  label: string;
+  variant: 'success' | 'warning' | 'default';
+};
+
 const toMinutes = (time?: string): number | null => {
   if (!time) {
     return null;
@@ -55,6 +60,35 @@ const calculateDuration = (
   }
 
   return formatDuration(diff);
+};
+
+export const getAbhijeetStatus = (
+  start?: string,
+  end?: string,
+  tzone?: number,
+): AbhijeetStatus => {
+  if (!start || !end) {
+    return {label: 'Unknown', variant: 'default'};
+  }
+
+  const now = new Date();
+  const utcMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+  const offsetMinutes = tzone ? Math.round(tzone * 60) : 0;
+  const targetMinutes = utcMinutes + offsetMinutes;
+  const normalizedCurrent = ((targetMinutes % 1440) + 1440) % 1440;
+
+  const startMinutes = toMinutes(start);
+  const endMinutes = toMinutes(end);
+
+  if (startMinutes === null || endMinutes === null) {
+    return {label: 'Unknown', variant: 'default'};
+  }
+
+  if (normalizedCurrent >= startMinutes && normalizedCurrent <= endMinutes) {
+    return {label: 'Active', variant: 'success'};
+  }
+
+  return {label: 'Over', variant: 'warning'};
 };
 
 export const getMuhurtaDetailsViewModel = (
