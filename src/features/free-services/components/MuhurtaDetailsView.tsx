@@ -66,7 +66,7 @@ const MuhurtaDetailsView: React.FC<MuhurtaDetailsViewProps> = ({
     return (
       <View
         style={[styles.card, {backgroundColor: colors.background.secondary}]}>
-        <View style={styles.cardHeader}>
+        <View style={styles.cardHeaderCenter}>
           <Icon
             name="wb-sunny"
             size={20}
@@ -74,7 +74,7 @@ const MuhurtaDetailsView: React.FC<MuhurtaDetailsViewProps> = ({
             library="MaterialIcons"
           />
           <Text
-            variant="bodySmall"
+            variant="bodyMedium"
             weight="bold"
             style={{color: colors.primary.main, marginLeft: 8}}>
             Chaughadiya Muhurta
@@ -84,9 +84,13 @@ const MuhurtaDetailsView: React.FC<MuhurtaDetailsViewProps> = ({
         {normalizedData.day?.length ? (
           <View style={styles.resultSection}>
             <Text
-              variant="bodySmall"
+              variant="bodyMedium"
               weight="bold"
-              style={{color: colors.text.primary, marginBottom: 8}}>
+              style={{
+                color: colors.text.primary,
+                marginBottom: 8,
+                textAlign: 'center',
+              }}>
               Day Chaughadiya
             </Text>
             <View style={styles.resultList}>
@@ -103,7 +107,7 @@ const MuhurtaDetailsView: React.FC<MuhurtaDetailsViewProps> = ({
                     key={`day-${index}`}
                     style={[styles.resultItemCenter, itemStyle]}>
                     <Text
-                      variant="bodySmall"
+                      variant="bodyMedium"
                       weight="bold"
                       style={{color: nameColor}}>
                       {item.muhurta || 'No name'}
@@ -130,9 +134,13 @@ const MuhurtaDetailsView: React.FC<MuhurtaDetailsViewProps> = ({
         {normalizedData.night?.length ? (
           <View style={styles.resultSection}>
             <Text
-              variant="bodySmall"
+              variant="bodyMedium"
               weight="bold"
-              style={{color: colors.text.primary, marginBottom: 8}}>
+              style={{
+                color: colors.text.primary,
+                marginBottom: 8,
+                textAlign: 'center',
+              }}>
               Night Chaughadiya
             </Text>
             <View style={styles.resultList}>
@@ -149,7 +157,7 @@ const MuhurtaDetailsView: React.FC<MuhurtaDetailsViewProps> = ({
                     key={`night-${index}`}
                     style={[styles.resultItemCenter, itemStyle]}>
                     <Text
-                      variant="bodySmall"
+                      variant="bodyMedium"
                       weight="bold"
                       style={{color: nameColor}}>
                       {item.muhurta || 'No name'}
@@ -240,7 +248,7 @@ const MuhurtaDetailsView: React.FC<MuhurtaDetailsViewProps> = ({
             library="MaterialIcons"
           />
           <Text
-            variant="bodySmall"
+            variant="bodyMedium"
             weight="bold"
             style={{color: colors.primary.main, marginLeft: 8}}>
             Abhijeet Muhurta
@@ -378,7 +386,7 @@ const MuhurtaDetailsView: React.FC<MuhurtaDetailsViewProps> = ({
             library="MaterialIcons"
           />
           <Text
-            variant="bodySmall"
+            variant="bodyMedium"
             weight="bold"
             style={{color: '#ffffff', marginLeft: 8}}>
             Request Summary
@@ -507,6 +515,7 @@ const styles = StyleSheet.create({
   summaryHeaderBar: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
@@ -550,7 +559,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   resultTimeText: {
-    marginTop: 4,
+    marginTop: 6,
     fontSize: 12,
   },
   abhijeetCenterCard: {

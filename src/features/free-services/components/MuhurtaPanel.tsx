@@ -383,9 +383,13 @@ const MuhurtaPanel: React.FC<MuhurtaPanelProps> = ({
                 {isChaughadiya && chaughadiyaData ? (
                   <View>
                     <Text
-                      variant="bodySmall"
+                      variant="bodyMedium"
                       weight="bold"
-                      style={{color: colors.text.primary, marginBottom: 8}}>
+                      style={{
+                        color: colors.text.primary,
+                        marginBottom: 8,
+                        textAlign: 'center',
+                      }}>
                       Chaughadiya Muhurta
                     </Text>
                     {chaughadiyaData.day?.length ||
@@ -394,11 +398,12 @@ const MuhurtaPanel: React.FC<MuhurtaPanelProps> = ({
                         {chaughadiyaData.day?.length ? (
                           <View style={styles.resultSection}>
                             <Text
-                              variant="bodySmall"
+                              variant="bodyMedium"
                               weight="bold"
                               style={{
                                 color: colors.text.primary,
                                 marginBottom: 8,
+                                textAlign: 'center',
                               }}>
                               Day Chaughadiya
                             </Text>
@@ -426,7 +431,7 @@ const MuhurtaPanel: React.FC<MuhurtaPanelProps> = ({
                                         itemStyle,
                                       ]}>
                                       <Text
-                                        variant="bodySmall"
+                                        variant="bodyMedium"
                                         weight="bold"
                                         style={{color: nameColor}}>
                                         {item.muhurta || 'No name'}
@@ -454,11 +459,12 @@ const MuhurtaPanel: React.FC<MuhurtaPanelProps> = ({
                         {chaughadiyaData.night?.length ? (
                           <View style={styles.resultSection}>
                             <Text
-                              variant="bodySmall"
+                              variant="bodyMedium"
                               weight="bold"
                               style={{
                                 color: colors.text.primary,
                                 marginBottom: 8,
+                                textAlign: 'center',
                               }}>
                               Night Chaughadiya
                             </Text>
@@ -486,7 +492,7 @@ const MuhurtaPanel: React.FC<MuhurtaPanelProps> = ({
                                         itemStyle,
                                       ]}>
                                       <Text
-                                        variant="bodySmall"
+                                        variant="bodyMedium"
                                         weight="bold"
                                         style={{color: nameColor}}>
                                         {item.muhurta || 'No name'}
@@ -535,7 +541,7 @@ const MuhurtaPanel: React.FC<MuhurtaPanelProps> = ({
                           library="MaterialIcons"
                         />
                         <Text
-                          variant="bodySmall"
+                          variant="bodyMedium"
                           weight="bold"
                           style={{
                             color: colors.primary.main,
@@ -793,7 +799,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   resultTimeText: {
-    marginTop: 4,
+    marginTop: 6,
     fontSize: 12,
   },
   cardHeader: {
