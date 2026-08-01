@@ -34,19 +34,25 @@ type MuhurtaPanelProps = {
   onSuccess?: (payload: any) => void;
 };
 
-const initialPayload = {
-  day: '10',
-  month: '5',
-  year: '1990',
-  hour: '19',
-  min: '55',
+const getInitialPayload = () => {
+  const now = new Date();
+  return {
+    day: String(now.getDate()).padStart(2, '0'),
+    month: String(now.getMonth() + 1).padStart(2, '0'),
+    year: String(now.getFullYear()),
+    hour: String(now.getHours()).padStart(2, '0'),
+    min: String(now.getMinutes()).padStart(2, '0'),
+  };
 };
+
+const initialPayload = getInitialPayload();
 
 const buildPayload = (
   values: typeof initialPayload,
   lat: number,
   lon: number,
   tzone: number,
+  address = '',
 ) => ({
   day: Number(values.day),
   month: Number(values.month),
@@ -56,6 +62,7 @@ const buildPayload = (
   lat,
   lon,
   tzone,
+  address,
 });
 
 const MuhurtaPanel: React.FC<MuhurtaPanelProps> = ({
@@ -116,6 +123,8 @@ const MuhurtaPanel: React.FC<MuhurtaPanelProps> = ({
     try {
       setLoading(true);
       setError(null);
+      setChaughadiyaData(null);
+      setAbhijeetData(null);
 
       const coords = await geocodeAddress(address);
       const tzone = new Date().getTimezoneOffset() / -60;
@@ -124,6 +133,7 @@ const MuhurtaPanel: React.FC<MuhurtaPanelProps> = ({
         Number(coords.lat),
         Number(coords.lon),
         tzone,
+        coords.display_name,
       );
 
       let responseData: any = null;
@@ -373,13 +383,6 @@ const MuhurtaPanel: React.FC<MuhurtaPanelProps> = ({
 
             {!loading && !error && (isChaughadiya || isAbhijeet) ? (
               <View style={styles.stateCard}>
-                <Text
-                  variant="bodySmall"
-                  weight="bold"
-                  style={{color: colors.text.primary, marginBottom: 12}}>
-                  Results
-                </Text>
-
                 {isChaughadiya && chaughadiyaData ? (
                   <View>
                     <Text
@@ -526,7 +529,7 @@ const MuhurtaPanel: React.FC<MuhurtaPanelProps> = ({
                   </View>
                 ) : null}
 
-                {isChaughadiya && abhijeetData ? (
+                {isAbhijeet && abhijeetData ? (
                   <View style={styles.resultSection}>
                     <View
                       style={[

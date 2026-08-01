@@ -360,7 +360,7 @@ const MuhurtaDetailsView: React.FC<MuhurtaDetailsViewProps> = ({
       hour12: true,
     });
 
-    const locationValue = payload.address || `${payload.lat}, ${payload.lon}`;
+    const locationValue = payload.address || 'Address not available';
 
     return (
       <View
@@ -530,21 +530,21 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   summaryContentCenter: {
-    padding: 16,
+    padding: 20,
     alignItems: 'center',
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
-    gap: 16,
+    gap: 24,
   },
   summaryColumn: {
     flex: 1,
     alignItems: 'center',
   },
   summaryLocationRow: {
-    marginTop: 16,
+    marginTop: 20,
     width: '100%',
     alignItems: 'center',
   },
