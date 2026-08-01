@@ -265,7 +265,7 @@ export const createGraphQLClient = (): AxiosInstance => {
       //   config.headers.Authorization.substring(0, 30) + '...',
       // );
     } else {
-      console.log('[GraphQL] WARNING: No access token found!');
+      // console.log('[GraphQL] WARNING: No access token found!');
     }
     loggingService.info(
       `[GraphQL] ${config.method?.toUpperCase()} ${config.url}`,
@@ -305,31 +305,31 @@ export const createGraphQLClient = (): AxiosInstance => {
       //   JSON.stringify(response.data, null, 2),
       // );
 
-      console.log('====================');
+      // console.log('====================');
 
       return response;
     },
 
     (error: AxiosError) => {
-      console.log('====================');
-      console.log('AXIOS ERROR HIT');
+      // console.log('====================');
+      // console.log('AXIOS ERROR HIT');
 
-      console.log(
-        'STATUS =>',
-        error?.response?.status,
-      );
+      // console.log(
+      //   'STATUS =>',
+      //   error?.response?.status,
+      // );
 
-      console.log(
-        'DATA =>',
-        JSON.stringify(error?.response?.data, null, 2),
-      );
+      // console.log(
+      //   'DATA =>',
+      //   JSON.stringify(error?.response?.data, null, 2),
+      // );
 
-      console.log(
-        'MESSAGE =>',
-        error?.message,
-      );
+      // console.log(
+      //   'MESSAGE =>',
+      //   error?.message,
+      // );
 
-      console.log('====================');
+      // console.log('====================');
 
       return Promise.reject(error);
     },

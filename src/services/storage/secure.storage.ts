@@ -94,17 +94,17 @@ class SecureStorageService {
             this.memoryCache = allCredentials;
             const value = allCredentials[key] || null;
             if (value) {
-              console.log(
-                `[SecureStorage] Token found in Keychain: ${key}, value: ${value.substring(
-                  0,
-                  20,
-                )}...`,
-              );
+              // console.log(
+              //   `[SecureStorage] Token found in Keychain: ${key}, value: ${value.substring(
+              //     0,
+              //     20,
+              //   )}...`,
+              // );
               loggingService.info(
                 `[SecureStorage] Token read from Keychain: ${key}`,
               );
             } else {
-              console.log(`[SecureStorage] Key not found in Keychain: ${key}`);
+              // console.log(`[SecureStorage] Key not found in Keychain: ${key}`);
             }
             return value;
           }
@@ -113,7 +113,7 @@ class SecureStorageService {
         }
       }
 
-      console.log(`[SecureStorage] Token not found: ${key}`);
+      // console.log(`[SecureStorage] Token not found: ${key}`);
       loggingService.info(`[SecureStorage] Token not found: ${key}`);
       return null;
     } catch (error) {

@@ -20,6 +20,7 @@ import styles from './styles';
 import Filter from '../../../assets/images/filter.svg';
 import { useAstrologers } from '../../../services/api/recomandedAstrologer/astrologer.hooks';
 import { ConsultationFlowLayer } from '../consultation';
+import { useChatActions } from '../../../services/chat';
 
 const ChatCallScreen: React.FC<ChatCallScreenProps> = ({
   onNavigateToLogin,
@@ -101,6 +102,16 @@ const ChatCallScreen: React.FC<ChatCallScreenProps> = ({
     setShowChatScreen(false);
   }
 }, [chatStatus]);
+
+
+//  const { completeChat } = useChatActions();
+
+
+//   // ⚠️ Testing only
+// useEffect(() => {
+//   console.log('[TEST] Force complete chat');
+//   completeChat();
+// }, []);
 
   useEffect(() => {
     const roomIdStr = roomId ? String(roomId) : null;

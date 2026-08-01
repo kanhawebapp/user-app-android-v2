@@ -251,6 +251,12 @@
       "parentBranch": "call-chat",
       "createdAt": "2026-06-18T06:58:58.800Z",
       "remote": "origin"
+    },
+    "wt-1785559054518-1": {
+      "branch": "fantasy-condition",
+      "path": "/Users/sudoraj/Desktop/DhwaniAstro/.kilo/worktrees/fantasy-condition",
+      "parentBranch": "wallet-update",
+      "createdAt": "2026-07-29T13:02:06.982Z"
     }
   },
   "sessions": {
@@ -457,6 +463,10 @@
     "ses_126669232ffeIjRj0kfL13RddI": {
       "worktreeId": "wt-1781765938799-2",
       "createdAt": "2026-06-18T07:19:31.555Z"
+    },
+    "ses_05207af37ffeXM5X5YFoYujKky": {
+      "worktreeId": "wt-1785559054518-1",
+      "createdAt": "2026-08-01T04:37:34.518Z"
     }
   },
   "tabOrder": {
@@ -554,6 +564,8 @@
     "wt-1781265565611-1",
     "wt-1781267278064-2",
     "wt-1781761155956-1",
-    "wt-1781765938799-2"
-  ]
+    "wt-1781765938799-2",
+    "wt-1785559054518-1"
+  ],
+  "sessionsCollapsed": false
 }

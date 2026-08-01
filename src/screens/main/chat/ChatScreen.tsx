@@ -136,7 +136,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
 
   const handleEndChat = useCallback(() => {
     try {
-      console.log('handleEndChat called');
+      // console.log('handleEndChat called');
       completeChat();
       setShowRatingModal(true);
     } catch (error) {
@@ -145,7 +145,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     }
     finally {
       handleBack();
-      console.log('handleEndChat completed');
+      // console.log('handleEndChat completed');
     }
   }, [completeChat, handleBack]);
 

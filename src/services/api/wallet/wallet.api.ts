@@ -13,8 +13,8 @@ query GetUserWallet {
 
 export const getUserWallet = async () => {
   try {
-    console.log('=== GET USER WALLET API CALL ===');
-    console.log('Calling graphqlRequest...');
+    // console.log('=== GET USER WALLET API CALL ===');
+    // console.log('Calling graphqlRequest...');
 
     const response = await graphqlRequest<UserWalletResponse>(
       'GetUserWallet',
@@ -22,7 +22,7 @@ export const getUserWallet = async () => {
       {},
     );
 
-    console.log('WALLET RESPONSE:', response);
+    // console.log('WALLET RESPONSE:', response);
 
     return response.getUserWallet;
   } catch (error: any) {

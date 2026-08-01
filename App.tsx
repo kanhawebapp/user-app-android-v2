@@ -21,7 +21,7 @@ const App: React.FC = () => {
     const testAnalytics = async () => {
       try {
         await logEvent(analytics, 'app_test_open');
-        console.log('Analytics event sent');
+        // console.log('Analytics event sent');
 
       } catch (error) {
         console.log('Analytics error:', error);

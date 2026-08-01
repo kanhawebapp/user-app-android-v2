@@ -160,8 +160,8 @@ export const useAuthStore = create<AuthState>()(
           });
 
           if (accessToken && userData) {
-            console.log('Access Token (from storage):', accessToken);
-            console.log('Refresh Token (from storage):', refreshToken);
+            // console.log('Access Token (from storage):', accessToken);
+            // console.log('Refresh Token (from storage):', refreshToken);
             const user = JSON.parse(userData) as User;
             set({
               user,
