@@ -15,7 +15,6 @@ import {setNavigator} from '../../services/navigation/NavigationService';
 import {useCallStore} from '../../services/call/call.store';
 import {useChatStore} from '../../services/chat/chat.store';
 
-
 const PrivacyPolicyScreen = lazy(() =>
   import('../../screens/legal/PrivacyPolicyScreen').then(module => ({
     default: module.default,
@@ -50,6 +49,14 @@ const CallScreen = lazy(() =>
   import('../../screens/main/call').then(module => ({
     default: module.CallScreen,
   })),
+);
+
+const MuhurtaDetailsScreen = lazy(() =>
+  import('../../features/free-services/screens/MuhurtaDetailsScreen').then(
+    module => ({
+      default: module.default,
+    }),
+  ),
 );
 
 // Create stack navigator for animated transitions
@@ -335,6 +342,10 @@ const AnimatedAppContent: React.FC<AnimatedAppContentProps> = ({
             )}
           />
           <Stack.Screen name="Call" component={CallScreen} />
+          <Stack.Screen
+            name="MuhurtaDetails"
+            component={MuhurtaDetailsScreen}
+          />
         </Stack.Navigator>
         <QueueBubble />
       </NavigationContainer>

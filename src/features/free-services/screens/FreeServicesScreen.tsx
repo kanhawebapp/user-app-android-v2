@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useMemo, useState} from 'react';
 import {
   View,
   StyleSheet,
@@ -7,6 +7,7 @@ import {
   StatusBar,
   ActivityIndicator,
 } from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '../../../theme';
@@ -15,6 +16,8 @@ import { Icon } from '../../../components/Icon';
 import { Card } from '../../../components/Card';
 import { useFreeServices } from '../../../services/api/freeServices/useFreeServices';
 import { GoBack } from '../../../components';
+import MuhurtaPanel from '../components/MuhurtaPanel';
+import {getMuhurtaServiceKind} from '../utils/muhurtaService';
 
 interface FreeServicesScreenProps {
   onNavigateBack?: () => void;
@@ -60,13 +63,36 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
   const colors = theme.colors;
   const insets = useSafeAreaInsets();
 
+  const navigation = useNavigation<any>();
   const { data: services, loading } = useFreeServices();
+  const [selectedService, setSelectedService] = useState<any | null>(null);
+  const [muhurtaDetails, setMuhurtaDetails] = useState<any>(null);
 
-  const activeServices =
-    services
-      ?.filter(item => item.isActive)
-      ?.sort((a, b) => a.order - b.order) || [];
+  const activeServices = useMemo(
+    () =>
+      services
+        ?.filter(item => item.isActive)
+        ?.sort((a, b) => a.order - b.order) || [],
+    [services],
+  );
 
+  const handleServicePress = (item: any) => {
+    const title = item?.title || '';
+    if (getMuhurtaServiceKind(title) !== 'other') {
+      setSelectedService(item);
+      return;
+    }
+
+    onServicePress?.(item);
+  };
+
+  const handleMuhurtaSuccess = (result: any) => {
+    setMuhurtaDetails(result);
+    navigation.navigate('MuhurtaDetails', {
+      result,
+      serviceTitle: selectedService?.title,
+    });
+  };
 
   const renderService = ({ item }: { item: any }) => (
     <TouchableOpacity
@@ -77,7 +103,8 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
           backgroundColor: colors.background.secondary,
           borderColor: colors.border.light,
         },
-      ]}>
+      ]}
+      onPress={() => handleServicePress(item)}>
       {/* Top Row */}
       <View style={styles.cardHeader}>
         <View
@@ -254,6 +281,15 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
           }
         />
       )}
+
+      {selectedService ? (
+        <MuhurtaPanel
+          visible={Boolean(selectedService)}
+          serviceTitle={selectedService.title}
+          onClose={() => setSelectedService(null)}
+          onSuccess={handleMuhurtaSuccess}
+        />
+      ) : null}
     </View>
   );
 };
