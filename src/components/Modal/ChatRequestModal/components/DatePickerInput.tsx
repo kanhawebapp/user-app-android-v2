@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, {useState, useCallback, useMemo} from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,8 @@ import {
   ScrollView,
   Platform,
 } from 'react-native';
-import { useTheme } from '../../../../theme';
-import { Icon } from '../../../Icon';
+import {useTheme} from '../../../../theme';
+import {Icon} from '../../../Icon';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 
 interface DatePickerInputProps {
@@ -19,7 +19,7 @@ interface DatePickerInputProps {
   error?: string;
 }
 
-const DAYS = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
+const DAYS = Array.from({length: 31}, (_, i) => String(i + 1).padStart(2, '0'));
 const MONTHS = [
   'Jan',
   'Feb',
@@ -65,26 +65,34 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
       return null;
     }
     const [day, month, year] = value.split('/');
-    return { day, month, year };
+    return {day, month, year};
   }, [value]);
+
+  const getMonthName = useCallback((month: string) => {
+    const monthIndex = Number(month);
+    if (monthIndex >= 1 && monthIndex <= 12) {
+      return MONTHS[monthIndex - 1];
+    }
+    return 'Jan';
+  }, []);
 
   React.useEffect(() => {
     if (parsedDate) {
       setSelectedDay(parsedDate.day || '01');
-      setSelectedMonth(parsedDate.month || 'Jan');
+      setSelectedMonth(getMonthName(parsedDate.month || '1'));
       setSelectedYear(parsedDate.year || String(new Date().getFullYear()));
     }
-  }, [parsedDate]);
+  }, [parsedDate, getMonthName]);
 
   const handleOpenPicker = useCallback(() => {
     if (value) {
       const [day, month, year] = value.split('/');
       setSelectedDay(day || '01');
-      setSelectedMonth(month || 'Jan');
+      setSelectedMonth(getMonthName(month || '1'));
       setSelectedYear(year || String(new Date().getFullYear()));
     }
     setShowPicker(true);
-  }, [value]);
+  }, [value, getMonthName]);
 
   const handleConfirm = useCallback(() => {
     const monthIndex = MONTHS.indexOf(selectedMonth) + 1;
@@ -103,8 +111,8 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.label, { color: colors.text.primary }]}>
-        Date of Birth <Text style={{ color: colors.error.main }}>*</Text>
+      <Text style={[styles.label, {color: colors.text.primary}]}>
+        Date of Birth <Text style={{color: colors.error.main}}>*</Text>
       </Text>
       <TouchableOpacity
         style={[
@@ -117,11 +125,11 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
         onPress={handleOpenPicker}
         activeOpacity={0.7}>
         {value ? (
-          <Text style={[styles.valueText, { color: colors.text.primary }]}>
+          <Text style={[styles.valueText, {color: colors.text.primary}]}>
             {value}
           </Text>
         ) : (
-          <Text style={[styles.placeholder, { color: colors.text.tertiary }]}>
+          <Text style={[styles.placeholder, {color: colors.text.tertiary}]}>
             Select date of birth
           </Text>
         )}
@@ -132,7 +140,7 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
         />
       </TouchableOpacity>
       {error && (
-        <Text style={[styles.errorText, { color: colors.error.main }]}>
+        <Text style={[styles.errorText, {color: colors.error.main}]}>
           {error}
         </Text>
       )}
@@ -151,20 +159,20 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
           <View
             style={[
               styles.modalContent,
-              { backgroundColor: colors.background.primary },
+              {backgroundColor: colors.background.primary},
             ]}>
             <View style={styles.modalHeader}>
               <TouchableOpacity onPress={handleClear}>
-                <Text style={[styles.clearText, { color: colors.error.main }]}>
+                <Text style={[styles.clearText, {color: colors.error.main}]}>
                   Clear
                 </Text>
               </TouchableOpacity>
-              <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
+              <Text style={[styles.modalTitle, {color: colors.text.primary}]}>
                 Select Date
               </Text>
               <TouchableOpacity onPress={handleConfirm}>
                 <Text
-                  style={[styles.confirmText, { color: colors.primary.main }]}>
+                  style={[styles.confirmText, {color: colors.primary.main}]}>
                   Done
                 </Text>
               </TouchableOpacity>
@@ -173,7 +181,7 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
             <View style={styles.pickerContainer}>
               <View style={styles.pickerColumn}>
                 <Text
-                  style={[styles.pickerLabel, { color: colors.text.secondary }]}>
+                  style={[styles.pickerLabel, {color: colors.text.secondary}]}>
                   Day
                 </Text>
                 <ScrollView
@@ -206,7 +214,7 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
 
               <View style={styles.pickerColumn}>
                 <Text
-                  style={[styles.pickerLabel, { color: colors.text.secondary }]}>
+                  style={[styles.pickerLabel, {color: colors.text.secondary}]}>
                   Month
                 </Text>
                 <ScrollView
@@ -239,7 +247,7 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
 
               <View style={styles.pickerColumn}>
                 <Text
-                  style={[styles.pickerLabel, { color: colors.text.secondary }]}>
+                  style={[styles.pickerLabel, {color: colors.text.secondary}]}>
                   Year
                 </Text>
                 <ScrollView

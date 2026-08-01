@@ -9,7 +9,6 @@ import {
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
-import {InputBox} from '../../../components/InputBox';
 import {Text} from '../../../components/Text';
 import {Icon} from '../../../components/Icon';
 import {useTheme} from '../../../theme';
@@ -20,6 +19,8 @@ import {
   geocodeAddress,
 } from '../../../services/api/astrologyApi/astrology.api';
 import {PlaceOfBirthInput} from '../../../components/Modal/ChatRequestModal/components/PlaceOfBirthInput';
+import {DatePickerInput} from '../../../components/Modal/ChatRequestModal/components/DatePickerInput';
+import {TimePickerInput} from '../../../components/Modal/ChatRequestModal/components/TimePickerInput';
 import {getMuhurtaServiceKind} from '../utils/muhurtaService';
 import {
   getMuhurtaDetailsViewModel,
@@ -36,12 +37,21 @@ type MuhurtaPanelProps = {
 
 const getInitialPayload = () => {
   const now = new Date();
+  let hour12 = now.getHours();
+  const meridiem = hour12 >= 12 ? 'PM' : 'AM';
+  if (hour12 === 0) {
+    hour12 = 12;
+  } else if (hour12 > 12) {
+    hour12 -= 12;
+  }
+
   return {
-    day: String(now.getDate()).padStart(2, '0'),
-    month: String(now.getMonth() + 1).padStart(2, '0'),
-    year: String(now.getFullYear()),
-    hour: String(now.getHours()).padStart(2, '0'),
-    min: String(now.getMinutes()).padStart(2, '0'),
+    date: `${String(now.getDate()).padStart(2, '0')}/${String(
+      now.getMonth() + 1,
+    ).padStart(2, '0')}/${now.getFullYear()}`,
+    time: `${String(hour12).padStart(2, '0')}:${String(
+      now.getMinutes(),
+    ).padStart(2, '0')} ${meridiem}`,
   };
 };
 
@@ -53,17 +63,31 @@ const buildPayload = (
   lon: number,
   tzone: number,
   address = '',
-) => ({
-  day: Number(values.day),
-  month: Number(values.month),
-  year: Number(values.year),
-  hour: Number(values.hour),
-  min: Number(values.min),
-  lat,
-  lon,
-  tzone,
-  address,
-});
+) => {
+  const [day, month, year] = values.date.split('/');
+  const [timePart, meridiem] = values.time.split(' ');
+  const [hour24, min] = timePart.split(':');
+
+  let hour = Number(hour24);
+  if (meridiem === 'PM' && hour !== 12) {
+    hour += 12;
+  }
+  if (meridiem === 'AM' && hour === 12) {
+    hour = 0;
+  }
+
+  return {
+    day: Number(day),
+    month: Number(month),
+    year: Number(year),
+    hour,
+    min: Number(min),
+    lat,
+    lon,
+    tzone,
+    address,
+  };
+};
 
 const MuhurtaPanel: React.FC<MuhurtaPanelProps> = ({
   visible,
@@ -80,6 +104,8 @@ const MuhurtaPanel: React.FC<MuhurtaPanelProps> = ({
   const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dateError, setDateError] = useState<string | null>(null);
+  const [timeError, setTimeError] = useState<string | null>(null);
   const [chaughadiyaData, setChaughadiyaData] = useState<any>(null);
   const [abhijeetData, setAbhijeetData] = useState<any>(null);
 
@@ -95,6 +121,13 @@ const MuhurtaPanel: React.FC<MuhurtaPanelProps> = ({
   const handleInputChange = useCallback(
     (key: keyof typeof initialPayload, value: string) => {
       setFormValues(prev => ({...prev, [key]: value}));
+      if (key === 'date') {
+        setDateError(null);
+      }
+      if (key === 'time') {
+        setTimeError(null);
+      }
+      setError(null);
     },
     [],
   );
@@ -103,6 +136,8 @@ const MuhurtaPanel: React.FC<MuhurtaPanelProps> = ({
     setFormValues(initialPayload);
     setAddress('');
     setError(null);
+    setDateError(null);
+    setTimeError(null);
     setChaughadiyaData(null);
     setAbhijeetData(null);
   }, []);
@@ -113,10 +148,36 @@ const MuhurtaPanel: React.FC<MuhurtaPanelProps> = ({
     }
   }, [resetState, visible]);
 
-  const handleFetch = useCallback(async () => {
+  const validateForm = useCallback((): boolean => {
+    let isValid = true;
+
+    if (!formValues.date || !/^\d{2}\/\d{2}\/\d{4}$/.test(formValues.date)) {
+      setDateError('Please select a valid date');
+      isValid = false;
+    } else {
+      setDateError(null);
+    }
+
+    if (
+      !formValues.time ||
+      !/^\d{1,2}:\d{2}\s?(AM|PM)$/i.test(formValues.time)
+    ) {
+      setTimeError('Please select a valid time');
+      isValid = false;
+    } else {
+      setTimeError(null);
+    }
+
     if (!address.trim()) {
       setError('Please select an address first.');
-      showError('Please select an address first.');
+      isValid = false;
+    }
+
+    return isValid;
+  }, [address, formValues.date, formValues.time]);
+
+  const handleFetch = useCallback(async () => {
+    if (!validateForm()) {
       return;
     }
 
@@ -237,6 +298,7 @@ const MuhurtaPanel: React.FC<MuhurtaPanelProps> = ({
     onSuccess,
     serviceTitle,
     showError,
+    validateForm,
   ]);
 
   return (
@@ -289,57 +351,26 @@ const MuhurtaPanel: React.FC<MuhurtaPanelProps> = ({
                 style={{color: colors.text.primary, marginBottom: 12}}>
                 Date & Time
               </Text>
-              <View style={styles.inputRow}>
-                {(
-                  ['day', 'month', 'year'] as Array<keyof typeof initialPayload>
-                ).map(field => (
-                  <View key={field} style={styles.inputColumn}>
-                    <Text
-                      variant="captionSmall"
-                      style={{color: colors.text.secondary, marginBottom: 6}}>
-                      {field === 'day'
-                        ? 'Day'
-                        : field === 'month'
-                        ? 'Month'
-                        : 'Year'}
-                    </Text>
-                    <InputBox
-                      value={formValues[field]}
-                      onChangeText={text => handleInputChange(field, text)}
-                      keyboardType="numeric"
-                      placeholder={
-                        field === 'day'
-                          ? 'Day'
-                          : field === 'month'
-                          ? 'Month'
-                          : 'Year'
-                      }
-                      containerStyle={styles.inputBox}
-                    />
-                  </View>
-                ))}
-              </View>
-
-              <View style={styles.inputRow}>
-                {(['hour', 'min'] as Array<keyof typeof initialPayload>).map(
-                  field => (
-                    <View key={field} style={styles.inputColumn}>
-                      <Text
-                        variant="captionSmall"
-                        style={{color: colors.text.secondary, marginBottom: 6}}>
-                        {field === 'hour' ? 'Hour' : 'Minute'}
-                      </Text>
-                      <InputBox
-                        value={formValues[field]}
-                        onChangeText={text => handleInputChange(field, text)}
-                        keyboardType="numeric"
-                        placeholder={field === 'hour' ? 'Hour' : 'Minute'}
-                        containerStyle={styles.inputBox}
-                      />
-                    </View>
-                  ),
-                )}
-              </View>
+              <DatePickerInput
+                value={formValues.date}
+                onChangeText={(text: string) => handleInputChange('date', text)}
+                error={dateError || undefined}
+              />
+              <TimePickerInput
+                value={formValues.time}
+                onChangeText={(text: string) => handleInputChange('time', text)}
+              />
+              {timeError ? (
+                <Text
+                  style={{
+                    color: colors.error.main,
+                    fontSize: 12,
+                    marginTop: 6,
+                    fontWeight: '500',
+                  }}>
+                  {timeError}
+                </Text>
+              ) : null}
             </View>
 
             <View style={styles.sectionCard}>
@@ -753,18 +784,6 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 12,
     backgroundColor: 'rgba(109,40,217,0.05)',
-  },
-  inputRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  inputColumn: {
-    flex: 1,
-    marginHorizontal: 4,
-  },
-  inputBox: {
-    marginBottom: 0,
   },
   fetchButton: {
     borderRadius: 12,
