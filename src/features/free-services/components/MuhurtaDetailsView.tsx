@@ -345,28 +345,22 @@ const MuhurtaDetailsView: React.FC<MuhurtaDetailsViewProps> = ({
       return null;
     }
 
-    const summaryItems = [
-      {
-        label: 'Date',
-        value: `${payload.day}/${payload.month}/${payload.year}`,
-        icon: 'calendar-today',
-      },
-      {
-        label: 'Time',
-        value: `${payload.hour}:${payload.min}`,
-        icon: 'access-time',
-      },
-      {
-        label: 'Location',
-        value: `${payload.lat}, ${payload.lon}`,
-        icon: 'place',
-      },
-      {
-        label: 'Timezone',
-        value: `UTC${payload.tzone >= 0 ? '+' : ''}${payload.tzone}`,
-        icon: 'public',
-      },
-    ];
+    const formattedDate = `${String(payload.day).padStart(2, '0')} ${new Date(
+      Number(payload.year),
+      Number(payload.month) - 1,
+      Number(payload.day),
+    ).toLocaleString('en-US', {month: 'long', year: 'numeric'})}`;
+
+    const [hours, minutes] = (payload.hour + ':' + payload.min).split(':');
+    const dateObj = new Date();
+    dateObj.setHours(Number(hours), Number(minutes));
+    const formattedTime = dateObj.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+
+    const locationValue = payload.address || `${payload.lat}, ${payload.lon}`;
 
     return (
       <View
@@ -379,56 +373,72 @@ const MuhurtaDetailsView: React.FC<MuhurtaDetailsViewProps> = ({
             styles.summaryHeaderBar,
             {backgroundColor: colors.primary.main},
           ]}>
-          <Icon
-            name="info-outline"
-            size={18}
-            color="#ffffff"
-            library="MaterialIcons"
-          />
-          <Text
-            variant="bodyMedium"
-            weight="bold"
-            style={{color: '#ffffff', marginLeft: 8}}>
+          <Text variant="bodyMedium" weight="bold" style={{color: '#ffffff'}}>
             Request Summary
           </Text>
         </View>
 
-        <View style={styles.summaryContent}>
-          <View style={styles.summaryGrid}>
-            {summaryItems.map(item => (
-              <View key={item.label} style={styles.summaryItem}>
-                <View style={styles.summaryItemHeader}>
-                  <Icon
-                    name={item.icon as any}
-                    size={16}
-                    color={colors.primary.main}
-                    library="MaterialIcons"
-                  />
-                  <Text
-                    variant="captionSmall"
-                    weight="bold"
-                    style={{
-                      color: colors.text.secondary,
-                      marginLeft: 6,
-                    }}>
-                    {item.label}
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    styles.valueBadge,
-                    {backgroundColor: colors.primary.main + '12'},
-                  ]}>
-                  <Text
-                    variant="bodySmall"
-                    weight="bold"
-                    style={{color: colors.text.primary}}
-                    numberOfLines={1}>
-                    {item.value}
-                  </Text>
-                </View>
-              </View>
-            ))}
+        <View style={styles.summaryContentCenter}>
+          <View style={styles.summaryRow}>
+            <View style={styles.summaryColumn}>
+              <Text
+                variant="captionSmall"
+                weight="bold"
+                style={{
+                  color: colors.text.secondary,
+                  textTransform: 'uppercase',
+                  marginBottom: 4,
+                  textAlign: 'center',
+                }}>
+                Date
+              </Text>
+              <Text
+                variant="bodyMedium"
+                weight="bold"
+                style={{color: colors.text.primary, textAlign: 'center'}}>
+                {formattedDate}
+              </Text>
+            </View>
+
+            <View style={styles.summaryColumn}>
+              <Text
+                variant="captionSmall"
+                weight="bold"
+                style={{
+                  color: colors.text.secondary,
+                  textTransform: 'uppercase',
+                  marginBottom: 4,
+                  textAlign: 'center',
+                }}>
+                Time
+              </Text>
+              <Text
+                variant="bodyMedium"
+                weight="bold"
+                style={{color: colors.text.primary, textAlign: 'center'}}>
+                {formattedTime}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.summaryLocationRow}>
+            <Text
+              variant="captionSmall"
+              weight="bold"
+              style={{
+                color: colors.text.secondary,
+                textTransform: 'uppercase',
+                marginBottom: 4,
+                textAlign: 'center',
+              }}>
+              Location
+            </Text>
+            <Text
+              variant="bodyMedium"
+              weight="bold"
+              style={{color: colors.text.primary, textAlign: 'center'}}>
+              {locationValue}
+            </Text>
           </View>
         </View>
       </View>
@@ -519,29 +529,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  summaryContent: {
+  summaryContentCenter: {
     padding: 16,
-  },
-  summaryGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  summaryItem: {
-    width: '48%',
-    alignItems: 'flex-start',
-  },
-  summaryItemHeader: {
-    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
   },
-  valueBadge: {
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(15,23,42,0.06)',
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    gap: 16,
+  },
+  summaryColumn: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  summaryLocationRow: {
+    marginTop: 16,
+    width: '100%',
+    alignItems: 'center',
   },
   resultSection: {
     marginBottom: 12,
