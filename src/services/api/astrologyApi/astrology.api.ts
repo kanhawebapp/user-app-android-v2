@@ -1,11 +1,13 @@
-import { Buffer } from 'buffer';
+import {Buffer} from 'buffer';
 import axios from 'axios';
 
 import type {
   AbhijeetMuhurtaResponse,
+  AdvancedPanchangResponse,
   AstrologyMuhurtaPayload,
   ChaughadiyaMuhurtaResponse,
   GeocodeResult,
+  HoraMuhurtaResponse,
 } from './astrology.types';
 
 const ASTROLOGY_API_BASE_URL = 'https://json.astrologyapi.com';
@@ -29,7 +31,10 @@ const buildFormBody = (payload: AstrologyMuhurtaPayload) => {
   return params.toString();
 };
 
-const requestAstrology = async <T>(endpoint: string, payload: AstrologyMuhurtaPayload) => {
+const requestAstrology = async <T>(
+  endpoint: string,
+  payload: AstrologyMuhurtaPayload,
+) => {
   try {
     const response = await astrologyApiClient.request<T>({
       method: 'POST',
@@ -48,9 +53,14 @@ const requestAstrology = async <T>(endpoint: string, payload: AstrologyMuhurtaPa
     const message =
       typeof data === 'string'
         ? data
-        : data?.message || data?.error || error?.message || 'Astrology API request failed';
+        : data?.message ||
+          data?.error ||
+          error?.message ||
+          'Astrology API request failed';
 
-    throw new Error(`Astrology API request failed (${status || 'unknown'}): ${message}`);
+    throw new Error(
+      `Astrology API request failed (${status || 'unknown'}): ${message}`,
+    );
   }
 };
 
@@ -113,4 +123,19 @@ export const getAbhijeetMuhurta = async (
     '/v1/advanced_panchang',
     payload,
   );
+};
+
+export const getAdvancedPanchang = async (
+  payload: AstrologyMuhurtaPayload,
+): Promise<AdvancedPanchangResponse> => {
+  return requestAstrology<AdvancedPanchangResponse>(
+    '/v1/advanced_panchang',
+    payload,
+  );
+};
+
+export const getHoraMuhurta = async (
+  payload: AstrologyMuhurtaPayload,
+): Promise<HoraMuhurtaResponse> => {
+  return requestAstrology<HoraMuhurtaResponse>('/v1/hora_muhurta', payload);
 };

@@ -59,6 +59,14 @@ const MuhurtaDetailsScreen = lazy(() =>
   ),
 );
 
+const PanchangDetailsScreen = lazy(() =>
+  import('../../features/free-services/screens/PanchangDetailsScreen').then(
+    module => ({
+      default: module.default,
+    }),
+  ),
+);
+
 // Create stack navigator for animated transitions
 const Stack = createNativeStackNavigator();
 
@@ -345,6 +353,10 @@ const AnimatedAppContent: React.FC<AnimatedAppContentProps> = ({
           <Stack.Screen
             name="MuhurtaDetails"
             component={MuhurtaDetailsScreen}
+          />
+          <Stack.Screen
+            name="PanchangDetails"
+            component={PanchangDetailsScreen}
           />
         </Stack.Navigator>
         <QueueBubble />

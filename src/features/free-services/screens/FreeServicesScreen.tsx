@@ -8,52 +8,22 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
-import { useTheme } from '../../../theme';
-import { Text } from '../../../components/Text';
-import { Icon } from '../../../components/Icon';
-import { Card } from '../../../components/Card';
-import { useFreeServices } from '../../../services/api/freeServices/useFreeServices';
-import { GoBack } from '../../../components';
+import {useTheme} from '../../../theme';
+import {Text} from '../../../components/Text';
+import {Icon} from '../../../components/Icon';
+import {Card} from '../../../components/Card';
+import {useFreeServices} from '../../../services/api/freeServices/useFreeServices';
+import {GoBack} from '../../../components';
 import MuhurtaPanel from '../components/MuhurtaPanel';
+import PanchangPanel from '../components/PanchangPanel';
 import {getMuhurtaServiceKind} from '../utils/muhurtaService';
 
 interface FreeServicesScreenProps {
   onNavigateBack?: () => void;
   onServicePress?: (service: any) => void;
 }
-
-const getServiceIcon = (title: string) => {
-  const name = title.toLowerCase();
-
-  if (name.includes('horoscope')) return 'stars';
-  if (name.includes('kundali')) return 'auto-awesome';
-  if (name.includes('numerology')) return 'pin';
-  if (name.includes('panchang')) return 'calendar-today';
-  if (name.includes('chaughadiya')) return 'schedule';
-  if (name.includes('muhurat')) return 'event';
-
-  return 'dashboard';
-};
-
-const getServiceColor = (title: string, colors: any) => {
-  const name = title.toLowerCase();
-
-  if (name.includes('horoscope')) return colors.primary.main;
-
-  if (name.includes('kundali')) return colors.secondary.main;
-
-  if (name.includes('numerology')) return '#06B6D4';
-
-  if (name.includes('panchang')) return '#F97316';
-
-  if (name.includes('chaughadiya')) return '#8B5CF6';
-
-  if (name.includes('muhurat')) return '#10B981';
-
-  return colors.primary.main;
-};
 
 const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
   onNavigateBack,
@@ -64,9 +34,8 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
   const insets = useSafeAreaInsets();
 
   const navigation = useNavigation<any>();
-  const { data: services, loading } = useFreeServices();
+  const {data: services, loading} = useFreeServices();
   const [selectedService, setSelectedService] = useState<any | null>(null);
-  const [muhurtaDetails, setMuhurtaDetails] = useState<any>(null);
 
   const activeServices = useMemo(
     () =>
@@ -78,7 +47,8 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
 
   const handleServicePress = (item: any) => {
     const title = item?.title || '';
-    if (getMuhurtaServiceKind(title) !== 'other') {
+    const kind = getMuhurtaServiceKind(title);
+    if (kind !== 'other') {
       setSelectedService(item);
       return;
     }
@@ -87,14 +57,20 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
   };
 
   const handleMuhurtaSuccess = (result: any) => {
-    setMuhurtaDetails(result);
     navigation.navigate('MuhurtaDetails', {
       result,
       serviceTitle: selectedService?.title,
     });
   };
 
-  const renderService = ({ item }: { item: any }) => (
+  const handlePanchangSuccess = (result: any) => {
+    navigation.navigate('PanchangDetails', {
+      result,
+      serviceTitle: selectedService?.title,
+    });
+  };
+
+  const renderService = ({item}: {item: any}) => (
     <TouchableOpacity
       activeOpacity={0.8}
       style={[
@@ -213,7 +189,7 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
         },
       ]}>
       <StatusBar barStyle={theme.isDark ? 'light-content' : 'dark-content'} />
-      <GoBack onBack={onNavigateBack} title='Free Services' />
+      <GoBack onBack={onNavigateBack} title="Free Services" />
 
       <Card style={styles.bannerCard}>
         <View style={styles.bannerContent}>
@@ -225,7 +201,7 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
           />
 
           <View style={styles.bannerText}>
-            <Text variant="h6" weight="bold" style={{ color: '#FFF' }}>
+            <Text variant="h6" weight="bold" style={{color: '#FFF'}}>
               Free Astrology Services
             </Text>
 
@@ -283,12 +259,21 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
       )}
 
       {selectedService ? (
-        <MuhurtaPanel
-          visible={Boolean(selectedService)}
-          serviceTitle={selectedService.title}
-          onClose={() => setSelectedService(null)}
-          onSuccess={handleMuhurtaSuccess}
-        />
+        getMuhurtaServiceKind(selectedService.title) === 'panchang' ? (
+          <PanchangPanel
+            visible={Boolean(selectedService)}
+            serviceTitle={selectedService.title}
+            onClose={() => setSelectedService(null)}
+            onSuccess={handlePanchangSuccess}
+          />
+        ) : (
+          <MuhurtaPanel
+            visible={Boolean(selectedService)}
+            serviceTitle={selectedService.title}
+            onClose={() => setSelectedService(null)}
+            onSuccess={handleMuhurtaSuccess}
+          />
+        )
       ) : null}
     </View>
   );

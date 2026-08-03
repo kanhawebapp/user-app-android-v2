@@ -27,3 +27,28 @@ export const getMuhurtaStyle = (muhurta?: string): MuhurtaStyle => {
 
   return {backgroundColor: 'transparent', textColor: '#000000'};
 };
+
+export const HORA_COLOR_MAP: Record<string, MuhurtaStyle> = {
+  Sun: {backgroundColor: '#f97316', textColor: '#ffffff'},
+  Moon: {backgroundColor: '#e2e8f0', textColor: '#1e293b'},
+  Mars: {backgroundColor: '#ef4444', textColor: '#ffffff'},
+  Mercury: {backgroundColor: '#22c55e', textColor: '#ffffff'},
+  Jupiter: {backgroundColor: '#eab308', textColor: '#ffffff'},
+  Venus: {backgroundColor: '#ec4899', textColor: '#ffffff'},
+  Saturn: {backgroundColor: '#6366f1', textColor: '#ffffff'},
+};
+
+export const getHoraStyle = (hora?: string): MuhurtaStyle => {
+  if (!hora) {
+    return {backgroundColor: 'transparent', textColor: '#000000'};
+  }
+
+  const normalized = hora.trim();
+  const mapped = HORA_COLOR_MAP[normalized];
+
+  if (mapped) {
+    return mapped;
+  }
+
+  return {backgroundColor: 'transparent', textColor: '#000000'};
+};
