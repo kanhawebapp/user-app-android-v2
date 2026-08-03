@@ -59,6 +59,8 @@ export const HoroscopeHeader: React.FC<HoroscopeHeaderProps> = ({
 
 const styles = StyleSheet.create({
   container: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingBottom: 12,
   },
   backButton: {
