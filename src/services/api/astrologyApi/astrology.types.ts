@@ -127,3 +127,55 @@ export interface GeocodeResult {
   lat: string;
   lon: string;
 }
+
+// ============================================
+// Horoscope (Sun Sign Prediction) types
+// Mapped for the astrologyapi.com
+// sun_sign_prediction/daily/:zodiacName endpoints.
+// ============================================
+
+/** Tab selector for daily horoscope predictions. */
+export type HoroscopeTab = 'today' | 'previous' | 'next';
+
+/** A single zodiac prediction section (personal life, profession, ...). */
+export interface HoroscopePrediction {
+  personal_life?: string;
+  profession?: string;
+  health?: string;
+  emotions?: string;
+  travel?: string;
+  luck?: string;
+
+  // Ratings are only returned by the previous/next endpoints.
+  personal_life_rating?: number;
+  profession_rating?: number;
+  health_rating?: number;
+  emotions_rating?: number;
+  travel_rating?: number;
+  luck_rating?: number;
+}
+
+/**
+ * Raw response for the sun sign prediction endpoints.
+ *
+ * - `today` returns a **flat** object (just the 6 prediction texts).
+ * - `previous` / `next` return a **nested** object with `status`,
+ *   `sun_sign`, `prediction_date` and a `prediction` block that also
+ *   contains the ratings.
+ *
+ * The util `getHoroscopeViewModel` normalises both shapes into one view model.
+ */
+export interface HoroscopeResponse {
+  status?: boolean;
+  sun_sign?: string;
+  prediction_date?: string;
+  prediction?: HoroscopePrediction;
+
+  // Flat fields returned by the "today" endpoint
+  personal_life?: string;
+  profession?: string;
+  health?: string;
+  emotions?: string;
+  travel?: string;
+  luck?: string;
+}

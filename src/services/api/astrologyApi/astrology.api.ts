@@ -8,6 +8,7 @@ import type {
   ChaughadiyaMuhurtaResponse,
   GeocodeResult,
   HoraMuhurtaResponse,
+  HoroscopeResponse,
 } from './astrology.types';
 
 const ASTROLOGY_API_BASE_URL = 'https://json.astrologyapi.com';
@@ -33,7 +34,7 @@ const buildFormBody = (payload: AstrologyMuhurtaPayload) => {
 
 const requestAstrology = async <T>(
   endpoint: string,
-  payload: AstrologyMuhurtaPayload,
+  payload: Record<string, unknown>,
 ) => {
   try {
     const response = await astrologyApiClient.request<T>({
@@ -138,4 +139,45 @@ export const getHoraMuhurta = async (
   payload: AstrologyMuhurtaPayload,
 ): Promise<HoraMuhurtaResponse> => {
   return requestAstrology<HoraMuhurtaResponse>('/v1/hora_muhurta', payload);
+};
+
+// ============================================
+// Horoscope (Sun Sign Prediction) endpoints
+// https://json.astrologyapi.com/v1/sun_sign_prediction/daily/:zodiacName
+//
+// The `today` endpoint returns a flat prediction object, while the
+// `previous` / `next` endpoints wrap the prediction (plus ratings)
+// inside a nested `prediction` object. `HoroscopeResponse` models both.
+// ============================================
+
+const HOROSCOPE_TIMEZONE = 5.5;
+
+export const getSunSignPredictionToday = async (
+  zodiacName: string,
+  timezone: number = HOROSCOPE_TIMEZONE,
+): Promise<HoroscopeResponse> => {
+  return requestAstrology<HoroscopeResponse>(
+    `/v1/sun_sign_prediction/daily/${zodiacName}`,
+    {timezone},
+  );
+};
+
+export const getSunSignPredictionPrevious = async (
+  zodiacName: string,
+  timezone: number = HOROSCOPE_TIMEZONE,
+): Promise<HoroscopeResponse> => {
+  return requestAstrology<HoroscopeResponse>(
+    `/v1/sun_sign_prediction/daily/previous/${zodiacName}`,
+    {timezone},
+  );
+};
+
+export const getSunSignPredictionNext = async (
+  zodiacName: string,
+  timezone: number = HOROSCOPE_TIMEZONE,
+): Promise<HoroscopeResponse> => {
+  return requestAstrology<HoroscopeResponse>(
+    `/v1/sun_sign_prediction/daily/next/${zodiacName}`,
+    {timezone},
+  );
 };

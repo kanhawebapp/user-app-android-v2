@@ -45,11 +45,26 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
     [services],
   );
 
+  const isHoroscopeService = (item: any) => {
+    const slug = (item?.slug || '').toLowerCase();
+    const title = (item?.title || '').toLowerCase();
+    return (
+      slug === 'horoscope' ||
+      title === 'horoscope' ||
+      title.includes('horoscope')
+    );
+  };
+
   const handleServicePress = (item: any) => {
     const title = item?.title || '';
     const kind = getMuhurtaServiceKind(title);
     if (kind !== 'other') {
       setSelectedService(item);
+      return;
+    }
+
+    if (isHoroscopeService(item)) {
+      navigation.navigate('Horoscope');
       return;
     }
 

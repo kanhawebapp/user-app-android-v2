@@ -67,6 +67,22 @@ const PanchangDetailsScreen = lazy(() =>
   ),
 );
 
+const HoroscopeScreen = lazy(() =>
+  import('../../features/horoscope/screens/ZodiacSelectionScreen').then(
+    module => ({
+      default: module.default,
+    }),
+  ),
+);
+
+const HoroscopeDetailsScreen = lazy(() =>
+  import('../../features/horoscope/screens/HoroscopeDetailsScreen').then(
+    module => ({
+      default: module.default,
+    }),
+  ),
+);
+
 // Create stack navigator for animated transitions
 const Stack = createNativeStackNavigator();
 
@@ -92,6 +108,8 @@ export type RootStackParamList = {
     };
     isIncoming?: boolean;
   };
+  Horoscope: undefined;
+  HoroscopeDetails: {zodiacName?: string};
 };
 
 const AppContent: React.FC = () => {
@@ -357,6 +375,11 @@ const AnimatedAppContent: React.FC<AnimatedAppContentProps> = ({
           <Stack.Screen
             name="PanchangDetails"
             component={PanchangDetailsScreen}
+          />
+          <Stack.Screen name="Horoscope" component={HoroscopeScreen} />
+          <Stack.Screen
+            name="HoroscopeDetails"
+            component={HoroscopeDetailsScreen}
           />
         </Stack.Navigator>
         <QueueBubble />

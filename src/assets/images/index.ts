@@ -18,6 +18,7 @@ const images = {
   mam: require('./mam.jpeg'),
   healing: require('./healing.webp'),
   OM: require('./Om.png'),
+  Zodiac: require('./zodiac2.png'),
 };
 
 // const bottomImg ={
