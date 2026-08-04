@@ -10,6 +10,8 @@ import type {
   BirthDetailsResponse,
   ChaughadiyaMuhurtaResponse,
   GeocodeResult,
+  GeneralNakshatraReportPayload,
+  GeneralNakshatraReportResponse,
   HoraMuhurtaResponse,
   HoroscopeChartPayload,
   HoroscopeChartResponse,
@@ -186,6 +188,24 @@ export const getMajorVdasha = async (
   payload: AstrologyMuhurtaPayload,
 ): Promise<MajorDashaPeriod[]> => {
   return requestAstrology<MajorDashaPeriod[]>('/v1/major_vdasha', payload);
+};
+
+// ============================================
+// General Nakshatra Report endpoint
+// https://json.astrologyapi.com/v1/general_nakshatra_report
+//
+// Reuses the stored birth details and adds the gender selected in the Kundli
+// form. Returns sectioned paragraphs (physical, character, education,
+// family, health).
+// ============================================
+
+export const getGeneralNakshatraReport = async (
+  payload: GeneralNakshatraReportPayload,
+): Promise<GeneralNakshatraReportResponse> => {
+  return requestAstrology<GeneralNakshatraReportResponse>(
+    '/v1/general_nakshatra_report',
+    payload,
+  );
 };
 
 // ============================================

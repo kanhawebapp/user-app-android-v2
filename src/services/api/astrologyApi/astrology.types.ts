@@ -15,6 +15,25 @@ export interface AstrologyMuhurtaPayload {
   tzone: number;
 }
 
+/** Request body for the general nakshatra report endpoint (adds gender). */
+export interface GeneralNakshatraReportPayload extends AstrologyMuhurtaPayload {
+  gender: 'male' | 'female';
+}
+
+/**
+ * Response for POST /v1/general_nakshatra_report.
+ *
+ * Each key is a report section holding one or more paragraphs. Any section
+ * may be missing from the response.
+ */
+export interface GeneralNakshatraReportResponse {
+  physical?: string | string[];
+  character?: string | string[];
+  education?: string | string[];
+  family?: string | string[];
+  health?: string | string[];
+}
+
 export interface ChaughadiyaMuhurtaResponse {
   chaughadiya?: {
     day?: {

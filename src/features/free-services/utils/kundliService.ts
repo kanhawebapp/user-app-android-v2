@@ -2,6 +2,7 @@ import type {IconProps} from '../../../components/Icon/iconType';
 import type {
   AstrologyMuhurtaPayload,
   BaseChartType,
+  GeneralNakshatraReportPayload,
   HoroscopeChartPayload,
   HoroscopeChartType,
 } from '../../../services/api/astrologyApi/astrology.types';
@@ -191,6 +192,21 @@ export const buildHoroscopeChartPayload = (
 /** Returns true when the tapped kundli card is the "Birth Chart / Kundli" card. */
 export const isBirthChartCard = (name: string): boolean =>
   (name || '').toLowerCase().includes('birth chart');
+
+/** Returns true when the tapped kundli card is "General Life Prediction". */
+export const isGeneralLifePredictionCard = (name: string): boolean =>
+  (name || '').toLowerCase().includes('life prediction');
+
+/**
+ * Builds the general_nakshatra_report request body from the birth details
+ * already collected in the Kundli form payload, adding the gender.
+ */
+export const buildGeneralLifePredictionPayload = (
+  birthPayload: any,
+): GeneralNakshatraReportPayload => ({
+  ...buildBasicDetailsPayload(birthPayload),
+  gender: birthPayload?.gender === 'female' ? 'female' : 'male',
+});
 
 /**
  * Extracts the aspect ratio (width / height) from an SVG string's viewBox.

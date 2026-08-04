@@ -18,10 +18,12 @@ import {NameInput} from '../../../components/Modal/ChatRequestModal/components/N
 import {PlaceOfBirthInput} from '../../../components/Modal/ChatRequestModal/components/PlaceOfBirthInput';
 import {DatePickerInput} from '../../../components/Modal/ChatRequestModal/components/DatePickerInput';
 import {TimePickerInput} from '../../../components/Modal/ChatRequestModal/components/TimePickerInput';
+import {GenderInput} from '../../../components/Modal/ChatRequestModal/components/GenderInput';
 import {
   getInitialBirthValues,
   buildBirthPayload,
   type BirthFormValues,
+  type GenderValue,
 } from '../utils/freeServiceForm';
 
 type KundliPanelProps = {
@@ -52,6 +54,7 @@ const KundliPanel: React.FC<KundliPanelProps> = ({
   const [nameError, setNameError] = useState<string | null>(null);
   const [dateError, setDateError] = useState<string | null>(null);
   const [timeError, setTimeError] = useState<string | null>(null);
+  const [genderError, setGenderError] = useState<string | null>(null);
 
   const handleInputChange = useCallback(
     (key: keyof BirthFormValues, value: string) => {
@@ -61,6 +64,9 @@ const KundliPanel: React.FC<KundliPanelProps> = ({
       }
       if (key === 'time') {
         setTimeError(null);
+      }
+      if (key === 'gender') {
+        setGenderError(null);
       }
       setError(null);
     },
@@ -75,6 +81,7 @@ const KundliPanel: React.FC<KundliPanelProps> = ({
     setNameError(null);
     setDateError(null);
     setTimeError(null);
+    setGenderError(null);
   }, []);
 
   useEffect(() => {
@@ -117,8 +124,15 @@ const KundliPanel: React.FC<KundliPanelProps> = ({
       setError(null);
     }
 
+    if (!formValues.gender) {
+      setGenderError('Please select your gender');
+      isValid = false;
+    } else {
+      setGenderError(null);
+    }
+
     return isValid;
-  }, [address, formValues.date, formValues.time, name]);
+  }, [address, formValues.date, formValues.gender, formValues.time, name]);
 
   const handleFetch = useCallback(async () => {
     if (!validateForm()) {
@@ -265,6 +279,22 @@ const KundliPanel: React.FC<KundliPanelProps> = ({
                 onChangeText={setAddress}
                 placeholder="Your birth place"
                 error={undefined}
+              />
+            </View>
+
+            <View style={styles.sectionCard}>
+              <Text
+                variant="bodySmall"
+                weight="bold"
+                style={{color: colors.text.primary, marginBottom: 12}}>
+                Gender
+              </Text>
+              <GenderInput
+                value={formValues.gender}
+                onChange={(gender: GenderValue) =>
+                  handleInputChange('gender', gender)
+                }
+                error={genderError || undefined}
               />
             </View>
 

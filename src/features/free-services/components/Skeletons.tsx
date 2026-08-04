@@ -57,6 +57,30 @@ export const ChartSkeletonBlock: React.FC = () => (
   <SkeletonLoader height={220} borderRadius={12} />
 );
 
+/** Skeleton lines for a paragraph block (used by the report skeletons). */
+export const ParagraphBlockSkeleton: React.FC<{lines?: number}> = ({
+  lines = 4,
+}) => (
+  <View>
+    {Array.from({length: lines}).map((_, index) => (
+      <SkeletonLoader
+        key={index}
+        width={index === lines - 1 ? '70%' : '100%'}
+        height={12}
+        style={styles.paragraphLine}
+      />
+    ))}
+  </View>
+);
+
+/** Card skeleton for a General Life Prediction section card. */
+export const LifePredictionCardSkeleton: React.FC = () => (
+  <Card variant="elevated" style={styles.skeletonCard}>
+    <SkeletonLoader width="40%" height={14} style={styles.titleBar} />
+    <ParagraphBlockSkeleton lines={4} />
+  </Card>
+);
+
 const styles = StyleSheet.create({
   skeletonCard: {
     marginBottom: 12,
@@ -81,5 +105,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 10,
+  },
+  paragraphLine: {
+    marginBottom: 10,
   },
 });

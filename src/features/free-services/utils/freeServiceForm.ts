@@ -1,6 +1,10 @@
+export type GenderValue = 'male' | 'female';
+
 export type BirthFormValues = {
   date: string;
   time: string;
+  /** Selected gender; empty until the user makes a choice. */
+  gender?: GenderValue | '';
 };
 
 export const getInitialBirthValues = (): BirthFormValues => {
@@ -20,6 +24,7 @@ export const getInitialBirthValues = (): BirthFormValues => {
     time: `${String(hour12).padStart(2, '0')}:${String(
       now.getMinutes(),
     ).padStart(2, '0')} ${meridiem}`,
+    gender: '',
   };
 };
 
@@ -52,5 +57,6 @@ export const buildBirthPayload = (
     lon,
     tzone,
     address,
+    gender: values.gender || 'male',
   };
 };

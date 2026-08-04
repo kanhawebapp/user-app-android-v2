@@ -83,6 +83,14 @@ const BirthChartScreen = lazy(() =>
   ),
 );
 
+const GeneralLifePredictionScreen = lazy(() =>
+  import(
+    '../../features/free-services/screens/GeneralLifePredictionScreen'
+  ).then(module => ({
+    default: module.default,
+  })),
+);
+
 const HoroscopeScreen = lazy(() =>
   import('../../features/horoscope/screens/ZodiacSelectionScreen').then(
     module => ({
@@ -131,6 +139,10 @@ export type RootStackParamList = {
     serviceTitle?: string;
   };
   BirthChart: {
+    result?: any;
+    serviceTitle?: string;
+  };
+  GeneralLifePrediction: {
     result?: any;
     serviceTitle?: string;
   };
@@ -402,6 +414,10 @@ const AnimatedAppContent: React.FC<AnimatedAppContentProps> = ({
           />
           <Stack.Screen name="KundliCards" component={KundliCardsScreen} />
           <Stack.Screen name="BirthChart" component={BirthChartScreen} />
+          <Stack.Screen
+            name="GeneralLifePrediction"
+            component={GeneralLifePredictionScreen}
+          />
           <Stack.Screen name="Horoscope" component={HoroscopeScreen} />
           <Stack.Screen
             name="HoroscopeDetails"

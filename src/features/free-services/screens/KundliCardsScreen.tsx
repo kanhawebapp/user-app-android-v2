@@ -1,7 +1,10 @@
 import React from 'react';
 import {useRoute, useNavigation} from '@react-navigation/native';
 import KundliCardsView from '../components/KundliCardsView';
-import {isBirthChartCard} from '../utils/kundliService';
+import {
+  isBirthChartCard,
+  isGeneralLifePredictionCard,
+} from '../utils/kundliService';
 
 type KundliCardsRouteParams = {
   result: any;
@@ -16,6 +19,11 @@ const KundliCardsScreen = () => {
   const handleCardPress = (card: any) => {
     if (isBirthChartCard(card?.name)) {
       navigation.navigate('BirthChart', {
+        result,
+        serviceTitle,
+      });
+    } else if (isGeneralLifePredictionCard(card?.name)) {
+      navigation.navigate('GeneralLifePrediction', {
         result,
         serviceTitle,
       });
