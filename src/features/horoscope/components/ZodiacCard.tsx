@@ -1,17 +1,17 @@
 import React from 'react';
-import {StyleSheet, TouchableOpacity, View} from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
-import {CustomImage} from '../../../components/Image';
-import {Text} from '../../../components/Text';
-import {useTheme} from '../../../theme';
-import type {ZodiacSign} from '../constants/zodiacSigns';
+import { CustomImage } from '../../../components/Image';
+import { Text } from '../../../components/Text';
+import { useTheme } from '../../../theme';
+import type { ZodiacSign } from '../constants/zodiacSigns';
 
 export interface ZodiacCardProps {
   sign: ZodiacSign;
   onPress: (sign: ZodiacSign) => void;
 }
 
-export const ZodiacCard: React.FC<ZodiacCardProps> = ({sign, onPress}) => {
+export const ZodiacCard: React.FC<ZodiacCardProps> = ({ sign, onPress }) => {
   const theme = useTheme();
   const colors = theme.colors;
 
@@ -39,9 +39,9 @@ export const ZodiacCard: React.FC<ZodiacCardProps> = ({sign, onPress}) => {
         <View
           style={[
             styles.symbolBadge,
-            {backgroundColor: colors.primary.light + '30'},
+            { backgroundColor: colors.primary.light + '30' },
           ]}>
-          <Text variant="h4" weight="bold" style={{color: colors.primary.main}}>
+          <Text variant="h4" weight="bold" style={{ color: colors.primary.main }}>
             {sign.symbol}
           </Text>
         </View>
@@ -50,14 +50,14 @@ export const ZodiacCard: React.FC<ZodiacCardProps> = ({sign, onPress}) => {
       <Text
         variant="body"
         weight="bold"
-        style={{color: colors.text.primary, marginTop: 12}}
+        style={{ color: colors.text.primary, marginTop: 12 }}
         numberOfLines={1}>
         {sign.name || '-'}
       </Text>
 
       <Text
         variant="captionSmall"
-        style={{color: colors.text.secondary, marginTop: 4}}>
+        style={{ color: colors.text.secondary, marginTop: 4 }}>
         {sign.dateRange || '-'}
       </Text>
     </TouchableOpacity>
@@ -74,10 +74,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 6,
     elevation: 2,
+    marginHorizontal: 6,
+
   },
   imageContainer: {
     position: 'relative',
