@@ -1,24 +1,23 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import {ScrollView, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {SvgXml} from 'react-native-svg';
 
 import {Icon} from '../../../components/Icon';
 import {Text} from '../../../components/Text';
 import {useTheme} from '../../../theme';
 import {useToast} from '../../../context/ToastContext';
 import {
-  beautifyKundliSvg,
+  buildBasicDetailsPayload,
   buildHoroscopeChartPayload,
-  getSvgAspectRatio,
 } from '../utils/kundliService';
 import {useHoroscopeCharts} from '../hooks/useHoroscopeCharts';
+import {useBirthBasicsData} from '../hooks/useBirthBasicsData';
+import {usePlanetsData} from '../hooks/usePlanetsData';
+import {useDivisionalCharts} from '../hooks/useDivisionalCharts';
+import ChartTabs, {type ChartTabItem} from './ChartTabs';
+import BasicTabView from './BasicTabView';
+import PlanetsTabView from './PlanetsTabView';
+import DivisionalChartsView from './DivisionalChartsView';
 
 export interface BirthChartViewProps {
   result: any;
@@ -26,114 +25,13 @@ export interface BirthChartViewProps {
   onBack: () => void;
 }
 
-/** Fallback chart height when the SVG has no usable viewBox. */
-const CHART_FALLBACK_HEIGHT = 320;
+type ActiveTab = 'basic' | 'planets' | 'divisional';
 
-const ChartCard: React.FC<{
-  title: string;
-  svg?: string | null;
-  error?: any;
-  onRetry: () => void;
-}> = ({title, svg, error, onRetry}) => {
-  const theme = useTheme();
-  const colors = theme.colors;
-  const [contentWidth, setContentWidth] = useState(0);
-
-  const beautifiedSvg = useMemo(
-    () => (svg ? beautifyKundliSvg(svg) : null),
-    [svg],
-  );
-
-  const aspectRatio = useMemo(
-    () => getSvgAspectRatio(beautifiedSvg || ''),
-    [beautifiedSvg],
-  );
-
-  const renderBody = () => {
-    if (error) {
-      return (
-        <View style={styles.chartState}>
-          <Icon
-            name="error-outline"
-            size={32}
-            color={colors.error.main}
-            library="MaterialIcons"
-          />
-          <Text
-            variant="bodySmall"
-            style={{
-              color: colors.text.secondary,
-              marginTop: 8,
-              textAlign: 'center',
-            }}>
-            {error?.message || 'Failed to load this chart.'}
-          </Text>
-          <TouchableOpacity
-            style={[styles.retryButton, {backgroundColor: colors.primary.main}]}
-            onPress={onRetry}
-            activeOpacity={0.85}>
-            <Text
-              variant="bodySmall"
-              weight="bold"
-              style={{color: colors.primary.contrastText}}>
-              Retry
-            </Text>
-          </TouchableOpacity>
-        </View>
-      );
-    }
-
-    if (!beautifiedSvg) {
-      return (
-        <View style={styles.chartState}>
-          <Text
-            variant="bodySmall"
-            style={{color: colors.text.tertiary, textAlign: 'center'}}>
-            No chart data available.
-          </Text>
-        </View>
-      );
-    }
-
-    if (contentWidth === 0) {
-      return null;
-    }
-
-    const chartHeight = aspectRatio
-      ? contentWidth / aspectRatio
-      : CHART_FALLBACK_HEIGHT;
-
-    return (
-      <SvgXml
-        xml={beautifiedSvg}
-        width={contentWidth}
-        height={chartHeight}
-        preserveAspectRatio="xMidYMid meet"
-      />
-    );
-  };
-
-  return (
-    <View
-      style={[
-        styles.chartCard,
-        {backgroundColor: colors.background.secondary},
-      ]}>
-      <Text
-        variant="body"
-        weight="bold"
-        style={{color: colors.text.primary, marginBottom: 12}}>
-        {title}
-      </Text>
-
-      <View
-        style={styles.chartContent}
-        onLayout={e => setContentWidth(e.nativeEvent.layout.width)}>
-        {renderBody()}
-      </View>
-    </View>
-  );
-};
+const TABS: ChartTabItem[] = [
+  {key: 'basic', label: 'Basic'},
+  {key: 'planets', label: 'Planets'},
+  {key: 'divisional', label: 'Divisional'},
+];
 
 const BirthChartView: React.FC<BirthChartViewProps> = ({
   result,
@@ -144,52 +42,105 @@ const BirthChartView: React.FC<BirthChartViewProps> = ({
   const colors = theme.colors;
   const {showError} = useToast();
 
+  const [activeTab, setActiveTab] = useState<ActiveTab>('basic');
+
+  const birthPayload = result?.payload;
+
+  const basicPayload = useMemo(() => {
+    if (!birthPayload || birthPayload.day == null) {
+      return null;
+    }
+    return buildBasicDetailsPayload(birthPayload);
+  }, [birthPayload]);
+
   const chartPayload = useMemo(() => {
-    const birthPayload = result?.payload;
     if (!birthPayload || birthPayload.day == null) {
       return null;
     }
     return buildHoroscopeChartPayload(birthPayload);
-  }, [result?.payload]);
+  }, [birthPayload]);
 
-  const {charts, loading, error, reload} = useHoroscopeCharts(chartPayload);
+  // The Chalit + D9 charts are fetched once here and shared by the Basic and
+  // Planets tabs. Switching tabs never triggers a second request.
+  const charts = useHoroscopeCharts(chartPayload);
+  const basics = useBirthBasicsData(basicPayload);
+  const planets = usePlanetsData(basicPayload, activeTab === 'planets');
+  const divisional = useDivisionalCharts(
+    chartPayload,
+    activeTab === 'divisional',
+  );
 
-  // Surface the global error (e.g. missing birth details) through the toast.
+  // Surface global errors (e.g. missing birth details) through the toast.
   useEffect(() => {
-    if (error) {
-      showError(error?.message || 'Failed to load birth charts.');
+    if (charts.error) {
+      showError(charts.error?.message || 'Failed to load birth charts.');
     }
-  }, [error, showError]);
+  }, [charts.error, showError]);
 
-  // Debug log for the rendering status of each chart after fetch settles.
   useEffect(() => {
-    if (loading) {
-      return;
+    if (basics.error) {
+      showError(basics.error?.message || 'Failed to load basic details.');
     }
-    charts.forEach(chart => {
-      console.log(`[BirthChart] render ${chart.type}`, {
-        title: chart.label,
-        hasSvg: Boolean(chart.svg),
-        svgLength: chart.svg?.length || 0,
-        error: chart.error?.message || null,
-      });
-    });
-  }, [charts, loading]);
+  }, [basics.error, showError]);
 
-  const handleRetry = useCallback(() => {
-    reload();
-  }, [reload]);
+  useEffect(() => {
+    if (planets.error) {
+      showError(planets.error?.message || 'Failed to load planet details.');
+    }
+  }, [planets.error, showError]);
 
-  const renderContent = () => {
-    if (loading) {
-      return (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.primary.main} />
-        </View>
+  useEffect(() => {
+    if (divisional.error) {
+      showError(
+        divisional.error?.message || 'Failed to load divisional charts.',
       );
     }
+  }, [divisional.error, showError]);
 
-    if (error) {
+  const handleRetryCharts = useCallback(() => {
+    charts.reload();
+  }, [charts]);
+
+  const renderActiveTab = () => {
+    switch (activeTab) {
+      case 'planets':
+        return (
+          <PlanetsTabView
+            planets={planets.planets}
+            dasha={planets.dasha}
+            charts={charts.charts}
+            chartsLoading={charts.loading}
+            onRetryPlanets={planets.reload}
+            onRetryCharts={handleRetryCharts}
+          />
+        );
+      case 'divisional':
+        return (
+          <DivisionalChartsView
+            charts={divisional.charts}
+            loading={divisional.loading}
+            error={divisional.error}
+            onRetry={divisional.reload}
+          />
+        );
+      case 'basic':
+      default:
+        return (
+          <BasicTabView
+            birthDetails={basics.birthDetails}
+            panchang={basics.panchang}
+            astroDetails={basics.astroDetails}
+            charts={charts.charts}
+            chartsLoading={charts.loading}
+            onRetryBasics={basics.reload}
+            onRetryCharts={handleRetryCharts}
+          />
+        );
+    }
+  };
+
+  const renderContent = () => {
+    if (!chartPayload) {
       return (
         <View style={[styles.center, {marginTop: 40}]}>
           <Icon
@@ -205,37 +156,14 @@ const BirthChartView: React.FC<BirthChartViewProps> = ({
               marginTop: 12,
               textAlign: 'center',
             }}>
-            {error?.message || 'Something went wrong. Please try again.'}
+            Birth details are missing. Please go back and submit the Kundli form
+            again.
           </Text>
-          {chartPayload ? (
-            <TouchableOpacity
-              style={[
-                styles.retryButton,
-                {backgroundColor: colors.primary.main},
-              ]}
-              onPress={handleRetry}
-              activeOpacity={0.85}>
-              <Text
-                variant="bodySmall"
-                weight="bold"
-                style={{color: colors.primary.contrastText}}>
-                Retry
-              </Text>
-            </TouchableOpacity>
-          ) : null}
         </View>
       );
     }
 
-    return charts.map(chart => (
-      <ChartCard
-        key={chart.type}
-        title={chart.label}
-        svg={chart.svg}
-        error={chart.error}
-        onRetry={handleRetry}
-      />
-    ));
+    return renderActiveTab();
   };
 
   return (
@@ -257,6 +185,12 @@ const BirthChartView: React.FC<BirthChartViewProps> = ({
           {serviceTitle || 'Birth Chart'}
         </Text>
       </View>
+
+      <ChartTabs
+        tabs={TABS}
+        activeKey={activeTab}
+        onChange={key => setActiveTab(key as ActiveTab)}
+      />
 
       <ScrollView
         contentContainerStyle={styles.content}
@@ -293,34 +227,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 80,
     paddingHorizontal: 24,
-  },
-  chartCard: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    width: '100%',
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  chartContent: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  chartState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-    paddingHorizontal: 16,
-  },
-  retryButton: {
-    marginTop: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 12,
-    alignItems: 'center',
   },
 });

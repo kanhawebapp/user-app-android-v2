@@ -4,12 +4,22 @@ import {
   isKundliService,
   CHART_LABELS,
   CHART_TYPES,
+  DIVISIONAL_CHARTS,
+  buildBasicDetailsPayload,
   buildHoroscopeChartPayload,
   isBirthChartCard,
   getSvgAspectRatio,
   beautifyKundliSvg,
   PLANET_COLOR_MAP,
   ZODIAC_COLOR_MAP,
+  formatDashaDateTime,
+  getDashaDuration,
+  formatDashaDuration,
+  getPlanetAbbreviation,
+  getPlanetColor,
+  formatPlanetDegree,
+  formatPlanetSpeed,
+  toDisplayValue,
 } from '../src/features/free-services/utils/kundliService';
 
 describe('kundliCards', () => {
@@ -119,6 +129,79 @@ describe('CHART_LABELS', () => {
 
   it('exposes a stable chart type order', () => {
     expect(CHART_TYPES).toEqual(['chalit', 'D9']);
+  });
+});
+
+describe('DIVISIONAL_CHARTS', () => {
+  it('lists every divisional chart from the task table and excludes chalit', () => {
+    const ids = DIVISIONAL_CHARTS.map(c => c.chartId);
+    expect(ids).toEqual([
+      'SUN',
+      'MOON',
+      'D1',
+      'D2',
+      'D3',
+      'D4',
+      'D5',
+      'D7',
+      'D8',
+      'D9',
+      'D10',
+      'D12',
+      'D16',
+      'D20',
+      'D24',
+      'D27',
+      'D30',
+      'D40',
+      'D45',
+      'D60',
+    ]);
+    expect(ids).not.toContain('chalit');
+  });
+
+  it('maps every chart id to a display title', () => {
+    const titles = DIVISIONAL_CHARTS.map(c => c.title);
+    expect(titles).toContain('Sun Chart');
+    expect(titles).toContain('Navamansha Chart');
+    expect(titles).toContain('Shashtymsha Chart');
+    DIVISIONAL_CHARTS.forEach(c => {
+      expect(typeof c.title).toBe('string');
+      expect(c.title.length).toBeGreaterThan(0);
+    });
+  });
+});
+
+describe('buildBasicDetailsPayload', () => {
+  it('reuses the birth details and strips chart/config and address fields', () => {
+    const birthPayload = {
+      day: 10,
+      month: 5,
+      year: 1990,
+      hour: 19,
+      min: 55,
+      lat: 19.2056,
+      lon: 25.2056,
+      tzone: 5.5,
+      address: 'Somewhere',
+    };
+
+    expect(buildBasicDetailsPayload(birthPayload)).toEqual({
+      day: 10,
+      month: 5,
+      year: 1990,
+      hour: 19,
+      min: 55,
+      lat: 19.2056,
+      lon: 25.2056,
+      tzone: 5.5,
+    });
+  });
+
+  it('tolerates a missing payload', () => {
+    const payload = buildBasicDetailsPayload(null);
+    expect(payload.day).toBe(0);
+    expect(payload.tzone).toBe(0);
   });
 });
 
@@ -339,5 +422,160 @@ describe('beautifyKundliSvg', () => {
     expect(out).toContain('font-size="15"');
     expect(out).not.toContain('>Ju </text>');
     expect(out).not.toContain('>Ve </text>');
+  });
+});
+
+describe('formatDashaDateTime', () => {
+  it('formats the API date string with 12-hour time', () => {
+    expect(formatDashaDateTime('2-5-1994  14:7')).toBe('02 May 1994, 02:07 PM');
+    expect(formatDashaDateTime('2-5-1994 8:7')).toBe('02 May 1994, 08:07 AM');
+  });
+
+  it('formats midnight as 12 AM and noon as 12 PM', () => {
+    expect(formatDashaDateTime('1-1-2000  0:0')).toBe(
+      '01 January 2000, 12:00 AM',
+    );
+    expect(formatDashaDateTime('1-1-2000  12:30')).toBe(
+      '01 January 2000, 12:30 PM',
+    );
+  });
+
+  it('returns the raw value for unexpected formats', () => {
+    expect(formatDashaDateTime('not-a-date')).toBe('not-a-date');
+    expect(formatDashaDateTime(undefined)).toBe('—');
+  });
+});
+
+describe('getPlanetAbbreviation', () => {
+  it('maps known planet names to their chart abbreviations', () => {
+    expect(getPlanetAbbreviation('Sun')).toBe('Su');
+    expect(getPlanetAbbreviation('Moon')).toBe('Mo');
+    expect(getPlanetAbbreviation('Mercury')).toBe('Me');
+    expect(getPlanetAbbreviation('Jupiter')).toBe('Ju');
+    expect(getPlanetAbbreviation('Venus')).toBe('Ve');
+    expect(getPlanetAbbreviation('Saturn')).toBe('Sa');
+    expect(getPlanetAbbreviation('Rahu')).toBe('Ra');
+    expect(getPlanetAbbreviation('Ketu')).toBe('Ke');
+  });
+
+  it('falls back to the first two letters for unknown names', () => {
+    expect(getPlanetAbbreviation('Foo')).toBe('Fo');
+    expect(getPlanetAbbreviation(undefined)).toBe('?');
+  });
+});
+
+describe('getPlanetColor', () => {
+  it('returns the chart colour for known planets', () => {
+    expect(getPlanetColor('Sun')).toBe(PLANET_COLOR_MAP.Su);
+    expect(getPlanetColor('Moon')).toBe(PLANET_COLOR_MAP.Mo);
+    expect(getPlanetColor('Ketu')).toBe(PLANET_COLOR_MAP.Ke);
+  });
+
+  it('falls back to the primary colour for unknown planets', () => {
+    expect(getPlanetColor('Foo')).toBe('#5B2CA5');
+    expect(getPlanetColor(undefined)).toBe('#5B2CA5');
+  });
+});
+
+describe('getDashaDuration', () => {
+  it('computes whole-year spans', () => {
+    expect(getDashaDuration('2-5-1994 14:7', '2-5-2001 8:7')).toEqual({
+      years: 7,
+      months: 0,
+      days: 0,
+    });
+  });
+
+  it('computes months and days with borrowing', () => {
+    expect(getDashaDuration('10-3-1990 12:0', '10-5-1997 12:0')).toEqual({
+      years: 7,
+      months: 2,
+      days: 0,
+    });
+    expect(getDashaDuration('10-1-2020 0:0', '5-2-2020 0:0')).toEqual({
+      years: 0,
+      months: 0,
+      days: 26,
+    });
+    expect(getDashaDuration('31-3-2020 0:0', '1-5-2020 0:0')).toEqual({
+      years: 0,
+      months: 1,
+      days: 0,
+    });
+  });
+
+  it('returns null when dates are unparseable or inverted', () => {
+    expect(getDashaDuration(undefined, '2-5-2001 8:7')).toBeNull();
+    expect(getDashaDuration('not-a-date', '2-5-2001 8:7')).toBeNull();
+    expect(getDashaDuration('2-5-2001 8:7', '2-5-1994 14:7')).toBeNull();
+  });
+});
+
+describe('formatDashaDuration', () => {
+  it('formats the duration as readable parts', () => {
+    expect(formatDashaDuration('2-5-1994 14:7', '2-5-2001 8:7')).toBe(
+      '7 years',
+    );
+    expect(formatDashaDuration('10-3-1990 12:0', '10-5-1997 12:0')).toBe(
+      '7 years, 2 months',
+    );
+    expect(formatDashaDuration('10-1-2020 0:0', '5-2-2020 0:0')).toBe(
+      '26 days',
+    );
+  });
+
+  it('uses singular units and handles zero-length spans', () => {
+    expect(formatDashaDuration('2-5-1994 14:7', '2-6-1994 14:7')).toBe(
+      '1 month',
+    );
+    expect(formatDashaDuration('2-5-1994 14:7', '2-5-1994 14:7')).toBe(
+      '0 days',
+    );
+  });
+
+  it('returns a dash when the duration cannot be computed', () => {
+    expect(formatDashaDuration(undefined, '2-5-2001 8:7')).toBe('—');
+    expect(formatDashaDuration('2-5-2001 8:7', '2-5-1994 14:7')).toBe('—');
+  });
+});
+
+describe('formatPlanetDegree', () => {
+  it('formats numeric degrees with two decimals and a degree symbol', () => {
+    expect(formatPlanetDegree(12.189540792)).toBe('12.19°');
+    expect(formatPlanetDegree('0')).toBe('0.00°');
+  });
+
+  it('returns a dash for missing values', () => {
+    expect(formatPlanetDegree(undefined)).toBe('—');
+    expect(formatPlanetDegree('n/a')).toBe('—');
+  });
+});
+
+describe('formatPlanetSpeed', () => {
+  it('formats speed with two decimals and keeps negative values', () => {
+    expect(formatPlanetSpeed(0.953779744)).toBe('0.95°/day');
+    expect(formatPlanetSpeed(-0.294679)).toBe('-0.29°/day');
+  });
+
+  it('returns a dash for missing values', () => {
+    expect(formatPlanetSpeed(undefined)).toBe('—');
+  });
+});
+
+describe('toDisplayValue', () => {
+  it('renders booleans as Yes/No', () => {
+    expect(toDisplayValue(true)).toBe('Yes');
+    expect(toDisplayValue(false)).toBe('No');
+  });
+
+  it('renders nullish/empty values as a dash', () => {
+    expect(toDisplayValue(null)).toBe('—');
+    expect(toDisplayValue(undefined)).toBe('—');
+    expect(toDisplayValue('')).toBe('—');
+  });
+
+  it('stringifies other values', () => {
+    expect(toDisplayValue('Leo')).toBe('Leo');
+    expect(toDisplayValue(3)).toBe('3');
   });
 });

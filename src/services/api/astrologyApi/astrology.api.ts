@@ -5,6 +5,9 @@ import type {
   AbhijeetMuhurtaResponse,
   AdvancedPanchangResponse,
   AstrologyMuhurtaPayload,
+  AstroDetailsResponse,
+  BasicPanchangResponse,
+  BirthDetailsResponse,
   ChaughadiyaMuhurtaResponse,
   GeocodeResult,
   HoraMuhurtaResponse,
@@ -12,6 +15,8 @@ import type {
   HoroscopeChartResponse,
   HoroscopeChartType,
   HoroscopeResponse,
+  MajorDashaPeriod,
+  PlanetPosition,
 } from './astrology.types';
 
 const ASTROLOGY_API_BASE_URL = 'https://json.astrologyapi.com';
@@ -25,7 +30,7 @@ const getAuthorizationHeader = () => {
   return `Basic ${encodedCredentials}`;
 };
 
-const buildFormBody = (payload: AstrologyMuhurtaPayload) => {
+const buildFormBody = (payload: Record<string, unknown>) => {
   const params = new URLSearchParams();
 
   Object.entries(payload).forEach(([key, value]) => {
@@ -35,15 +40,12 @@ const buildFormBody = (payload: AstrologyMuhurtaPayload) => {
   return params.toString();
 };
 
-const requestAstrology = async <T>(
-  endpoint: string,
-  payload: Record<string, unknown>,
-) => {
+const requestAstrology = async <T>(endpoint: string, payload: object) => {
   try {
     const response = await astrologyApiClient.request<T>({
       method: 'POST',
       url: endpoint,
-      data: buildFormBody(payload),
+      data: buildFormBody(payload as Record<string, unknown>),
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
@@ -81,7 +83,7 @@ astrologyApiClient.interceptors.request.use(config => {
   config.headers = {
     ...config.headers,
     Authorization: getAuthorizationHeader(),
-  };
+  } as typeof config.headers;
 
   return config;
 });
@@ -142,6 +144,48 @@ export const getHoraMuhurta = async (
   payload: AstrologyMuhurtaPayload,
 ): Promise<HoraMuhurtaResponse> => {
   return requestAstrology<HoraMuhurtaResponse>('/v1/hora_muhurta', payload);
+};
+
+// ============================================
+// Kundli (Birth Chart) endpoints
+// https://json.astrologyapi.com/v1/birth_details
+// https://json.astrologyapi.com/v1/basic_panchang
+// https://json.astrologyapi.com/v1/astro_details
+// https://json.astrologyapi.com/v1/planets
+// https://json.astrologyapi.com/v1/major_vdasha
+//
+// All endpoints accept the same birth-details payload (day, month, year,
+// hour, min, lat, lon, tzone) and are meant to be called in parallel.
+// ============================================
+
+export const getBirthDetails = async (
+  payload: AstrologyMuhurtaPayload,
+): Promise<BirthDetailsResponse> => {
+  return requestAstrology<BirthDetailsResponse>('/v1/birth_details', payload);
+};
+
+export const getBasicPanchang = async (
+  payload: AstrologyMuhurtaPayload,
+): Promise<BasicPanchangResponse> => {
+  return requestAstrology<BasicPanchangResponse>('/v1/basic_panchang', payload);
+};
+
+export const getAstroDetails = async (
+  payload: AstrologyMuhurtaPayload,
+): Promise<AstroDetailsResponse> => {
+  return requestAstrology<AstroDetailsResponse>('/v1/astro_details', payload);
+};
+
+export const getPlanets = async (
+  payload: AstrologyMuhurtaPayload,
+): Promise<PlanetPosition[]> => {
+  return requestAstrology<PlanetPosition[]>('/v1/planets', payload);
+};
+
+export const getMajorVdasha = async (
+  payload: AstrologyMuhurtaPayload,
+): Promise<MajorDashaPeriod[]> => {
+  return requestAstrology<MajorDashaPeriod[]>('/v1/major_vdasha', payload);
 };
 
 // ============================================

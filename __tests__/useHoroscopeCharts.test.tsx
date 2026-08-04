@@ -4,6 +4,9 @@ import React from 'react';
 import {getHoroscopeChart} from '../src/services/api/astrologyApi/astrology.api';
 import {useHoroscopeCharts} from '../src/features/free-services/hooks/useHoroscopeCharts';
 import {
+  clearChartSvgCache,
+} from '../src/features/free-services/utils/chartSvgCache';
+import {
   CHART_LABELS,
   CHART_TYPES,
 } from '../src/features/free-services/utils/kundliService';
@@ -62,6 +65,7 @@ const unmount = () => renderer.unmount();
 describe('useHoroscopeCharts', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    clearChartSvgCache();
     mocked.getHoroscopeChart.mockImplementation(async type => ({
       svg: `<svg type="${type}"/>`,
     }));
@@ -160,6 +164,41 @@ describe('useHoroscopeCharts', () => {
     });
 
     expect(mocked.getHoroscopeChart).toHaveBeenCalledTimes(4);
+  });
+
+  it('reuses cached SVGs on a subsequent mount without calling the API again', async () => {
+    const getResult = renderHook(PAYLOAD);
+
+    await act(async () => {
+      await flushPromises();
+    });
+    expect(mocked.getHoroscopeChart).toHaveBeenCalledTimes(2);
+
+    unmount();
+
+    const getResult2 = renderHook(PAYLOAD);
+
+    await act(async () => {
+      await flushPromises();
+    });
+
+    expect(mocked.getHoroscopeChart).toHaveBeenCalledTimes(2);
+    expect(getResult2()?.loading).toBe(false);
+    expect(getResult2()?.error).toBeNull();
+    expect(getResult2()?.charts).toEqual([
+      {
+        type: 'chalit',
+        label: CHART_LABELS.chalit,
+        svg: '<svg type="chalit"/>',
+        error: null,
+      },
+      {
+        type: 'D9',
+        label: CHART_LABELS.D9,
+        svg: '<svg type="D9"/>',
+        error: null,
+      },
+    ]);
   });
 
   it('sets a global error and skips fetching when payload is missing', async () => {

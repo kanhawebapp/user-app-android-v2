@@ -186,8 +186,38 @@ export interface HoroscopeResponse {
 // /v1/horo_chart_image/:chalit and /v1/horo_chart_image/:D9 endpoints.
 // ============================================
 
-/** Supported horoscope chart variants. */
-export type HoroscopeChartType = 'chalit' | 'D9';
+/**
+ * Charts rendered on the Basic and Planets tabs (fetched together and
+ * cached after the first successful request).
+ */
+export type BaseChartType = 'chalit' | 'D9';
+
+/**
+ * All chart variants supported by the horo_chart_image endpoint, including
+ * every divisional (Varga) chart rendered on the Divisional Charts tab.
+ */
+export type HoroscopeChartType =
+  | BaseChartType
+  | 'SUN'
+  | 'MOON'
+  | 'D1'
+  | 'D2'
+  | 'D3'
+  | 'D4'
+  | 'D5'
+  | 'D7'
+  | 'D8'
+  | 'D9'
+  | 'D10'
+  | 'D12'
+  | 'D16'
+  | 'D20'
+  | 'D24'
+  | 'D27'
+  | 'D30'
+  | 'D40'
+  | 'D45'
+  | 'D60';
 
 /** Request body for the horo_chart_image endpoints. */
 export interface HoroscopeChartPayload {
@@ -209,4 +239,90 @@ export interface HoroscopeChartPayload {
 /** Response for the horo_chart_image endpoints. */
 export interface HoroscopeChartResponse {
   svg?: string;
+}
+
+// ============================================
+// Kundli (Birth Chart) endpoint types
+// Mapped for the astrologyapi.com /v1/birth_details,
+// /v1/basic_panchang, /v1/astro_details, /v1/planets and
+// /v1/major_vdasha endpoints.
+// ============================================
+
+/** Response for POST /v1/birth_details. */
+export interface BirthDetailsResponse {
+  year?: number;
+  month?: number;
+  day?: number;
+  hour?: number;
+  minute?: number;
+  latitude?: number;
+  longitude?: number;
+  timezone?: number;
+  sunrise?: string;
+  sunset?: string;
+  ayanamsha?: number;
+}
+
+/** Response for POST /v1/basic_panchang. */
+export interface BasicPanchangResponse {
+  day?: string;
+  tithi?: string;
+  yog?: string;
+  nakshatra?: string;
+  karan?: string;
+  sunrise?: string;
+  sunset?: string;
+}
+
+/**
+ * Response for POST /v1/astro_details.
+ *
+ * Field names keep the API's original casing (Varna, SignLord, ...) so the
+ * values can be mapped directly into display cards.
+ */
+export interface AstroDetailsResponse {
+  ascendant?: string;
+  Varna?: string;
+  Vashya?: string;
+  Yoni?: string;
+  Gan?: string;
+  Nadi?: string;
+  SignLord?: string;
+  sign?: string;
+  Naksahtra?: string;
+  NaksahtraLord?: string;
+  Charan?: number | string;
+  Yog?: string;
+  Karan?: string;
+  Tithi?: string;
+  yunja?: string;
+  tatva?: string;
+  name_alphabet?: string;
+  paya?: string;
+}
+
+/** A single planetary position returned by POST /v1/planets. */
+export interface PlanetPosition {
+  id?: number;
+  name?: string;
+  fullDegree?: number;
+  normDegree?: number;
+  speed?: number;
+  isRetro?: string | boolean;
+  sign?: string;
+  signLord?: string;
+  nakshatra?: string;
+  nakshatraLord?: string;
+  nakshatra_pad?: number;
+  house?: number;
+  is_planet_set?: boolean;
+  planet_awastha?: string;
+}
+
+/** A single Maha Vimshottari dasha period returned by POST /v1/major_vdasha. */
+export interface MajorDashaPeriod {
+  planet?: string;
+  planet_id?: number;
+  start?: string;
+  end?: string;
 }

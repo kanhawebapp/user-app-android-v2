@@ -1,5 +1,7 @@
 import type {IconProps} from '../../../components/Icon/iconType';
 import type {
+  AstrologyMuhurtaPayload,
+  BaseChartType,
   HoroscopeChartPayload,
   HoroscopeChartType,
 } from '../../../services/api/astrologyApi/astrology.types';
@@ -112,13 +114,64 @@ export const isKundliService = (title: string): boolean => {
   );
 };
 
-/** Display labels for each horoscope chart variant. */
-export const CHART_LABELS: Record<HoroscopeChartType, string> = {
+/** Display labels for the base charts shown on the Basic and Planets tabs. */
+export const CHART_LABELS: Record<BaseChartType, string> = {
   chalit: 'Lagna / Ascendant / Basic Birth Chart',
   D9: 'Navamsa (Prospects of Marriage)',
 };
 
-export const CHART_TYPES: HoroscopeChartType[] = ['chalit', 'D9'];
+export const CHART_TYPES: BaseChartType[] = ['chalit', 'D9'];
+
+/** One entry of the Divisional Charts tab (excludes `chalit`). */
+export interface DivisionalChart {
+  chartId: Exclude<HoroscopeChartType, 'chalit'>;
+  title: string;
+}
+
+/** All divisional (Varga) charts rendered on the Divisional Charts tab. */
+export const DIVISIONAL_CHARTS: DivisionalChart[] = [
+  {chartId: 'SUN', title: 'Sun Chart'},
+  {chartId: 'MOON', title: 'Moon Chart'},
+  {chartId: 'D1', title: 'Birth Chart'},
+  {chartId: 'D2', title: 'Hora Chart'},
+  {chartId: 'D3', title: 'Dreshkan Chart'},
+  {chartId: 'D4', title: 'Chaturthamasha Chart'},
+  {chartId: 'D5', title: 'Panchmansha Chart'},
+  {chartId: 'D7', title: 'Saptamansha Chart'},
+  {chartId: 'D8', title: 'Ashtamansha Chart'},
+  {chartId: 'D9', title: 'Navamansha Chart'},
+  {chartId: 'D10', title: 'Dashamansha Chart'},
+  {chartId: 'D12', title: 'Dwadashamsha Chart'},
+  {chartId: 'D16', title: 'Shodashamsha Chart'},
+  {chartId: 'D20', title: 'Vishamansha Chart'},
+  {chartId: 'D24', title: 'Chaturvimshamsha Chart'},
+  {chartId: 'D27', title: 'Bhamsha Chart'},
+  {chartId: 'D30', title: 'Trishamansha Chart'},
+  {chartId: 'D40', title: 'Khavedamsha Chart'},
+  {chartId: 'D45', title: 'Akshvedansha Chart'},
+  {chartId: 'D60', title: 'Shashtymsha Chart'},
+];
+
+const toBirthNumber = (value: unknown, fallback = 0): number =>
+  Number(value) || fallback;
+
+/**
+ * Builds the plain birth-details payload shared by every Kundli API
+ * (birth_details, basic_panchang, astro_details, planets, major_vdasha)
+ * from the birth details already collected in the Kundli form.
+ */
+export const buildBasicDetailsPayload = (
+  birthPayload: any,
+): AstrologyMuhurtaPayload => ({
+  day: toBirthNumber(birthPayload?.day),
+  month: toBirthNumber(birthPayload?.month),
+  year: toBirthNumber(birthPayload?.year),
+  hour: toBirthNumber(birthPayload?.hour),
+  min: toBirthNumber(birthPayload?.min),
+  lat: toBirthNumber(birthPayload?.lat),
+  lon: toBirthNumber(birthPayload?.lon),
+  tzone: toBirthNumber(birthPayload?.tzone),
+});
 
 /**
  * Builds the horo_chart_image request body from the birth details already
@@ -127,14 +180,7 @@ export const CHART_TYPES: HoroscopeChartType[] = ['chalit', 'D9'];
 export const buildHoroscopeChartPayload = (
   birthPayload: any,
 ): HoroscopeChartPayload => ({
-  day: Number(birthPayload?.day) || 0,
-  month: Number(birthPayload?.month) || 0,
-  year: Number(birthPayload?.year) || 0,
-  hour: Number(birthPayload?.hour) || 0,
-  min: Number(birthPayload?.min) || 0,
-  lat: Number(birthPayload?.lat) || 0,
-  lon: Number(birthPayload?.lon) || 0,
-  tzone: Number(birthPayload?.tzone) || 0,
+  ...buildBasicDetailsPayload(birthPayload),
   planetColor: '#ff0000',
   signColor: '#ff0000',
   lineColor: '#ff0000',
@@ -189,6 +235,39 @@ export const PLANET_COLOR_MAP: Record<string, string> = {
   Ke: '#008000',
   Ur: '#ff1f1f',
 };
+
+/** Chart abbreviation per planet name (e.g. "Sun" -> "Su"). */
+const PLANET_ABBREVIATIONS: Record<string, string> = {
+  Sun: 'Su',
+  Moon: 'Mo',
+  Mars: 'Ma',
+  Mercury: 'Me',
+  Jupiter: 'Ju',
+  Venus: 'Ve',
+  Saturn: 'Sa',
+  Rahu: 'Ra',
+  Ketu: 'Ke',
+  Uranus: 'Ur',
+  Neptune: 'Ne',
+  Pluto: 'Pl',
+  Lagna: 'La',
+};
+
+/** Returns the two-letter chart abbreviation for a planet name. */
+export const getPlanetAbbreviation = (name?: string): string => {
+  if (name) {
+    const abbreviation = PLANET_ABBREVIATIONS[name];
+    if (abbreviation) {
+      return abbreviation;
+    }
+  }
+  const fallback = name?.slice(0, 2);
+  return fallback ? fallback.charAt(0).toUpperCase() + fallback.charAt(1) : '?';
+};
+
+/** Returns the brand colour used for a planet across charts and cards. */
+export const getPlanetColor = (name?: string): string =>
+  PLANET_COLOR_MAP[getPlanetAbbreviation(name)] || '#5B2CA5';
 
 /** Distinct colour per zodiac house number. */
 export const ZODIAC_COLOR_MAP: Record<number, string> = {
@@ -308,4 +387,179 @@ export const beautifyKundliSvg = (svg: string): string => {
   );
 
   return result;
+};
+
+// ============================================
+// Display formatters
+// ============================================
+
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+const pad2 = (value: number): string => String(value).padStart(2, '0');
+
+/**
+ * Formats a dasha date string from the major_vdasha API
+ * (e.g. `2-5-1994  14:7`) into `02 May 1994, 02:07 PM`.
+ * Returns the raw value (or a dash) when the format is unexpected.
+ */
+export const formatDashaDateTime = (value?: string): string => {
+  if (!value) {
+    return '—';
+  }
+
+  const [datePart, timePart] = String(value).trim().split(/\s+/);
+  const dateMatch = datePart?.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  const timeMatch = timePart?.match(/^(\d{1,2}):(\d{1,2})$/);
+
+  if (!dateMatch) {
+    return String(value);
+  }
+
+  const [, day, month, year] = dateMatch;
+  const monthName = MONTH_NAMES[Number(month) - 1] || month;
+
+  if (!timeMatch) {
+    return `${pad2(Number(day))} ${monthName} ${year}`;
+  }
+
+  let hour = Number(timeMatch[1]);
+  const minute = Number(timeMatch[2]);
+  const meridiem = hour >= 12 ? 'PM' : 'AM';
+  hour = hour % 12 || 12;
+
+  return `${pad2(Number(day))} ${monthName} ${year}, ${pad2(hour)}:${pad2(
+    minute,
+  )} ${meridiem}`;
+};
+
+/** Parses a dasha date string (e.g. `2-5-1994  14:7`) into a local Date. */
+const parseDashaDateTime = (value?: string): Date | null => {
+  if (!value) {
+    return null;
+  }
+  const [datePart, timePart] = String(value).trim().split(/\s+/);
+  const dateMatch = datePart?.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  if (!dateMatch) {
+    return null;
+  }
+  const timeMatch = timePart?.match(/^(\d{1,2}):(\d{1,2})$/);
+  const [, day, month, year] = dateMatch;
+  const date = new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    timeMatch?.[1] ? Number(timeMatch[1]) : 0,
+    timeMatch?.[2] ? Number(timeMatch[2]) : 0,
+  );
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+/** Calendar difference between two dasha dates. */
+export interface DashaDuration {
+  years: number;
+  months: number;
+  days: number;
+}
+
+/**
+ * Computes the years/months/days between two dasha dates. Returns null when
+ * either date is unparseable or the end precedes the start.
+ */
+export const getDashaDuration = (
+  start?: string,
+  end?: string,
+): DashaDuration | null => {
+  const startDate = parseDashaDateTime(start);
+  const endDate = parseDashaDateTime(end);
+  if (!startDate || !endDate || endDate.getTime() < startDate.getTime()) {
+    return null;
+  }
+
+  let years = endDate.getFullYear() - startDate.getFullYear();
+  let months = endDate.getMonth() - startDate.getMonth();
+  let days = endDate.getDate() - startDate.getDate();
+
+  if (days < 0) {
+    months -= 1;
+    days += new Date(endDate.getFullYear(), endDate.getMonth(), 0).getDate();
+  }
+  if (months < 0) {
+    years -= 1;
+    months += 12;
+  }
+
+  return {years, months, days};
+};
+
+/**
+ * Human-readable duration between two dasha dates
+ * (e.g. `2-5-1994 14:7` -> `2-5-2001 8:7` => `7 years`).
+ */
+export const formatDashaDuration = (start?: string, end?: string): string => {
+  const duration = getDashaDuration(start, end);
+  if (!duration) {
+    return '—';
+  }
+
+  const parts: string[] = [];
+  if (duration.years) {
+    parts.push(`${duration.years} ${duration.years === 1 ? 'year' : 'years'}`);
+  }
+  if (duration.months) {
+    parts.push(
+      `${duration.months} ${duration.months === 1 ? 'month' : 'months'}`,
+    );
+  }
+  if (duration.days) {
+    parts.push(`${duration.days} ${duration.days === 1 ? 'day' : 'days'}`);
+  }
+  if (parts.length === 0) {
+    return '0 days';
+  }
+  return parts.join(', ');
+};
+
+/** Formats a degree value (e.g. `12.1895`) as `12.19°`. */
+export const formatPlanetDegree = (value?: number | string): string => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return '—';
+  }
+  return `${numeric.toFixed(2)}°`;
+};
+
+/** Formats a planet speed as `0.95°/day` (negative values stay negative). */
+export const formatPlanetSpeed = (value?: number | string): string => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return '—';
+  }
+  return `${numeric.toFixed(2)}°/day`;
+};
+
+/**
+ * Converts any API value into a display-safe string: booleans become
+ * Yes/No and missing values become a dash.
+ */
+export const toDisplayValue = (value: unknown): string => {
+  if (value === null || value === undefined || value === '') {
+    return '—';
+  }
+  if (typeof value === 'boolean') {
+    return value ? 'Yes' : 'No';
+  }
+  return String(value);
 };
