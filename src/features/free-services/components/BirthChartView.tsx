@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {ScrollView, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {StyleSheet, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {Icon} from '../../../components/Icon';
@@ -118,7 +118,8 @@ const BirthChartView: React.FC<BirthChartViewProps> = ({
         return (
           <DivisionalChartsView
             charts={divisional.charts}
-            loading={divisional.loading}
+            requestChart={divisional.requestChart}
+            retryChart={divisional.retryChart}
             error={divisional.error}
             onRetry={divisional.reload}
           />
@@ -192,11 +193,7 @@ const BirthChartView: React.FC<BirthChartViewProps> = ({
         onChange={key => setActiveTab(key as ActiveTab)}
       />
 
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}>
-        {renderContent()}
-      </ScrollView>
+      <View style={styles.content}>{renderContent()}</View>
     </SafeAreaView>
   );
 };
@@ -219,8 +216,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   content: {
-    padding: 16,
-    paddingBottom: 32,
+    flex: 1,
   },
   center: {
     alignItems: 'center',

@@ -1,5 +1,5 @@
 import React from 'react';
-import {ActivityIndicator, StyleSheet, View} from 'react-native';
+import {StyleSheet, View} from 'react-native';
 
 import {Text} from '../../../components/Text';
 import {useTheme} from '../../../theme';
@@ -28,8 +28,9 @@ const ChartsSection: React.FC<ChartsSectionProps> = ({
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.primary.main} />
+      <View style={styles.container}>
+        <ChartCard title="Chalit Chart" loading />
+        <ChartCard title="D9 Chart" loading />
       </View>
     );
   }
@@ -57,7 +58,7 @@ const ChartsSection: React.FC<ChartsSectionProps> = ({
   );
 };
 
-export default ChartsSection;
+export default React.memo(ChartsSection);
 
 const styles = StyleSheet.create({
   container: {

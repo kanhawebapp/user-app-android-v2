@@ -1,5 +1,5 @@
-import React from 'react';
-import {StyleSheet, View} from 'react-native';
+import React, {useMemo} from 'react';
+import {FlatList, StyleSheet} from 'react-native';
 
 import type {
   AstroDetailsResponse,
@@ -8,8 +8,8 @@ import type {
 } from '../../../services/api/astrologyApi/astrology.types';
 import type {AsyncResult} from '../hooks/asyncTypes';
 import type {HoroscopeChartResult} from '../hooks/useHoroscopeCharts';
-import ChartsSection from './ChartsSection';
-import InfoCard from './InfoCard';
+import type {ListSection} from './ListSection';
+import ListSectionCell from './ListSection';
 
 export interface BasicTabViewProps {
   birthDetails: AsyncResult<BirthDetailsResponse>;
@@ -79,7 +79,7 @@ const getAstroDetailsItems = (data: AstroDetailsResponse | null) => [
 
 /**
  * Basic tab content: the three information cards followed by the shared
- * Chalit and D9 charts.
+ * Chalit and D9 charts, rendered as a single virtualised list.
  */
 const BasicTabView: React.FC<BasicTabViewProps> = ({
   birthDetails,
@@ -90,48 +90,77 @@ const BasicTabView: React.FC<BasicTabViewProps> = ({
   onRetryBasics,
   onRetryCharts,
 }) => {
+  const sections = useMemo<ListSection[]>(
+    () => [
+      {
+        kind: 'info',
+        key: 'birth-details',
+        title: 'Basic Details',
+        icon: {name: 'person', library: 'MaterialIcons'},
+        items: getBirthDetailsItems(birthDetails.data),
+        loading: birthDetails.loading,
+        error: birthDetails.error,
+        onRetry: onRetryBasics,
+      },
+      {
+        kind: 'info',
+        key: 'basic-panchang',
+        title: 'Basic Panchang',
+        icon: {name: 'wb-sunny', library: 'MaterialIcons'},
+        items: getPanchangItems(panchang.data),
+        loading: panchang.loading,
+        error: panchang.error,
+        onRetry: onRetryBasics,
+      },
+      {
+        kind: 'info',
+        key: 'basic-astro-details',
+        title: 'Basic Astro Details',
+        icon: {name: 'stars', library: 'MaterialIcons'},
+        items: getAstroDetailsItems(astroDetails.data),
+        loading: astroDetails.loading,
+        error: astroDetails.error,
+        onRetry: onRetryBasics,
+      },
+      {
+        kind: 'charts',
+        key: 'charts',
+        charts,
+        loading: chartsLoading,
+        onRetry: onRetryCharts,
+      },
+    ],
+    [
+      birthDetails,
+      panchang,
+      astroDetails,
+      charts,
+      chartsLoading,
+      onRetryBasics,
+      onRetryCharts,
+    ],
+  );
+
   return (
-    <View style={styles.container}>
-      <InfoCard
-        title="Basic Details"
-        icon={{name: 'person', library: 'MaterialIcons'}}
-        items={getBirthDetailsItems(birthDetails.data)}
-        loading={birthDetails.loading}
-        error={birthDetails.error}
-        onRetry={onRetryBasics}
-      />
-
-      <InfoCard
-        title="Basic Panchang"
-        icon={{name: 'wb-sunny', library: 'MaterialIcons'}}
-        items={getPanchangItems(panchang.data)}
-        loading={panchang.loading}
-        error={panchang.error}
-        onRetry={onRetryBasics}
-      />
-
-      <InfoCard
-        title="Basic Astro Details"
-        icon={{name: 'stars', library: 'MaterialIcons'}}
-        items={getAstroDetailsItems(astroDetails.data)}
-        loading={astroDetails.loading}
-        error={astroDetails.error}
-        onRetry={onRetryBasics}
-      />
-
-      <ChartsSection
-        charts={charts}
-        loading={chartsLoading}
-        onRetry={onRetryCharts}
-      />
-    </View>
+    <FlatList
+      data={sections}
+      keyExtractor={item => item.key}
+      renderItem={({item}) => <ListSectionCell section={item} />}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+      initialNumToRender={6}
+      maxToRenderPerBatch={6}
+      windowSize={7}
+      testID="basic-tab-list"
+    />
   );
 };
 
-export default BasicTabView;
+export default React.memo(BasicTabView);
 
 const styles = StyleSheet.create({
-  container: {
-    width: '100%',
+  content: {
+    padding: 16,
+    paddingBottom: 32,
   },
 });

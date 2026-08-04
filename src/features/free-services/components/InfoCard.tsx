@@ -1,16 +1,12 @@
 import React from 'react';
-import {
-  ActivityIndicator,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import {StyleSheet, TouchableOpacity, View} from 'react-native';
 
 import {Card} from '../../../components/Card/Card';
 import {Icon} from '../../../components/Icon';
 import {Text} from '../../../components/Text';
 import {useTheme} from '../../../theme';
 import type {IconProps} from '../../../components/Icon/iconType';
+import {InfoRowsSkeleton} from './Skeletons';
 
 export interface InfoItem {
   label: string;
@@ -45,11 +41,7 @@ const InfoCard: React.FC<InfoCardProps> = ({
 
   const renderBody = () => {
     if (loading) {
-      return (
-        <View style={styles.state}>
-          <ActivityIndicator size="small" color={colors.primary.main} />
-        </View>
-      );
+      return <InfoRowsSkeleton rows={3} />;
     }
 
     if (error) {
@@ -164,7 +156,7 @@ const InfoCard: React.FC<InfoCardProps> = ({
   );
 };
 
-export default InfoCard;
+export default React.memo(InfoCard);
 
 const styles = StyleSheet.create({
   card: {

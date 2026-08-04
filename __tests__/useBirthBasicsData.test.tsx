@@ -7,6 +7,7 @@ import {
   getBirthDetails,
 } from '../src/services/api/astrologyApi/astrology.api';
 import {useBirthBasicsData} from '../src/features/free-services/hooks/useBirthBasicsData';
+import {clearKundliResponseCache} from '../src/features/free-services/utils/kundliApiCache';
 import type {AstrologyMuhurtaPayload} from '../src/services/api/astrologyApi/astrology.types';
 
 jest.mock('../src/services/api/astrologyApi/astrology.api', () => ({
@@ -16,9 +17,15 @@ jest.mock('../src/services/api/astrologyApi/astrology.api', () => ({
 }));
 
 const mocked = {
-  getBirthDetails: getBirthDetails as jest.MockedFunction<typeof getBirthDetails>,
-  getBasicPanchang: getBasicPanchang as jest.MockedFunction<typeof getBasicPanchang>,
-  getAstroDetails: getAstroDetails as jest.MockedFunction<typeof getAstroDetails>,
+  getBirthDetails: getBirthDetails as jest.MockedFunction<
+    typeof getBirthDetails
+  >,
+  getBasicPanchang: getBasicPanchang as jest.MockedFunction<
+    typeof getBasicPanchang
+  >,
+  getAstroDetails: getAstroDetails as jest.MockedFunction<
+    typeof getAstroDetails
+  >,
 };
 
 const PAYLOAD: AstrologyMuhurtaPayload = {
@@ -43,7 +50,8 @@ const Harness: React.FC<{payload: AstrologyMuhurtaPayload | null}> = ({
 
 let renderer: ReturnType<typeof create>;
 
-const flushPromises = () => new Promise<void>(resolve => setTimeout(resolve, 0));
+const flushPromises = () =>
+  new Promise<void>(resolve => setTimeout(resolve, 0));
 
 const renderHook = (payload: AstrologyMuhurtaPayload | null) => {
   capturedResult = null;
@@ -58,6 +66,7 @@ const unmount = () => renderer.unmount();
 describe('useBirthBasicsData', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    clearKundliResponseCache();
     mocked.getBirthDetails.mockResolvedValue({year: 1990});
     mocked.getBasicPanchang.mockResolvedValue({day: 'Wednesday'});
     mocked.getAstroDetails.mockResolvedValue({ascendant: 'Leo'});

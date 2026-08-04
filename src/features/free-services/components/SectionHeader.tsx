@@ -43,7 +43,7 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({title, icon}) => {
   );
 };
 
-export default SectionHeader;
+export default React.memo(SectionHeader);
 
 const styles = StyleSheet.create({
   container: {

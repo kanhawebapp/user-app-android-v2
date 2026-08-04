@@ -299,6 +299,21 @@ const CHART_NUMBER_FONT_SIZE = 14;
 const DEFAULT_SVG_SIZE = 350;
 
 /**
+ * Result cache for beautifyKundliSvg, keyed by the raw SVG string. The
+ * beautification is pure, so the same input always yields the same output.
+ * Caching avoids re-running the (expensive) regex rewriting on every render,
+ * which matters when a chart is re-shown after a tab switch.
+ */
+const SVG_BEAUTIFY_CACHE = new Map<string, string>();
+/** Upper bound on cached SVGs so the map cannot grow unboundedly. */
+const SVG_BEAUTIFY_CACHE_LIMIT = 50;
+
+/** Clears the SVG beautify cache (mainly used by tests). */
+export const clearSvgBeautifyCache = (): void => {
+  SVG_BEAUTIFY_CACHE.clear();
+};
+
+/**
  * Enhances a raw Kundli chart SVG string for a consistent, premium look.
  *
  * - Rewrites the root tag: drops fixed width/height, adds a `viewBox` so the
@@ -318,6 +333,11 @@ const DEFAULT_SVG_SIZE = 350;
 export const beautifyKundliSvg = (svg: string): string => {
   if (!svg || typeof svg !== 'string' || svg.trim().length === 0) {
     return svg;
+  }
+
+  const cached = SVG_BEAUTIFY_CACHE.get(svg);
+  if (cached) {
+    return cached;
   }
 
   const svgTagMatch = svg.match(/<svg\b[^>]*>/);
@@ -385,6 +405,14 @@ export const beautifyKundliSvg = (svg: string): string => {
       } font-size="${fontSize}" style="fill: ${fill}; font-weight: 600;">${label}</text>`;
     },
   );
+
+  if (SVG_BEAUTIFY_CACHE.size >= SVG_BEAUTIFY_CACHE_LIMIT) {
+    const oldestKey = SVG_BEAUTIFY_CACHE.keys().next().value;
+    if (oldestKey) {
+      SVG_BEAUTIFY_CACHE.delete(oldestKey);
+    }
+  }
+  SVG_BEAUTIFY_CACHE.set(svg, result);
 
   return result;
 };

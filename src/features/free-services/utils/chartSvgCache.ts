@@ -41,6 +41,11 @@ export const setCachedChartSvg = (key: string, svg: string): void => {
   CHART_SVG_CACHE.set(key, svg);
 };
 
+/** Removes a single chart SVG from the cache (used by reload). */
+export const removeCachedChartSvg = (key: string): void => {
+  CHART_SVG_CACHE.delete(key);
+};
+
 /** Clears the whole chart cache (mainly used by tests). */
 export const clearChartSvgCache = (): void => {
   CHART_SVG_CACHE.clear();

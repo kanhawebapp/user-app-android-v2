@@ -1,4 +1,4 @@
-import React, {useMemo, useState} from 'react';
+import React, {useCallback, useMemo, useState} from 'react';
 import {StyleSheet, TouchableOpacity, View} from 'react-native';
 import {SvgXml} from 'react-native-svg';
 
@@ -6,6 +6,7 @@ import {Icon} from '../../../components/Icon';
 import {Text} from '../../../components/Text';
 import {useTheme} from '../../../theme';
 import {beautifyKundliSvg, getSvgAspectRatio} from '../utils/kundliService';
+import {ChartSkeletonBlock} from './Skeletons';
 
 export interface ChartCardProps {
   /** Title shown above the SVG. */
@@ -14,6 +15,8 @@ export interface ChartCardProps {
   svg?: string | null;
   /** Per-chart error (renders a retry state instead of the SVG). */
   error?: any;
+  /** Renders a skeleton placeholder while the SVG is being fetched. */
+  loading?: boolean;
   /** Called by the retry button. */
   onRetry?: () => void;
 }
@@ -22,10 +25,16 @@ export interface ChartCardProps {
 const CHART_FALLBACK_HEIGHT = 320;
 
 /**
- * Renders a single horoscope chart inside a card. The SVG is beautified,
- * measured via its viewBox and scaled responsively to the available width.
+ * Renders a single horoscope chart inside a card. The SVG is beautified once
+ * (memoised on the raw string, then cached globally) and scaled responsively.
  */
-const ChartCard: React.FC<ChartCardProps> = ({title, svg, error, onRetry}) => {
+const ChartCard: React.FC<ChartCardProps> = ({
+  title,
+  svg,
+  error,
+  loading = false,
+  onRetry,
+}) => {
   const theme = useTheme();
   const colors = theme.colors;
   const [contentWidth, setContentWidth] = useState(0);
@@ -39,6 +48,11 @@ const ChartCard: React.FC<ChartCardProps> = ({title, svg, error, onRetry}) => {
     () => getSvgAspectRatio(beautifiedSvg || ''),
     [beautifiedSvg],
   );
+
+  const handleLayout = useCallback((event: any) => {
+    const nextWidth = event.nativeEvent?.layout?.width || 0;
+    setContentWidth(prev => (prev === nextWidth ? prev : nextWidth));
+  }, []);
 
   const renderBody = () => {
     if (error) {
@@ -77,6 +91,10 @@ const ChartCard: React.FC<ChartCardProps> = ({title, svg, error, onRetry}) => {
           ) : null}
         </View>
       );
+    }
+
+    if (loading) {
+      return <ChartSkeletonBlock />;
     }
 
     if (!beautifiedSvg) {
@@ -122,16 +140,14 @@ const ChartCard: React.FC<ChartCardProps> = ({title, svg, error, onRetry}) => {
         {title}
       </Text>
 
-      <View
-        style={styles.chartContent}
-        onLayout={e => setContentWidth(e.nativeEvent.layout.width)}>
+      <View style={styles.chartContent} onLayout={handleLayout}>
         {renderBody()}
       </View>
     </View>
   );
 };
 
-export default ChartCard;
+export default React.memo(ChartCard);
 
 const styles = StyleSheet.create({
   chartCard: {

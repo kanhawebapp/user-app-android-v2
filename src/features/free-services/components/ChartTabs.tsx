@@ -59,7 +59,7 @@ const ChartTabs: React.FC<ChartTabsProps> = ({tabs, activeKey, onChange}) => {
   );
 };
 
-export default ChartTabs;
+export default React.memo(ChartTabs);
 
 const styles = StyleSheet.create({
   container: {

@@ -37,6 +37,8 @@ const PAYLOAD: HoroscopeChartPayload = {
   image_type: 'svg',
 };
 
+const PRELOAD_IDS = DIVISIONAL_CHARTS.slice(0, 3).map(c => c.chartId);
+
 let capturedResult: ReturnType<typeof useDivisionalCharts> | null = null;
 
 const Harness: React.FC<{
@@ -49,9 +51,13 @@ const Harness: React.FC<{
 
 let renderer: ReturnType<typeof create>;
 
-const flushPromises = () => new Promise<void>(resolve => setTimeout(resolve, 0));
+const flushPromises = () =>
+  new Promise<void>(resolve => setTimeout(resolve, 0));
 
-const renderHook = (payload: HoroscopeChartPayload | null, enabled: boolean) => {
+const renderHook = (
+  payload: HoroscopeChartPayload | null,
+  enabled: boolean,
+) => {
   capturedResult = null;
   act(() => {
     renderer = create(<Harness payload={payload} enabled={enabled} />);
@@ -91,7 +97,7 @@ describe('useDivisionalCharts', () => {
     expect(mocked.getHoroscopeChart).not.toHaveBeenCalled();
   });
 
-  it('fetches every divisional chart in parallel once enabled', async () => {
+  it('preloads only the first batch of charts once enabled', async () => {
     renderHook(PAYLOAD, false);
     const getResult = rerender(PAYLOAD, true);
 
@@ -99,48 +105,86 @@ describe('useDivisionalCharts', () => {
       await flushPromises();
     });
 
-    expect(mocked.getHoroscopeChart).toHaveBeenCalledTimes(
-      DIVISIONAL_CHARTS.length,
-    );
-    DIVISIONAL_CHARTS.forEach(chart => {
-      expect(mocked.getHoroscopeChart).toHaveBeenCalledWith(
-        chart.chartId,
-        PAYLOAD,
-      );
+    expect(mocked.getHoroscopeChart).toHaveBeenCalledTimes(PRELOAD_IDS.length);
+    PRELOAD_IDS.forEach(id => {
+      expect(mocked.getHoroscopeChart).toHaveBeenCalledWith(id, PAYLOAD);
     });
 
-    expect(getResult()?.loading).toBe(false);
     expect(getResult()?.charts).toHaveLength(DIVISIONAL_CHARTS.length);
     expect(getResult()?.charts[0]).toEqual({
       chartId: 'SUN',
       title: DIVISIONAL_CHARTS[0].title,
       svg: '<svg>SUN</svg>',
       error: null,
+      loading: false,
+    });
+    // Charts outside the first batch stay pending until requested.
+    expect(getResult()?.charts[PRELOAD_IDS.length]).toMatchObject({
+      chartId: DIVISIONAL_CHARTS[PRELOAD_IDS.length].chartId,
+      svg: null,
+      error: null,
+      loading: true,
     });
   });
 
-  it('serves cached charts from the cache without a new request', async () => {
-    const d9Key = buildChartCacheKey('D9', PAYLOAD);
-    setCachedChartSvg(d9Key, '<svg>cached-d9</svg>');
+  it('requestChart lazily fetches a single chart and never re-requests it', async () => {
+    renderHook(PAYLOAD, true);
+    await act(async () => {
+      await flushPromises();
+    });
 
-    renderHook(PAYLOAD, false);
-    const getResult = rerender(PAYLOAD, true);
+    const lazyId = DIVISIONAL_CHARTS[PRELOAD_IDS.length].chartId;
+    act(() => {
+      capturedResult?.requestChart(lazyId);
+    });
 
     await act(async () => {
       await flushPromises();
     });
 
-    expect(mocked.getHoroscopeChart).toHaveBeenCalledTimes(
-      DIVISIONAL_CHARTS.length - 1,
-    );
-    expect(mocked.getHoroscopeChart).not.toHaveBeenCalledWith('D9', PAYLOAD);
+    expect(mocked.getHoroscopeChart).toHaveBeenCalledWith(lazyId, PAYLOAD);
 
-    const d9 = getResult()?.charts.find(c => c.chartId === 'D9');
-    expect(d9?.svg).toBe('<svg>cached-d9</svg>');
-    expect(d9?.error).toBeNull();
+    const chart = capturedResult?.charts.find(c => c.chartId === lazyId);
+    expect(chart?.svg).toBe(`<svg>${lazyId}</svg>`);
+    expect(chart?.loading).toBe(false);
+
+    const callsBefore = mocked.getHoroscopeChart.mock.calls.length;
+    act(() => {
+      capturedResult?.requestChart(lazyId);
+    });
+    await act(async () => {
+      await flushPromises();
+    });
+    expect(mocked.getHoroscopeChart.mock.calls.length).toBe(callsBefore);
   });
 
-  it('captures per-chart errors without failing the rest', async () => {
+  it('serves a cached chart without a new request', async () => {
+    setCachedChartSvg(
+      buildChartCacheKey('D9', PAYLOAD),
+      '<svg>cached-d9</svg>',
+    );
+
+    renderHook(PAYLOAD, true);
+    await act(async () => {
+      await flushPromises();
+    });
+
+    act(() => {
+      capturedResult?.requestChart('D9');
+    });
+    await act(async () => {
+      await flushPromises();
+    });
+
+    expect(mocked.getHoroscopeChart).not.toHaveBeenCalledWith('D9', PAYLOAD);
+
+    const d9 = capturedResult?.charts.find(c => c.chartId === 'D9');
+    expect(d9?.svg).toBe('<svg>cached-d9</svg>');
+    expect(d9?.error).toBeNull();
+    expect(d9?.loading).toBe(false);
+  });
+
+  it('captures per-chart errors and retryChart refetches bypassing the cache', async () => {
     mocked.getHoroscopeChart.mockImplementation(async type => {
       if (type === 'MOON') {
         throw new Error('Moon failed');
@@ -148,19 +192,44 @@ describe('useDivisionalCharts', () => {
       return {svg: `<svg>${type}</svg>`};
     });
 
-    renderHook(PAYLOAD, false);
-    const getResult = rerender(PAYLOAD, true);
+    renderHook(PAYLOAD, true);
+    await act(async () => {
+      await flushPromises();
+    });
+
+    const moon = capturedResult?.charts.find(c => c.chartId === 'MOON');
+    expect(moon?.svg).toBeNull();
+    expect(moon?.error?.message).toBe('Moon failed');
+    expect(moon?.loading).toBe(false);
+
+    mocked.getHoroscopeChart.mockImplementation(async type => ({
+      svg: `<svg>${type}-fixed</svg>`,
+    }));
+
+    act(() => {
+      capturedResult?.retryChart('MOON');
+    });
+    await act(async () => {
+      await flushPromises();
+    });
+
+    const moonFixed = capturedResult?.charts.find(c => c.chartId === 'MOON');
+    expect(moonFixed?.svg).toBe('<svg>MOON-fixed</svg>');
+    expect(moonFixed?.error).toBeNull();
+
+    const sun = capturedResult?.charts.find(c => c.chartId === 'SUN');
+    expect(sun?.svg).toBe('<svg>SUN</svg>');
+    expect(capturedResult?.error).toBeNull();
+  });
+
+  it('sets a global error when birth details are missing', async () => {
+    const getResult = renderHook(null, true);
 
     await act(async () => {
       await flushPromises();
     });
 
-    const moon = getResult()?.charts.find(c => c.chartId === 'MOON');
-    expect(moon?.svg).toBeNull();
-    expect(moon?.error?.message).toBe('Moon failed');
-
-    const sun = getResult()?.charts.find(c => c.chartId === 'SUN');
-    expect(sun?.svg).toBe('<svg>SUN</svg>');
-    expect(getResult()?.error).toBeNull();
+    expect(mocked.getHoroscopeChart).not.toHaveBeenCalled();
+    expect(getResult()?.error?.message).toBe('Birth details are missing.');
   });
 });

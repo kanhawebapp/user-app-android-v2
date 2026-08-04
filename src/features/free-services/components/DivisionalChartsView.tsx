@@ -1,113 +1,107 @@
-import React from 'react';
-import {
-  ActivityIndicator,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import React, {useEffect} from 'react';
+import {FlatList, StyleSheet} from 'react-native';
 
-import {Icon} from '../../../components/Icon';
-import {Text} from '../../../components/Text';
-import {useTheme} from '../../../theme';
-import type {DivisionalChartResult} from '../hooks/useDivisionalCharts';
+import type {DivisionalChartState} from '../hooks/useDivisionalCharts';
 import ChartCard from './ChartCard';
+import ListStateView from './ListStateView';
 
 export interface DivisionalChartsViewProps {
-  charts: DivisionalChartResult[];
-  loading: boolean;
+  /** One entry per divisional chart, in the DIVISIONAL_CHARTS order. */
+  charts: DivisionalChartState[];
+  /** Requests (and caches) a single chart. Called when a card mounts. */
+  requestChart: (chartId: string) => void;
+  /** Re-fetches a single chart, bypassing the cache (used by retry). */
+  retryChart: (chartId: string) => void;
   /** Global error (e.g. missing birth details). */
   error?: any;
   onRetry?: () => void;
 }
 
+interface LazyChartCardProps {
+  chart: DivisionalChartState;
+  requestChart: (chartId: string) => void;
+  retryChart: (chartId: string) => void;
+}
+
 /**
- * Divisional Charts tab content: one chart card per Varga chart
- * (SUN, MOON, D1–D60, excluding Chalit).
+ * A single divisional chart card. Fires the network request the first time
+ * the cell mounts (i.e. scrolls into view), so opening the tab never starts
+ * all requests at once. The hook dedupes repeated requests, so a cell that
+ * unmounts and re-mounts while scrolling does not re-fetch.
+ */
+const LazyChartCard: React.FC<LazyChartCardProps> = ({
+  chart,
+  requestChart,
+  retryChart,
+}) => {
+  useEffect(() => {
+    requestChart(chart.chartId);
+    // Intentionally run only on first mount; the hook guards against
+    // re-requesting already-resolved or in-flight charts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chart.chartId]);
+
+  return (
+    <ChartCard
+      title={chart.title}
+      svg={chart.svg}
+      error={chart.error}
+      loading={chart.loading}
+      onRetry={() => retryChart(chart.chartId)}
+    />
+  );
+};
+
+const MemoizedLazyChartCard = React.memo(LazyChartCard);
+
+/**
+ * Divisional Charts tab content: one lazily-fetched chart card per Varga
+ * chart (SUN, MOON, D1–D60, excluding Chalit), rendered as a virtualised
+ * list so only the visible cards hold their SVG in memory.
  */
 const DivisionalChartsView: React.FC<DivisionalChartsViewProps> = ({
   charts,
-  loading,
+  requestChart,
+  retryChart,
   error,
   onRetry,
 }) => {
-  const theme = useTheme();
-  const colors = theme.colors;
-
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.primary.main} />
-      </View>
-    );
-  }
-
   if (error) {
     return (
-      <View style={[styles.center, {marginTop: 24}]}>
-        <Icon
-          name="error-outline"
-          size={36}
-          color={colors.error.main}
-          library="MaterialIcons"
-        />
-        <Text
-          variant="bodySmall"
-          style={{
-            color: colors.text.secondary,
-            marginTop: 12,
-            textAlign: 'center',
-          }}>
-          {error?.message || 'Failed to load divisional charts.'}
-        </Text>
-        {onRetry ? (
-          <TouchableOpacity
-            style={[styles.retryButton, {backgroundColor: colors.primary.main}]}
-            onPress={onRetry}
-            activeOpacity={0.85}>
-            <Text
-              variant="bodySmall"
-              weight="bold"
-              style={{color: colors.primary.contrastText}}>
-              Retry
-            </Text>
-          </TouchableOpacity>
-        ) : null}
-      </View>
+      <ListStateView
+        error={error}
+        errorText="Failed to load divisional charts."
+        onRetry={onRetry}
+      />
     );
   }
 
   return (
-    <View style={styles.container}>
-      {charts.map(chart => (
-        <ChartCard
-          key={chart.chartId}
-          title={chart.title}
-          svg={chart.svg}
-          error={chart.error}
-          onRetry={onRetry}
+    <FlatList
+      data={charts}
+      keyExtractor={item => item.chartId}
+      renderItem={({item}) => (
+        <MemoizedLazyChartCard
+          chart={item}
+          requestChart={requestChart}
+          retryChart={retryChart}
         />
-      ))}
-    </View>
+      )}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+      initialNumToRender={5}
+      maxToRenderPerBatch={3}
+      windowSize={7}
+      testID="divisional-tab-list"
+    />
   );
 };
 
-export default DivisionalChartsView;
+export default React.memo(DivisionalChartsView);
 
 const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-  },
-  center: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 48,
-    paddingHorizontal: 24,
-  },
-  retryButton: {
-    marginTop: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 12,
-    alignItems: 'center',
+  content: {
+    padding: 16,
+    paddingBottom: 32,
   },
 });
