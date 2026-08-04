@@ -23,6 +23,11 @@ import {DatePickerInput} from '../../../components/Modal/ChatRequestModal/compon
 import {TimePickerInput} from '../../../components/Modal/ChatRequestModal/components/TimePickerInput';
 import {getMuhurtaServiceKind} from '../utils/muhurtaService';
 import {
+  getInitialBirthValues,
+  buildBirthPayload,
+  type BirthFormValues,
+} from '../utils/freeServiceForm';
+import {
   getMuhurtaDetailsViewModel,
   getAbhijeetStatus,
 } from '../utils/muhurtaResponse';
@@ -35,59 +40,7 @@ type MuhurtaPanelProps = {
   onSuccess?: (payload: any) => void;
 };
 
-const getInitialPayload = () => {
-  const now = new Date();
-  let hour12 = now.getHours();
-  const meridiem = hour12 >= 12 ? 'PM' : 'AM';
-  if (hour12 === 0) {
-    hour12 = 12;
-  } else if (hour12 > 12) {
-    hour12 -= 12;
-  }
-
-  return {
-    date: `${String(now.getDate()).padStart(2, '0')}/${String(
-      now.getMonth() + 1,
-    ).padStart(2, '0')}/${now.getFullYear()}`,
-    time: `${String(hour12).padStart(2, '0')}:${String(
-      now.getMinutes(),
-    ).padStart(2, '0')} ${meridiem}`,
-  };
-};
-
-const initialPayload = getInitialPayload();
-
-const buildPayload = (
-  values: typeof initialPayload,
-  lat: number,
-  lon: number,
-  tzone: number,
-  address = '',
-) => {
-  const [day, month, year] = values.date.split('/');
-  const [timePart, meridiem] = values.time.split(' ');
-  const [hour24, min] = timePart.split(':');
-
-  let hour = Number(hour24);
-  if (meridiem === 'PM' && hour !== 12) {
-    hour += 12;
-  }
-  if (meridiem === 'AM' && hour === 12) {
-    hour = 0;
-  }
-
-  return {
-    day: Number(day),
-    month: Number(month),
-    year: Number(year),
-    hour,
-    min: Number(min),
-    lat,
-    lon,
-    tzone,
-    address,
-  };
-};
+const initialPayload = getInitialBirthValues();
 
 const MuhurtaPanel: React.FC<MuhurtaPanelProps> = ({
   visible,
@@ -119,7 +72,7 @@ const MuhurtaPanel: React.FC<MuhurtaPanelProps> = ({
   );
 
   const handleInputChange = useCallback(
-    (key: keyof typeof initialPayload, value: string) => {
+    (key: keyof BirthFormValues, value: string) => {
       setFormValues(prev => ({...prev, [key]: value}));
       if (key === 'date') {
         setDateError(null);
@@ -189,7 +142,7 @@ const MuhurtaPanel: React.FC<MuhurtaPanelProps> = ({
 
       const coords = await geocodeAddress(address);
       const tzone = new Date().getTimezoneOffset() / -60;
-      const payload = buildPayload(
+      const payload = buildBirthPayload(
         formValues,
         Number(coords.lat),
         Number(coords.lon),

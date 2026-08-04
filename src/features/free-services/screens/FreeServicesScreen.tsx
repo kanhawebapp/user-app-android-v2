@@ -18,7 +18,9 @@ import {useFreeServices} from '../../../services/api/freeServices/useFreeService
 import {GoBack} from '../../../components';
 import MuhurtaPanel from '../components/MuhurtaPanel';
 import PanchangPanel from '../components/PanchangPanel';
+import KundliPanel from '../components/KundliPanel';
 import {getMuhurtaServiceKind} from '../utils/muhurtaService';
+import {isKundliService} from '../utils/kundliService';
 
 interface FreeServicesScreenProps {
   onNavigateBack?: () => void;
@@ -63,6 +65,11 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
       return;
     }
 
+    if (isKundliService(title)) {
+      setSelectedService(item);
+      return;
+    }
+
     if (isHoroscopeService(item)) {
       navigation.navigate('Horoscope');
       return;
@@ -80,6 +87,13 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
 
   const handlePanchangSuccess = (result: any) => {
     navigation.navigate('PanchangDetails', {
+      result,
+      serviceTitle: selectedService?.title,
+    });
+  };
+
+  const handleKundliSuccess = (result: any) => {
+    navigation.navigate('KundliCards', {
       result,
       serviceTitle: selectedService?.title,
     });
@@ -274,7 +288,14 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
       )}
 
       {selectedService ? (
-        getMuhurtaServiceKind(selectedService.title) === 'panchang' ? (
+        isKundliService(selectedService.title) ? (
+          <KundliPanel
+            visible={Boolean(selectedService)}
+            serviceTitle={selectedService.title}
+            onClose={() => setSelectedService(null)}
+            onSuccess={handleKundliSuccess}
+          />
+        ) : getMuhurtaServiceKind(selectedService.title) === 'panchang' ? (
           <PanchangPanel
             visible={Boolean(selectedService)}
             serviceTitle={selectedService.title}

@@ -179,3 +179,34 @@ export interface HoroscopeResponse {
   travel?: string;
   luck?: string;
 }
+
+// ============================================
+// Horoscope Chart (horo_chart_image) types
+// Mapped for the astrologyapi.com
+// /v1/horo_chart_image/:chalit and /v1/horo_chart_image/:D9 endpoints.
+// ============================================
+
+/** Supported horoscope chart variants. */
+export type HoroscopeChartType = 'chalit' | 'D9';
+
+/** Request body for the horo_chart_image endpoints. */
+export interface HoroscopeChartPayload {
+  day: number;
+  month: number;
+  year: number;
+  hour: number;
+  min: number;
+  lat: number;
+  lon: number;
+  tzone: number;
+  planetColor: string;
+  signColor: string;
+  lineColor: string;
+  chartType: 'north';
+  image_type: 'svg';
+}
+
+/** Response for the horo_chart_image endpoints. */
+export interface HoroscopeChartResponse {
+  svg?: string;
+}

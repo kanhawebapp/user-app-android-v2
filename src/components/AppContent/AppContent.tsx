@@ -67,6 +67,22 @@ const PanchangDetailsScreen = lazy(() =>
   ),
 );
 
+const KundliCardsScreen = lazy(() =>
+  import('../../features/free-services/screens/KundliCardsScreen').then(
+    module => ({
+      default: module.default,
+    }),
+  ),
+);
+
+const BirthChartScreen = lazy(() =>
+  import('../../features/free-services/screens/BirthChartScreen').then(
+    module => ({
+      default: module.default,
+    }),
+  ),
+);
+
 const HoroscopeScreen = lazy(() =>
   import('../../features/horoscope/screens/ZodiacSelectionScreen').then(
     module => ({
@@ -110,6 +126,14 @@ export type RootStackParamList = {
   };
   Horoscope: undefined;
   HoroscopeDetails: {zodiacName?: string};
+  KundliCards: {
+    result?: any;
+    serviceTitle?: string;
+  };
+  BirthChart: {
+    result?: any;
+    serviceTitle?: string;
+  };
 };
 
 const AppContent: React.FC = () => {
@@ -376,6 +400,8 @@ const AnimatedAppContent: React.FC<AnimatedAppContentProps> = ({
             name="PanchangDetails"
             component={PanchangDetailsScreen}
           />
+          <Stack.Screen name="KundliCards" component={KundliCardsScreen} />
+          <Stack.Screen name="BirthChart" component={BirthChartScreen} />
           <Stack.Screen name="Horoscope" component={HoroscopeScreen} />
           <Stack.Screen
             name="HoroscopeDetails"

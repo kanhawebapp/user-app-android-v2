@@ -436,6 +436,7 @@ export const PlaceOfBirthInput: React.FC<any> = ({
   value,
   onChangeText,
   error,
+  placeholder = 'Select birth place',
 }) => {
   const theme = useTheme();
   const colors = theme.colors;
@@ -576,7 +577,7 @@ export const PlaceOfBirthInput: React.FC<any> = ({
           </Text>
         ) : (
           <Text style={[styles.placeholder, {color: colors.text.tertiary}]}>
-            Select birth place
+            {placeholder}
           </Text>
         )}
         <FontAwesome6

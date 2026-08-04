@@ -8,6 +8,9 @@ import type {
   ChaughadiyaMuhurtaResponse,
   GeocodeResult,
   HoraMuhurtaResponse,
+  HoroscopeChartPayload,
+  HoroscopeChartResponse,
+  HoroscopeChartType,
   HoroscopeResponse,
 } from './astrology.types';
 
@@ -180,4 +183,78 @@ export const getSunSignPredictionNext = async (
     `/v1/sun_sign_prediction/daily/next/${zodiacName}`,
     {timezone},
   );
+};
+
+// ============================================
+// Horoscope Chart (horo_chart_image) endpoints
+// https://json.astrologyapi.com/v1/horo_chart_image/:chalit
+// https://json.astrologyapi.com/v1/horo_chart_image/:D9
+// Both endpoints accept the same request body and return an SVG string.
+// ============================================
+
+/**
+ * Normalises the horo_chart_image response into a uniform `{svg}` shape.
+ *
+ * The `chalit` endpoint returns the raw SVG string, while the `D9` endpoint
+ * wraps it in a JSON object (`{svg: "..."}`). Handle both so every caller
+ * receives a consistent response.
+ */
+export const normalizeHoroscopeChartResponse = (
+  data: unknown,
+): HoroscopeChartResponse => {
+  if (typeof data === 'string' && data.length > 0) {
+    return {svg: data};
+  }
+
+  if (
+    data &&
+    typeof data === 'object' &&
+    typeof (data as {svg?: unknown}).svg === 'string'
+  ) {
+    return {svg: (data as {svg: string}).svg};
+  }
+
+  return {};
+};
+
+export const getHoroscopeChart = async (
+  chartType: HoroscopeChartType,
+  payload: HoroscopeChartPayload,
+): Promise<HoroscopeChartResponse> => {
+  const endpoint = `/v1/horo_chart_image/${chartType}`;
+  const startedAt = Date.now();
+
+  console.log(`[BirthChart] ${chartType} API request`, {
+    endpoint,
+    ...payload,
+  });
+
+  try {
+    const data = await requestAstrology<unknown>(
+      endpoint,
+      payload as unknown as Record<string, unknown>,
+    );
+
+    // The Chalit endpoint returns the raw SVG string while the D9 endpoint
+    // wraps it in `{svg}`. Normalise both shapes here.
+    const normalized = normalizeHoroscopeChartResponse(data);
+    const svgLength = normalized.svg?.length || 0;
+
+    console.log(`[BirthChart] ${chartType} API response`, {
+      endpoint,
+      rawType: typeof data,
+      svgLength,
+      validSvg: svgLength > 0,
+      durationMs: Date.now() - startedAt,
+    });
+
+    return normalized;
+  } catch (err: any) {
+    console.log(`[BirthChart] ${chartType} API error`, {
+      endpoint,
+      message: err?.message,
+      durationMs: Date.now() - startedAt,
+    });
+    throw err;
+  }
 };
