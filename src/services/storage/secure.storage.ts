@@ -61,7 +61,7 @@ class SecureStorageService {
         accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
       });
 
-      loggingService.info(`[SecureStorage] Token saved: ${key}`);
+      // loggingService.info(`[SecureStorage] Token saved: ${key}`);
     } catch (error) {
       loggingService.error('[SecureStorage] Error saving item', {key, error});
       throw new Error('Failed to save to secure storage');
@@ -78,7 +78,7 @@ class SecureStorageService {
         //     key
         //   ].substring(0, 20)}...`,
         // );
-        loggingService.info(`[SecureStorage] Token read from cache: ${key}`);
+        // loggingService.info(`[SecureStorage] Token read from cache: ${key}`);
         return this.memoryCache[key];
       }
 

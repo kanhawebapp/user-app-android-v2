@@ -212,9 +212,9 @@ const AppContent: React.FC = () => {
 
         if (updatedAuthState.isAuthenticated) {
           setIsLoggedIn(true);
-          loggingService.info(
-            '[App] User is authenticated, navigating to home',
-          );
+          // loggingService.info(
+          //   '[App] User is authenticated, navigating to home',
+          // );
         } else {
           loggingService.info(
             '[App] User is not authenticated, navigating to login',

@@ -186,7 +186,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     },
     onRechargeSuccess: parsedTime => {
       setRechargeModal(false);
-      setHasShownRecharge(false);
+      setHasShownRecharge(true);
       if (!isNaN(parsedTime) && parsedTime > 0) {
         setTimeLeft(parsedTime);
       }

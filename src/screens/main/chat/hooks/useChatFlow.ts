@@ -123,7 +123,7 @@ export const useChatFlow = ({
     async (selectedPack: RechargePack): Promise<void> => {
       console.log('Proceeding to pay with pack:', selectedPack?.price);
 
-      const order = await createOrder(selectedPack?.price);
+     const order = await createOrder(String(selectedPack?.id));
       console.log('ORDER CREATED:', order);
 
       try {
@@ -136,7 +136,7 @@ export const useChatFlow = ({
         console.log('PAYMENT SUCCESS:', paymentResult);
         console.log('[Fallback] Closing modal after payment success');
         onShowRechargeModal(false);
-        setHasShownRecharge(false);
+        setHasShownRecharge(true);
 
         const socket = socketService.getSocket();
         const roomId = useChatStore.getState().roomId;
