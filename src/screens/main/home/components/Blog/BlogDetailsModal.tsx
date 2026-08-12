@@ -12,9 +12,9 @@ import {
 
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
-import {Text} from '../../../../../components/Text';
-import {useBlogBySlug} from '../../../../../services/api/blogs/useBlogBySlug';
-import type {BlogDetail} from '../../../../../services/api/blogs/blog.types';
+import { Text } from '../../../../../components/Text';
+import { useBlogBySlug } from '../../../../../services/api/blogs/useBlogBySlug';
+import type { BlogDetail } from '../../../../../services/api/blogs/blog.types';
 
 interface Props {
   visible: boolean;
@@ -42,8 +42,47 @@ const formatDate = (timestamp: string) => {
   });
 };
 
-export const BlogDetailsModal = ({visible, blog, onClose}: Props) => {
-  const {data, loading, error} = useBlogBySlug(blog?.slug);
+
+const stripHtmlTags = (html?: string) => {
+  if (!html) {
+    return '';
+  }
+
+  return html
+    // Remove script/style completely
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+
+    // Convert common block tags to line breaks
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<\/h[1-6]>/gi, '\n\n')
+    .replace(/<\/li>/gi, '\n')
+
+    // Add bullet for list items
+    .replace(/<li[^>]*>/gi, '• ')
+
+    // Remove remaining HTML tags
+    .replace(/<[^>]+>/g, '')
+
+    // Decode HTML entities
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&#x27;/gi, "'")
+
+    // Clean excessive spaces/newlines
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n\s*\n\s*\n/g, '\n\n')
+    .trim();
+};
+
+export const BlogDetailsModal = ({ visible, blog, onClose }: Props) => {
+  const { data, loading, error } = useBlogBySlug(blog?.slug);
   const displayBlog: BlogDetail | null = data || (blog as BlogDetail | null);
 
   const formattedDate = displayBlog ? formatDate(displayBlog.createdAt) : '';
@@ -101,7 +140,7 @@ export const BlogDetailsModal = ({visible, blog, onClose}: Props) => {
 
       <View style={styles.container}>
         <View style={styles.heroContainer}>
-          <Image source={{uri: imageUrl}} style={styles.heroImage} />
+          <Image source={{ uri: imageUrl }} style={styles.heroImage} />
 
           <LinearGradient
             colors={['transparent', 'rgba(0,0,0,0.35)', 'rgba(0,0,0,0.8)']}
@@ -172,12 +211,12 @@ export const BlogDetailsModal = ({visible, blog, onClose}: Props) => {
             </Text>
 
             <Text style={styles.contentText}>
-              {displayBlog.content ||
+              {stripHtmlTags(displayBlog.content) ||
                 'Detailed blog content is not available yet.'}
             </Text>
           </View>
 
-          <View style={{height: 40}} />
+          <View style={{ height: 40 }} />
         </ScrollView>
       </View>
     </Modal>
