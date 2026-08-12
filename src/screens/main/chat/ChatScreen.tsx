@@ -134,20 +134,23 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
 
   const { completeChat } = useChatActions();
 
-  const handleEndChat = useCallback(() => {
-    try {
-      // console.log('handleEndChat called');
-      completeChat();
+ const handleEndChat = useCallback(() => {
+  try {
+    // console.log('[ChatScreen] handleEndChat called');
+
+    const completed = completeChat();
+
+    // console.log('[ChatScreen] completeChat result:', completed);
+
+    if (completed) {
+      // console.log('[ChatScreen] Opening rating modal');
       setShowRatingModal(true);
-    } catch (error) {
-      handleBack();
-      console.error('Error ending chat:', error);
     }
-    finally {
-      handleBack();
-      // console.log('handleEndChat completed');
-    }
-  }, [completeChat, handleBack]);
+  } catch (error) {
+    // console.error('[ChatScreen] Error ending chat:', error);
+    handleBack();
+  }
+}, [completeChat, handleBack]);
 
   // Chat timer (provides timeLeft from store)
   const { timeLeft } = useChatTimer({
@@ -167,10 +170,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   });
 
   // Rating modal controller
-  useRatingModalController({
-    chatStatus,
-    onShowRatingModal: setShowRatingModal,
-  });
+  // useRatingModalController({
+  //   chatStatus,
+  //   onShowRatingModal: setShowRatingModal,
+  // });
 
   // Socket event listeners
   useChatSocket({

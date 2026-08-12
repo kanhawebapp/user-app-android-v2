@@ -76,6 +76,7 @@ const ChatCallScreen: React.FC<ChatCallScreenProps> = ({
   } = useChatCall(astrologers);
 
   const chatStatus = useChatStore(state => state.chatStatus);
+  const isRatingPending = useChatStore(state => state.isRatingPending);
   const shouldNavigateToChat = useChatStore(
     state => state.shouldNavigateToChat,
   );
@@ -90,19 +91,20 @@ const ChatCallScreen: React.FC<ChatCallScreenProps> = ({
   const hasNavigatedRef = useRef(false);
 
 
-  useEffect(() => {
+ useEffect(() => {
   if (
-    chatStatus === 'completed' ||
     chatStatus === 'rejected' ||
     chatStatus === 'cancelled'
   ) {
-    console.log('[ChatCallScreen] Reset navigation');
+    console.log(
+      '[ChatCallScreen] Reset navigation:',
+      chatStatus,
+    );
 
     hasNavigatedRef.current = false;
     setShowChatScreen(false);
   }
 }, [chatStatus]);
-
 
 //  const { completeChat } = useChatActions();
 
@@ -140,10 +142,12 @@ const ChatCallScreen: React.FC<ChatCallScreenProps> = ({
     }
   }, [chatStatus, roomId, shouldNavigateToChat]);
 
-  const handleBackFromChat = useCallback(() => {
-    setShowChatScreen(false);
-  }, []);
+const handleBackFromChat = useCallback(() => {
+  console.log('[ChatCallScreen] Closing chat screen');
 
+  setShowChatScreen(false);
+  hasNavigatedRef.current = false;
+}, []);
   const handleEndChat = useCallback(() => {
     setShowChatScreen(false);
   }, []);

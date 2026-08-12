@@ -102,29 +102,41 @@ export const useChatFlow = ({
   }, []);
 
   const handleChatAgain = useCallback(() => {
-    resetChatStore();
-    onShowThankYouModal(false);
-    goBack();
-  }, [resetChatStore, onShowThankYouModal]);
+  console.log('[ChatFlow] Chat Again');
 
-  const handleExit = useCallback(() => {
-    resetChatStore();
-    onShowThankYouModal(false);
-    navigate('Home');
-  }, [resetChatStore, onShowThankYouModal]);
+  onShowThankYouModal(false);
+
+  resetChatStore();
+
+  onBack?.();
+}, [resetChatStore, onShowThankYouModal, onBack]);
+
+ const handleExit = useCallback(() => {
+  // console.log('[ChatFlow] Exit chat');
+
+  onShowThankYouModal(false);
+  resetChatStore();
+
+  if (onBack) {
+    onBack();
+    return;
+  }
+
+  navigate('Home');
+}, [resetChatStore, onShowThankYouModal, onBack]);
 
   const handleEndChatPress = useCallback(() => {
-    console.log('[ChatScreen] End chat pressed');
+    // console.log('[ChatScreen] End chat pressed');
     cancelChatRequest();
     onShowRatingModal(true);
   }, [cancelChatRequest, onShowRatingModal]);
 
   const handleProceedToPay = useCallback(
     async (selectedPack: RechargePack): Promise<void> => {
-      console.log('Proceeding to pay with pack:', selectedPack?.price);
+      // console.log('Proceeding to pay with pack:', selectedPack?.price);
 
      const order = await createOrder(String(selectedPack?.id));
-      console.log('ORDER CREATED:', order);
+      // console.log('ORDER CREATED:', order);
 
       try {
         const paymentResult = await openRazorpayCheckout({
@@ -133,8 +145,8 @@ export const useChatFlow = ({
           selectedPack,
         });
 
-        console.log('PAYMENT SUCCESS:', paymentResult);
-        console.log('[Fallback] Closing modal after payment success');
+        // console.log('PAYMENT SUCCESS:', paymentResult);
+        // console.log('[Fallback] Closing modal after payment success');
         onShowRechargeModal(false);
         setHasShownRecharge(true);
 
@@ -143,7 +155,7 @@ export const useChatFlow = ({
         const userId = user?.id;
 
         if (socket && roomId) {
-          console.log('[EMIT] customer_recharge_completed');
+          // console.log('[EMIT] customer_recharge_completed');
           (socket as any).emit('customer_recharge_completed', {
             roomId: roomId,
             userId: userId,
@@ -156,7 +168,7 @@ export const useChatFlow = ({
         const userId = user?.id;
 
         if (socket && roomId) {
-          console.log('[EMIT] customer_recharge_fail');
+          // console.log('[EMIT] customer_recharge_fail');
           (socket as any).emit('customer_recharge_fail', {
             roomId: roomId,
             userId: userId,
