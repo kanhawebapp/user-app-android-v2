@@ -1,5 +1,5 @@
-
 import React, { useMemo } from 'react';
+
 import {
   View,
   StyleSheet,
@@ -19,7 +19,43 @@ import { API_BASE_URL } from '../../../../../constants/api.constants';
 
 const { width } = Dimensions.get('window');
 
-const BASE_IMAGE_URL = API_BASE_URL.DEVELOPMENT
+const BASE_IMAGE_URL = API_BASE_URL.DEVELOPMENT;
+
+/**
+ * Convert API timestamp into readable date
+ *
+ * Example:
+ * 1784014141608
+ * -> 13 Jul 2026, 10:19 AM
+ */
+const formatCreatedAt = (createdAt: any) => {
+  if (!createdAt) {
+    return '';
+  }
+
+  try {
+    const timestamp = Number(createdAt);
+
+    if (Number.isNaN(timestamp)) {
+      return '';
+    }
+
+    const date = new Date(timestamp);
+
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
+
+    return date.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  } catch (error) {
+    console.log('createdAt format error:', error);
+    return '';
+  }
+};
 
 export const Testimonials: React.FC<TestimonialsProps> = ({
   testimonials = [],
@@ -29,8 +65,6 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
   const colors = theme.colors;
 
   const { data, loading } = useTestimonials();
-
-  // console.log('testimoniulllsss', data);
 
   /**
    * FORMAT TESTIMONIALS
@@ -48,12 +82,14 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
 
         if (item?.image) {
           /**
-           * backend giving blob url
-           * skip blob because it won't work in app
+           * Backend giving blob URL
+           * Skip blob because it won't work reliably in app
            */
           if (item.image.startsWith('blob:')) {
             imageUrl =
-              'https://i.pravatar.cc/300?img=' + Math.floor(Math.random() * 60);
+              `https://i.pravatar.cc/300?img=${Math.floor(
+                Math.random() * 60,
+              )}`;
           } else if (item.image.startsWith('http')) {
             imageUrl = item.image;
           } else {
@@ -63,11 +99,22 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
 
         return {
           id: item?.id,
+
           userName: item?.name || 'Anonymous',
+
           comment: item?.content || '',
+
           location: item?.address || 'India',
+
           rating: Number(item?.rating || 5),
+
           image: imageUrl,
+
+          /**
+           * IMPORTANT:
+           * Keep createdAt from API
+           */
+          createdAt: item?.createdAt,
         };
       });
     }
@@ -78,16 +125,30 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
     return testimonials;
   }, [data, testimonials]);
 
+  /**
+   * LOADING
+   */
   if (loading && testimonialData.length === 0) {
     return (
       <View style={[styles.loaderContainer, style]}>
-        <ActivityIndicator size="small" color={colors.primary.main} />
+        <ActivityIndicator
+          size="small"
+          color={colors.primary.main}
+        />
       </View>
     );
   }
 
+  /**
+   * EMPTY STATE
+   */
+  if (!testimonialData.length) {
+    return null;
+  }
+
   return (
     <View style={[styles.container, style]}>
+
       {/* HEADER */}
       <View style={styles.headerRow}>
         <View>
@@ -114,6 +175,7 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
           </Text>
         </View>
 
+        {/* REVIEW BADGE */}
         <View
           style={[
             styles.reviewBadge,
@@ -121,7 +183,12 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
               backgroundColor: colors.primary.light + '20',
             },
           ]}>
-          <Icon name="star" size={16} color="#FFC107" library="MaterialIcons" />
+          <Icon
+            name="star"
+            size={16}
+            color="#FFC107"
+            library="MaterialIcons"
+          />
 
           <Text
             style={{
@@ -135,7 +202,7 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
         </View>
       </View>
 
-      {/* LIST */}
+      {/* TESTIMONIAL LIST */}
       <ScrollView
         horizontal
         decelerationRate="fast"
@@ -143,135 +210,158 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
         snapToInterval={width - 72}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}>
-        {testimonialData.map((item: any, index: number) => (
-          <Card
-            key={`${item.id}-${index}`}
-            style={[
-              styles.card,
-              {
-                backgroundColor: colors.background.secondary,
-                borderColor: colors.border.light,
-              },
-            ]}>
-            {/* PROFILE IMAGE */}
-            <View style={styles.imageWrapper}>
-              <Image
-                source={{
-                  uri: item.image || 'https://i.pravatar.cc/300',
-                }}
-                style={styles.image}
-              />
 
-              {/* VERIFIED BADGE */}
-              <View style={styles.verifiedBadge}>
-                <Icon
-                  name="check"
-                  size={10}
-                  color="#FFFFFF"
-                  library="Feather"
-                />
-              </View>
-            </View>
+        {testimonialData.map((item: any, index: number) => {
+          const formattedDate = formatCreatedAt(item?.createdAt);
 
-            {/* QUOTE ICON */}
-            <View
+          return (
+            <Card
+              key={`${item.id}-${index}`}
               style={[
-                styles.quoteIconContainer,
+                styles.card,
                 {
-                  backgroundColor: colors.primary.light + '18',
+                  backgroundColor: colors.background.secondary,
+                  borderColor: colors.border.light,
                 },
               ]}>
-              <Icon
-                name="format-quote-open"
-                size={18}
-                color={colors.primary.main}
-                library="MaterialCommunityIcons"
-              />
-            </View>
 
-            {/* COMMENT */}
-            <Text
-              style={[
-                styles.comment,
-                {
-                  color: colors.text.secondary,
-                },
-              ]}
-              numberOfLines={4}>
-              “{item.comment}”
-            </Text>
+              {/* PROFILE IMAGE */}
+              <View style={styles.imageWrapper}>
+                <Image
+                  source={{
+                    uri:
+                      item.image ||
+                      'https://i.pravatar.cc/300',
+                  }}
+                  style={styles.image}
+                />
 
-            {/* BOTTOM */}
-            <View style={styles.bottomRow}>
-              {/* USER INFO */}
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={[
-                    styles.name,
-                    {
-                      color: colors.text.primary,
-                    },
-                  ]}
-                  numberOfLines={1}>
-                  {item.userName}
-                </Text>
-
-                <View style={styles.locationRow}>
+                {/* VERIFIED BADGE */}
+                <View style={styles.verifiedBadge}>
                   <Icon
-                    name="location-on"
-                    size={12}
-                    color={colors.text.tertiary}
-                    library="MaterialIcons"
+                    name="check"
+                    size={10}
+                    color="#FFFFFF"
+                    library="Feather"
                   />
+                </View>
+              </View>
 
+              {/* QUOTE ICON */}
+              <View
+                style={[
+                  styles.quoteIconContainer,
+                  {
+                    backgroundColor:
+                      colors.primary.light + '18',
+                  },
+                ]}>
+                <Icon
+                  name="format-quote-open"
+                  size={18}
+                  color={colors.primary.main}
+                  library="MaterialCommunityIcons"
+                />
+              </View>
+
+              {/* COMMENT */}
+              <Text
+                style={[
+                  styles.comment,
+                  {
+                    color: colors.text.secondary,
+                  },
+                ]}
+                numberOfLines={4}>
+                “{item.comment}”
+              </Text>
+
+              {/* BOTTOM */}
+              <View style={styles.bottomRow}>
+
+                {/* USER INFO */}
+                <View style={{ flex: 1 }}>
                   <Text
                     style={[
-                      styles.location,
+                      styles.name,
                       {
-                        color: colors.text.tertiary,
+                        color: colors.text.primary,
                       },
                     ]}
                     numberOfLines={1}>
-                    {item.location}
+                    {item.userName}
+                  </Text>
+
+                  {/* LOCATION */}
+                  <View style={styles.locationRow}>
+                    <Icon
+                      name="location-on"
+                      size={12}
+                      color={colors.text.tertiary}
+                      library="MaterialIcons"
+                    />
+
+                    <Text
+                      style={[
+                        styles.location,
+                        {
+                          color: colors.text.tertiary,
+                        },
+                      ]}
+                      numberOfLines={1}>
+                      {item.location}
+                    </Text>
+                  </View>
+
+                  {/* CREATED AT */}
+                  {!!formattedDate && (
+                    <View style={styles.dateRow}>
+                      <Icon
+                        name="calendar-today"
+                        size={11}
+                        color={colors.text.tertiary}
+                        library="MaterialIcons"
+                      />
+
+                      <Text
+                        style={[
+                          styles.createdAt,
+                          {
+                            color: colors.text.tertiary,
+                          },
+                        ]}>
+                        {formattedDate}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* RATING */}
+                <View style={styles.ratingContainer}>
+                  <View style={styles.starRow}>
+                    {[1, 2, 3, 4, 5].map(star => (
+                      <Icon
+                        key={star}
+                        library="MaterialIcons"
+                        name={
+                          star <= item.rating
+                            ? 'star'
+                            : 'star-border'
+                        }
+                        size={17}
+                        color="#FDBA12"
+                      />
+                    ))}
+                  </View>
+
+                  <Text style={styles.ratingText}>
+                    {Number(item.rating || 0).toFixed(1)}
                   </Text>
                 </View>
               </View>
-
-              {/* RATING */}
-              {/* <View style={styles.ratingContainer}>
-                <Icon
-                  name="star"
-                  size={13}
-                  color="#FFC107"
-                  library="MaterialIcons"
-                />
-
-                <Text style={styles.ratingText}>{item.rating}</Text>
-              </View> */}
-              <View style={styles.ratingContainer}>
-                <View style={styles.starRow}>
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Icon
-                      key={star}
-                      library="MaterialIcons"
-                      name={
-                        star <= item.rating
-                          ? "star"
-                          : "star-border"
-                      }
-                      size={17}
-                      color="#FDBA12"
-                    />
-                  ))}
-                </View>
-
-                <Text style={styles.ratingText}>
-                  {item.rating.toFixed(1)}
-                </Text>
-              </View>
-            </View>
-          </Card>
-        ))}
+            </Card>
+          );
+        })}
       </ScrollView>
     </View>
   );
@@ -327,16 +417,6 @@ const styles = StyleSheet.create({
     borderRadius: 28,
 
     borderWidth: 1,
-
-    // shadowColor: '#000',
-    // shadowOpacity: 0.08,
-    // shadowRadius: 14,
-    // shadowOffset: {
-    //   width: 0,
-    //   height: 6,
-    // },
-
-    // elevation: 5,
   },
 
   imageWrapper: {
@@ -356,6 +436,7 @@ const styles = StyleSheet.create({
 
   verifiedBadge: {
     position: 'absolute',
+
     right: 0,
     bottom: 0,
 
@@ -398,7 +479,9 @@ const styles = StyleSheet.create({
 
   bottomRow: {
     flexDirection: 'row',
+
     justifyContent: 'space-between',
+
     alignItems: 'center',
   },
 
@@ -419,39 +502,38 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
 
-  // ratingContainer: {
-  //   flexDirection: 'row',
-  //   alignItems: 'center',
+  /**
+   * CREATED AT
+   */
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
 
-  //   backgroundColor: '#FFC10720',
+    marginTop: 4,
+  },
 
-  //   paddingHorizontal: 10,
-  //   paddingVertical: 5,
+  createdAt: {
+    fontSize: 11,
+    marginLeft: 4,
+  },
 
-  //   borderRadius: 50,
-  // },
-
-  // ratingText: {
-  //   marginLeft: 4,
-
-  //   fontSize: 13,
-  //   fontWeight: '700',
-
-  //   color: '#E6A700',
-  // },
   ratingContainer: {
-    alignItems: "flex-end"
+    alignItems: 'flex-end',
+
+    marginLeft: 10,
   },
 
   starRow: {
-    flexDirection: "row"
+    flexDirection: 'row',
   },
 
   ratingText: {
     marginTop: 4,
-    fontSize: 12,
-    color: "#666",
-    fontWeight: "700"
-  }
 
+    fontSize: 12,
+
+    color: '#666',
+
+    fontWeight: '700',
+  },
 });
