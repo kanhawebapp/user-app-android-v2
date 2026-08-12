@@ -170,10 +170,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   });
 
   // Rating modal controller
-  // useRatingModalController({
-  //   chatStatus,
-  //   onShowRatingModal: setShowRatingModal,
-  // });
+  useRatingModalController({
+    chatStatus,
+    onShowRatingModal: setShowRatingModal,
+  });
 
   // Socket event listeners
   useChatSocket({
