@@ -11,6 +11,7 @@ export const GET_ASTROLOGERS = `
         id
         profilePic
         name
+        displayName
         experience
         rating
         skills
@@ -52,11 +53,16 @@ export const GET_ASTROLOGERS_FOR_USER = `
         id
         profilePic
         name
+        displayName
         experience
         rating
         skills
         languages
-
+        isBusy
+        isOnline
+        isChatActive
+        isCallActive
+        isLiveActive
         activeOffer {
           id
           offerName
@@ -110,7 +116,6 @@ export const getAstrologers = async (searchInput: AstrologerSearchInput) => {
       GET_ASTROLOGERS,
       { searchInput },
     );
-
     return response.getAstrologerListBySearch;
   } catch (error) {
     console.log('Authenticated API failed, fallback to guest API');

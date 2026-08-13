@@ -53,7 +53,7 @@ const MyFollowingScreen: React.FC<MyFollowingScreenProps> = ({
 
           return {
             id: item.id,
-            name: item.name,
+            name: item.displayName,
             rating: item.rating || 0,
             reviewCount: 0,
             experience: `${item.experience}+ years`,

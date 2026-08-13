@@ -307,7 +307,7 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
           onNavigateToLogin,
           onNavigateToSignup,
           onNavigateToAstrologerProfile:
-            handleNavigateToAstrologerProfile,
+          handleNavigateToAstrologerProfile,
         })}
 
       </View>

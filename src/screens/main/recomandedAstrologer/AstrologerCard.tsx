@@ -35,7 +35,7 @@ const AstrologerCard: React.FC<AstrologerCardProps> = ({
   |--------------------------------------------------------------------------
   */
   // console.log("itemitemitemitem", item)
-
+console.log("item>>>>",item)
   const rating =
     item?.rating && item?.rating > 0 ? Number(item.rating).toFixed(1) : '4.8';
 
@@ -108,7 +108,7 @@ const AstrologerCard: React.FC<AstrologerCardProps> = ({
 
       {/* Name */}
       <Text numberOfLines={1} style={styles.name}>
-        {item?.name || 'Astrologer'}
+        {item?.displayName || 'Astrologer'}
       </Text>
       <Text
         style={[
