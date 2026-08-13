@@ -303,7 +303,8 @@ const AstrologerListScreen: React.FC<AstrologerListScreenProps> = ({
       try {
         const result = await sendChatRequest({
           astrologerId: chatTargetAstrologer.id,
-          astrologerName: chatTargetAstrologer.name,
+          astrologerName:
+            chatTargetAstrologer.displayName || chatTargetAstrologer.name,
           userProfile: {
             id: user?.id || '',
             name: user?.name || '',
@@ -349,7 +350,8 @@ const AstrologerListScreen: React.FC<AstrologerListScreenProps> = ({
               callId: result.callId || `call_${Date.now()}`,
               participant: {
                 id: chatTargetAstrologer.id,
-                name: chatTargetAstrologer.name,
+                name:
+                  chatTargetAstrologer.displayName || chatTargetAstrologer.name,
                 image: chatTargetAstrologer.profilePic,
               },
               isIncoming: false,
@@ -360,7 +362,8 @@ const AstrologerListScreen: React.FC<AstrologerListScreenProps> = ({
 
           useChatStore.getState().setSelectedAstrologer({
             id: chatTargetAstrologer.id,
-            name: chatTargetAstrologer.name,
+            name:
+              chatTargetAstrologer.displayName || chatTargetAstrologer.name,
             image: chatTargetAstrologer.profilePic,
             rating: chatTargetAstrologer.rating,
             experience: String(chatTargetAstrologer.experience),

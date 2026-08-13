@@ -18,6 +18,7 @@ export interface ChatRequestModalProps {
 export interface Astrologer {
   id: string;
   name: string;
+  displayName?: string;
   profilePic?: string;
   rating?: number;
   price?: number;

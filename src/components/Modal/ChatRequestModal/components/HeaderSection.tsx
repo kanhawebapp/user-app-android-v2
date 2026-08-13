@@ -57,7 +57,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
             style={[styles.headerTitle, { color: colors.text.primary }]}>
             {type === 'call' ? 'Call' : 'Chat'} with{' '}
             <Text style={{ color: colors.primary.main }}>
-              {astrologer?.name || 'Astrologer'}
+              {astrologer?.displayName || astrologer?.name || 'Astrologer'}
             </Text>
           </Text>
 
