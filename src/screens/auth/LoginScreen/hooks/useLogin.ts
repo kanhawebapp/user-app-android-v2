@@ -3,6 +3,7 @@ import {useAppStore} from '../../../../stores/app.store';
 import {useAuthStore} from '../../../../stores/auth.store';
 import {loggingService} from '../../../../services/logging';
 import {sendOTP, verifyOTP} from '../../../../services/api/auth/auth.api';
+import {updateUserProfile} from '../../../../services/api/profile/profile.api';
 import type {User, Gender} from '../../../../types/global.types';
 import {UseLoginProps, UseLoginReturn} from '../loginType';
 
@@ -18,9 +19,9 @@ const mapApiUserToUser = (apiUser: {
   gender?: string;
   zodiacSign?: string;
   languagePreference?: string;
-  walletBalance: number;
-  isVerified: boolean;
-  isAstrologer: boolean;
+  walletBalance?: number;
+  isVerified?: boolean;
+  isAstrologer?: boolean;
 }): User => ({
   id: apiUser.id,
   phone: apiUser.phone || '',
@@ -55,6 +56,11 @@ export const useLogin = ({
   const [otpError, setOtpError] = useState<string | null>(null);
 
   const otpRequestInFlight = useRef(false);
+
+  const [isNameRequired, setIsNameRequired] = useState(false);
+  const [isNameSubmitting, setIsNameSubmitting] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const nameSubmitInFlight = useRef(false);
 
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isFacebookLoading, setIsFacebookLoading] = useState(false);
@@ -117,6 +123,12 @@ export const useLogin = ({
     }
   }, [phoneNumber, onOTPRequested, onLoginError]);
 
+  const completeLoginFlow = useCallback(() => {
+    setIsLoggedIn(true);
+    onOTPSuccess?.();
+    onLoginSuccess?.();
+  }, [onOTPSuccess, onLoginSuccess, setIsLoggedIn]);
+
   const verifyOTPAndLogin = useCallback(
     async (otp: string) => {
       if (!otp || otp.length < 4) {
@@ -137,7 +149,24 @@ export const useLogin = ({
 
         await authLogin(user, result.accessToken, result.refreshToken);
 
-        setIsLoggedIn(true);
+        console.log('[AUTH] AUTHWITHOTP SUCCESS:', {
+          hasName: result.hasName,
+        });
+
+        if (result.hasName === false) {
+          console.log('[AUTH] NAME REQUIRED: true');
+          setIsNameRequired(true);
+          return;
+        }
+
+        if (result.hasName !== true) {
+          console.log(
+            '[AUTH] NAME REQUIRED: unexpected hasName value, using existing login flow:',
+            result.hasName,
+          );
+        } else {
+          console.log('[AUTH] NAME REQUIRED: false');
+        }
 
         loggingService.info('[Login] Login successful:', {
           phoneNumber,
@@ -145,8 +174,7 @@ export const useLogin = ({
           hasName: result.hasName,
         });
 
-        onOTPSuccess?.();
-        onLoginSuccess?.();
+        completeLoginFlow();
       } catch (error) {
         const err =
           error instanceof Error ? error : new Error('OTP verification failed');
@@ -157,14 +185,43 @@ export const useLogin = ({
         setIsOTPVerifying(false);
       }
     },
-    [
-      phoneNumber,
-      onOTPSuccess,
-      onLoginSuccess,
-      onLoginError,
-      setIsLoggedIn,
-      authLogin,
-    ],
+    [phoneNumber, onLoginError, authLogin, completeLoginFlow],
+  );
+
+  const submitName = useCallback(
+    async (name: string) => {
+      const trimmedName = name?.trim() ?? '';
+      if (!trimmedName) {
+        setNameError('Please enter a valid name');
+        return;
+      }
+      if (nameSubmitInFlight.current) {
+        return;
+      }
+
+      nameSubmitInFlight.current = true;
+      setIsNameSubmitting(true);
+      setNameError(null);
+      console.log('[PROFILE] UPDATE NAME START');
+
+      try {
+        await updateUserProfile({name: trimmedName});
+        console.log('[PROFILE] UPDATE NAME SUCCESS');
+        useAuthStore.getState().updateUser({name: trimmedName});
+        setIsNameRequired(false);
+        completeLoginFlow();
+      } catch (error) {
+        const err =
+          error instanceof Error ? error : new Error('Failed to update name');
+        console.log('[PROFILE] UPDATE NAME FAILED', err.message);
+        setNameError(err.message);
+        setIsNameRequired(true);
+      } finally {
+        nameSubmitInFlight.current = false;
+        setIsNameSubmitting(false);
+      }
+    },
+    [completeLoginFlow],
   );
 
   const resendOTP = useCallback(async () => {
@@ -265,6 +322,9 @@ export const useLogin = ({
     isGoogleLoading,
     isFacebookLoading,
     isGuestLoading,
+    isNameRequired,
+    isNameSubmitting,
+    nameError,
     requestOTP,
     verifyOTP: verifyOTPAndLogin,
     resendOTP,
@@ -273,6 +333,7 @@ export const useLogin = ({
     loginAsGuest,
     closeOTPModal,
     clearErrors,
+    submitName,
   };
 };
 

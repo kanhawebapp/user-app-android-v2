@@ -27,6 +27,13 @@ export interface LoginRequiredModalProps {
   showSignup?: boolean;
 }
 
+export interface EnterNameModalProps {
+  visible: boolean;
+  submitting?: boolean;
+  error?: string | null;
+  onSubmit: (name: string) => void;
+}
+
 export interface GiftModalProps {
   visible: boolean;
   onClose: () => void;

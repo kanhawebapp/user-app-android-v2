@@ -109,6 +109,11 @@ export interface UseLoginReturn {
   // Guest Login State
   isGuestLoading: boolean;
 
+  // First-login Name Collection State
+  isNameRequired: boolean;
+  isNameSubmitting: boolean;
+  nameError: string | null;
+
   // Actions
   requestOTP: () => Promise<{message: string} | undefined>;
   verifyOTP: (otp: string) => Promise<void>;
@@ -118,4 +123,5 @@ export interface UseLoginReturn {
   loginAsGuest: () => Promise<void>;
   closeOTPModal: () => void;
   clearErrors: () => void;
+  submitName: (name: string) => Promise<void>;
 }

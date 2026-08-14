@@ -1,5 +1,6 @@
 export {Modal} from './Modal';
 export {LoginRequiredModal} from './LoginRequiredModal';
+export {EnterNameModal} from './EnterNameModal';
 export {default as ProfileCompletionModal} from './ProfileCompletionModal';
 export {GiftModal} from './GiftModal';
 export {ChatRequestModal} from './ChatRequestModal';

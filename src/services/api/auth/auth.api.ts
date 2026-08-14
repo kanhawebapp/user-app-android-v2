@@ -4,7 +4,7 @@
 
 import { graphqlRequest } from '../graphql.client';
 import loggingService from '../../logging';
-import { LoginResult } from './auth.types';
+import { LoginResult, AuthWithOTPResponse } from './auth.types';
 import { Platform } from 'react-native';
 
 const REQUEST_OTP_MUTATION = `mutation RequestOtp($countryCode: String!, $mobile: String!) {
@@ -109,14 +109,16 @@ export const verifyOTP = async (
       ),
     );
 
-    const response = await graphqlRequest<{
-      authWithOtp: any;
-    }>('AuthWithOtp', AUTH_WITH_OTP_MUTATION, {
-      countryCode,
-      mobile: mobile.trim(),
-      otp: otp.trim(),
-      source: Platform.OS === 'ios' ? 'IOS' : 'ANDROID'
-    });
+    const response = await graphqlRequest<AuthWithOTPResponse>(
+      'AuthWithOtp',
+      AUTH_WITH_OTP_MUTATION,
+      {
+        countryCode,
+        mobile: mobile.trim(),
+        otp: otp.trim(),
+        source: Platform.OS === 'ios' ? 'IOS' : 'ANDROID',
+      },
+    );
 
     console.log('VERIFY OTP RESPONSE:', response);
 

@@ -1,4 +1,4 @@
-import React, {useState, useCallback} from 'react';
+import React, {useState, useCallback, useEffect} from 'react';
 import {
   View,
   StyleSheet,
@@ -11,6 +11,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useTheme} from '../../../theme';
 import {BackgroundLayout} from '../../../components/BackgroundLayout';
 import {OTPModal} from '../../../components/OTPModal';
+import {EnterNameModal} from '../../../components/Modal';
 import {Button} from '../../../components/Button';
 import {getBackgroundImageSource} from '../../../assets/images';
 import {useBackgroundImageUrl} from '../../../stores/config.store';
@@ -76,6 +77,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     otpError,
     // Guest Login State
     isGuestLoading,
+    // First-login Name Collection State
+    isNameRequired,
+    isNameSubmitting,
+    nameError,
 
     // Actions
     requestOTP,
@@ -83,6 +88,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     resendOTP,
     loginAsGuest,
     closeOTPModal,
+    submitName,
   } = useLogin({
     phoneNumber,
     onLoginSuccess,
@@ -145,6 +151,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     await loginAsGuest();
     onGuestLogin?.();
   }, [loginAsGuest, onGuestLogin]);
+
+  // Close OTP modal once the first-login name popup is required
+  useEffect(() => {
+    if (isNameRequired) {
+      setIsOTPModalVisible(false);
+    }
+  }, [isNameRequired]);
 
   return (
     <BackgroundLayout
@@ -242,6 +255,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         loading={isOTPVerifying}
         error={otpError || undefined}
         title={AUTH_LABELS.OTP_VERIFY_BUTTON}
+      />
+
+      {/* First-login Name Popup */}
+      <EnterNameModal
+        visible={isNameRequired}
+        submitting={isNameSubmitting}
+        error={nameError}
+        onSubmit={submitName}
       />
     </BackgroundLayout>
   );
