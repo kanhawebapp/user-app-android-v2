@@ -102,12 +102,12 @@ export const ThankYouModal: React.FC<ThankYouModalProps> = ({
 
           {/* ACTION BUTTONS */}
           <View style={styles.actions}>
-            <Button
+            {/* <Button
               title="Recharge Wallet"
               variant="primary"
               onPress={handleRecharge}
               style={{flex: 1}}
-            />
+            /> */}
 
             <Button
               title="Chat Again"
