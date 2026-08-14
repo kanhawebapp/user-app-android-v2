@@ -118,6 +118,7 @@ const styles = StyleSheet.create({
   },
   close: {
     fontSize: 18,
+    color:'#000'
   },
   card: {
     padding: 14,
