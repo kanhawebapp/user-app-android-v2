@@ -35,7 +35,7 @@ const AstrologerCard: React.FC<AstrologerCardProps> = ({
   |--------------------------------------------------------------------------
   */
   // console.log("itemitemitemitem", item)
-console.log("item>>>>",item)
+ // console.log("item>>>>",item)
   const rating =
     item?.rating && item?.rating > 0 ? Number(item.rating).toFixed(1) : '4.8';
 
