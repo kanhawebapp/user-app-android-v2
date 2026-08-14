@@ -17,6 +17,7 @@ import { useTheme } from '../../../theme';
 import { useAuthStore } from '../../../stores/auth.store';
 import { useChatStore } from '../../../services/chat/chat.store';
 import { socketService } from '../../../services/socket/socket.service';
+import { SOCKET_EVENTS } from '../../../services/socket/socket.events';
 import { RatingModal, ThankYouModal } from '../../../components/Modal';
 import {
   ChatHeader,
@@ -70,6 +71,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   const stopChatTimer = useChatStore(state => state.stopChatTimer);
   const setChatStatus = useChatStore(state => state.setChatStatus);
   const setTimeLeft = useChatStore(state => state.setTimeLeft);
+  const userPayload = useChatStore(state => state.userPayload);
+  const isChatTimerStarted = useChatStore(state => state.isChatTimerStarted);
 
   const roomId = storeRoomId || '';
   const astrologerName =
@@ -157,7 +160,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     chatStatus,
     chatDuration,
   });
-
+console.log('timeLeft', timeLeft);
   // Low-time recharge trigger
   useRechargeTrigger({
     timeLeft,
@@ -198,6 +201,40 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       setRechargeModal(false);
     },
   });
+
+  // Trigger AUTO_DISCONNECT when the chat time duration/timer expires
+  // Reuses the existing completeChat() + RatingModal flow (same as manual end chat)
+  const prevTimeLeftRef = useRef(timeLeft);
+  useEffect(() => {
+    const prevTimeLeft = prevTimeLeftRef.current;
+    prevTimeLeftRef.current = timeLeft;
+
+    if (
+      timeLeft === 0 &&
+      prevTimeLeft > 0 &&
+      isChatTimerStarted &&
+      chatStatus === 'active'
+    ) {
+      const emitted = socketService.emit(SOCKET_EVENTS.AUTO_DISCONNECT, {
+        room_id: roomId,
+        astroid: userPayload?.astro_id,
+        type: 'chat',
+      });
+      console.log(
+        '[ChatScreen] Chat timer expired, AUTO_DISCONNECT emitted:',
+        emitted,
+      );
+
+      handleEndChat();
+    }
+  }, [
+    timeLeft,
+    isChatTimerStarted,
+    chatStatus,
+    roomId,
+    userPayload,
+    handleEndChat,
+  ]);
 
   // console.log('selectedImage', selectedImage);
   // Auto-scroll to bottom when messages change
