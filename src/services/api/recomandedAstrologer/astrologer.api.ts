@@ -3,6 +3,8 @@ import {
   GetAstrologersResponse,
   AstrologerSearchInput,
 } from './astrologer.types';
+import { getAuthToken } from './authCheck';
+import { useAuthStore } from '../../../stores/auth.store';
 
 export const GET_ASTROLOGERS = `
   query GetAstrologers($searchInput: AstrologerSearchInput) {
@@ -83,25 +85,15 @@ export const GET_ASTROLOGERS_FOR_USER = `
   }
 `;
 
-// export const getAstrologers = async (searchInput: AstrologerSearchInput) => {
-//   const response = await graphqlRequest<GetAstrologersResponse>(
-//     'GetAstrologers',
-//     GET_ASTROLOGERS,
-//     { searchInput },
-//   );
-
-//   return response.getAstrologerListBySearch;
-// };
-
-// import {graphqlRequest} from '../graphql.client';
-import { getAuthToken } from './authCheck';
-// import {getAuthToken} from '../auth/auth.storage';
-
 export const getAstrologers = async (searchInput: AstrologerSearchInput) => {
-  const token = await getAuthToken();
+  const authToken = await getAuthToken();
+  const token = authToken;
 
-  try {
-    if (token) {
+  console.log('ASTROLOGER API TOKEN:', token);
+  console.log('AUTH STORE TOKEN:', useAuthStore.getState().accessToken);
+
+  if (token) {
+    try {
       const response = await graphqlRequest<any>(
         'GetAstrologerListForUser',
         GET_ASTROLOGERS_FOR_USER,
@@ -109,24 +101,17 @@ export const getAstrologers = async (searchInput: AstrologerSearchInput) => {
       );
 
       return response.getAstrologerListForUser;
+    } catch (error) {
+      console.log('GET_ASTROLOGERS_FOR_USER ERROR:', error);
+      throw error;
     }
-
-    const response = await graphqlRequest<GetAstrologersResponse>(
-      'GetAstrologers',
-      GET_ASTROLOGERS,
-      { searchInput },
-    );
-    return response.getAstrologerListBySearch;
-  } catch (error) {
-    console.log('Authenticated API failed, fallback to guest API');
-
-    const response = await graphqlRequest<GetAstrologersResponse>(
-      'GetAstrologers',
-      GET_ASTROLOGERS,
-      { searchInput },
-    );
-
-    return response.getAstrologerListBySearch;
   }
+
+  const response = await graphqlRequest<GetAstrologersResponse>(
+    'GetAstrologers',
+    GET_ASTROLOGERS,
+    { searchInput },
+  );
+  return response.getAstrologerListBySearch;
 };
 

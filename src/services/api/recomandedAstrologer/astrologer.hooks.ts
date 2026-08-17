@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {getAstrologers} from './astrologer.api';
 import {Astrologer, AstrologerSearchInput} from './astrologer.types';
+import {useAuthStore} from '../../../stores/auth.store';
 
 interface FiltersState {
   sortField?: 'RATING' | 'PRICE' | 'EXPERIENCE';
@@ -20,6 +21,12 @@ export const useAstrologers = () => {
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  const accessToken = useAuthStore(state => state.accessToken);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const isInitializing = useAuthStore(state => state.isInitializing);
+  const canFetchAstrologers =
+    !isInitializing && (!isAuthenticated || !!accessToken);
 
   const filtersRef = useRef<FiltersState>({
     sortField: 'RATING',
@@ -83,15 +90,21 @@ export const useAstrologers = () => {
     filtersRef.current = filters;
   }, [filters]);
 
-  // Initial mount: fetch page 1
+  // Fetch only after auth has settled so first-login uses the saved token.
   useEffect(() => {
+    if (!canFetchAstrologers) {
+      return;
+    }
     fetchAstrologers(1);
-  }, [fetchAstrologers]);
+  }, [fetchAstrologers, canFetchAstrologers]);
 
   // Whenever any filter value changes, reset to page 1 and refetch.
   useEffect(() => {
+    if (!canFetchAstrologers) {
+      return;
+    }
     fetchAstrologers(1);
-  }, [fetchAstrologers, filters]);
+  }, [fetchAstrologers, filters, canFetchAstrologers]);
 
   const changeFilter = <K extends keyof FiltersState>(
     key: K,

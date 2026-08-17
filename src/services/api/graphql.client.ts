@@ -216,11 +216,45 @@
 // DhwaniAstro - GraphQL Client
 // ============================================
 
-import axios, { AxiosInstance, AxiosError } from 'axios';
+import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { API_BASE_URL, TIMEOUT } from '../../constants/api.constants';
 import { STORAGE_KEYS } from '../../constants/app.constants';
 import secureStorage from '../storage/secure.storage';
 import loggingService from '../logging';
+import { useAuthStore } from '../../stores/auth.store';
+
+const resolveAccessToken = async (): Promise<string | null> => {
+  const authToken = useAuthStore.getState().accessToken;
+  if (authToken) {
+    return authToken;
+  }
+
+  return secureStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+};
+
+const applyAuthorizationHeader = (
+  config: InternalAxiosRequestConfig,
+  accessToken: string | null,
+) => {
+  if (!config.headers) {
+    config.headers = {} as InternalAxiosRequestConfig['headers'];
+  }
+
+  if (accessToken) {
+    if (typeof config.headers.set === 'function') {
+      config.headers.set('Authorization', `Bearer ${accessToken}`);
+    } else {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
+    return;
+  }
+
+  if (typeof config.headers.delete === 'function') {
+    config.headers.delete('Authorization');
+  } else {
+    delete config.headers.Authorization;
+  }
+};
 
 interface GraphQLResponse<T> {
   data?: T;
@@ -253,20 +287,9 @@ export const createGraphQLClient = (): AxiosInstance => {
   });
 
   client.interceptors.request.use(async config => {
-    const accessToken = await secureStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-    // console.log(
-    //   '[GraphQL] Access Token for request:',
-    //   accessToken ? `Token: ${accessToken.substring(0, 20)}...` : 'NO TOKEN',
-    // );
-    if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
-      // console.log(
-      //   '[GraphQL] Authorization header set:',
-      //   config.headers.Authorization.substring(0, 30) + '...',
-      // );
-    } else {
-      // console.log('[GraphQL] WARNING: No access token found!');
-    }
+    const accessToken = await resolveAccessToken();
+    applyAuthorizationHeader(config, accessToken);
+
     loggingService.info(
       `[GraphQL] ${config.method?.toUpperCase()} ${config.url}`,
     );

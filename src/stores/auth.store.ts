@@ -89,15 +89,6 @@ export const useAuthStore = create<AuthState>()(
         console.log('Refresh Token:', refreshToken);
 
         await secureStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
-        await secureStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
-        await secureStorage.setItem(
-          STORAGE_KEYS.USER_DATA,
-          JSON.stringify(user),
-        );
-
-        loggingService.info('[AuthStore] Tokens saved successfully', {
-          userId: user.id,
-        });
 
         set({
           user,
@@ -106,6 +97,18 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: true,
           isGuest: false,
           isLoading: false,
+        });
+
+        console.log('LOGIN TOKEN SAVED:', accessToken);
+
+        await secureStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+        await secureStorage.setItem(
+          STORAGE_KEYS.USER_DATA,
+          JSON.stringify(user),
+        );
+
+        loggingService.info('[AuthStore] Tokens saved successfully', {
+          userId: user.id,
         });
       },
 
