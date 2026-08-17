@@ -30,11 +30,13 @@ export const RatingModal: React.FC<RatingModalProps> = ({
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [feedback, setFeedback] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const resetState = () => {
     setRating(0);
     setFeedback('');
     setHoverRating(0);
+    setIsSubmitting(false);
   };
   // console.log('ASTROLOGER ID FROM MODAL =>', astrologerId);
 
@@ -44,12 +46,19 @@ export const RatingModal: React.FC<RatingModalProps> = ({
   //   store.queueData?.astrologerId || store.chatRoom?.astrologerId;
   // console.log('ASTROLOGER ID FROM STORE =>', astroId);
 
-  const handleSubmit = () => {
-    if (!rating) {
+  const handleSubmit = async () => {
+    if (!rating || isSubmitting) {
       return;
     }
-    onSubmit(astrologerId, rating, feedback);
-    resetState();
+
+    setIsSubmitting(true);
+
+    try {
+      await onSubmit(astrologerId, rating, feedback);
+      resetState();
+    } catch {
+      setIsSubmitting(false);
+    }
   };
 
   // const { submitReview, loading } = useCreateReview();
@@ -181,9 +190,9 @@ export const RatingModal: React.FC<RatingModalProps> = ({
             <Button
               title="Submit"
               variant="primary"
-              // onPress={handleSubmitReview}
               onPress={handleSubmit}
-              disabled={!rating}
+              disabled={!rating || isSubmitting}
+              loading={isSubmitting}
               style={{flex: 1}}
             />
           </View>

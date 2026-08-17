@@ -50,7 +50,11 @@ export interface GiftModalProps {
 export interface RatingModalProps {
   visible: boolean;
   onClose: () => void;
-  onSubmit: (astrologerId: any, rating: any, feedback?: any) => void;
+  onSubmit: (
+    astrologerId: any,
+    rating: any,
+    feedback?: any,
+  ) => void | Promise<void>;
   astrologerName?: string;
   astrologerId: any;
   userName: any;

@@ -87,19 +87,18 @@ export const useChatFlow = ({
 
       if (response?.success) {
         showSuccess('Review submitted successfully');
-      } else {
-        console.warn('Review submission failed:', response);
+        onShowRatingModal(false);
+        setTimeout(() => {
+          onShowThankYouModal(true);
+        }, 300);
+        return;
       }
+
+      console.warn('Review submission failed:', response);
+      throw new Error('Review submission failed');
     } catch (error) {
       console.error('Error submitting review:', error);
-    } finally {
-      // Always close the rating modal, regardless of API result
-      onShowRatingModal(false);
-
-      // Show thank you modal after a small delay
-      setTimeout(() => {
-        onShowThankYouModal(true);
-      }, 300);
+      throw error;
     }
   };
 
