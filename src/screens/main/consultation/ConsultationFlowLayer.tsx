@@ -105,7 +105,9 @@ export const ConsultationFlowLayer: React.FC<ConsultationFlowLayerProps> = ({
   const startChat = useCallback(
     (astrologer: ConsultationAstrologer) => {
       runIfAuthenticated(
-        CHAT_CALL_LABELS.LOGIN_REQUIRED_CHAT(astrologer.name),
+        CHAT_CALL_LABELS.LOGIN_REQUIRED_CHAT(
+          astrologer.displayName || astrologer.name || 'Astrologer',
+        ),
         () => openChatRequestModal('chat', astrologer),
       );
     },
@@ -115,7 +117,9 @@ export const ConsultationFlowLayer: React.FC<ConsultationFlowLayerProps> = ({
   const startCall = useCallback(
     (astrologer: ConsultationAstrologer) => {
       runIfAuthenticated(
-        CHAT_CALL_LABELS.LOGIN_REQUIRED_CHAT(astrologer.name),
+        CHAT_CALL_LABELS.LOGIN_REQUIRED_CHAT(
+          astrologer.displayName || astrologer.name || 'Astrologer',
+        ),
         () => openChatRequestModal('call', astrologer),
       );
     },

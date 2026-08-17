@@ -30,7 +30,8 @@ const mapAstrologer = (item: any): Astrologer => {
 
   return {
     id: item.id,
-    name: item.displayName,
+    name: item.displayName || item.name,
+    displayName: item.displayName,
     rating: item.rating || 0,
     reviewCount: 0,
     experience: `${item.experience}+ years`,

@@ -53,7 +53,8 @@ const MyFollowingScreen: React.FC<MyFollowingScreenProps> = ({
 
           return {
             id: item.id,
-            name: item.displayName,
+            name: item.displayName || item.name,
+            displayName: item.displayName,
             rating: item.rating || 0,
             reviewCount: 0,
             experience: `${item.experience}+ years`,
@@ -276,7 +277,8 @@ const MyFollowingScreen: React.FC<MyFollowingScreenProps> = ({
                                     .primary,
                               }}>
                               {astrologer.displayName ||
-                                astrologer.name}
+                                astrologer.name ||
+                                'Astrologer'}
                             </Text>
 
                             <Text

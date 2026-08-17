@@ -16,6 +16,8 @@ export interface AstrologerDetails {
 
   name: string;
 
+  displayName?: string;
+
   profilePic?: string;
 
   experience: number;

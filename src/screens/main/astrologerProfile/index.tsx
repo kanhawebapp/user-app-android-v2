@@ -59,7 +59,14 @@ const AstrologerProfileScreen: React.FC<AstrologerProfileScreenProps> = ({
 
 
   const astrologerData = useMemo(() => {
-    return data || astrologer;
+    if (!data) {
+      return astrologer;
+    }
+
+    return {
+      ...data,
+      displayName: (data as any).displayName || astrologer?.displayName,
+    };
   }, [data, astrologer]);
 
   const { submitConsultationRequest, loading: consultationLoading } =
@@ -384,7 +391,10 @@ const AstrologerProfileScreen: React.FC<AstrologerProfileScreenProps> = ({
             if (onNavigateToSendGift) {
               onNavigateToSendGift({
                 gifts: gifts || [],
-                astrologerName: astrologerData?.name,
+                astrologerName:
+                  astrologerData?.displayName ||
+                  astrologerData?.name ||
+                  'Astrologer',
                 astrologerProfilePic: astrologerData?.profilePic,
                 onSendGift: handleSendGiftApi,
                 loading: giftLoading,

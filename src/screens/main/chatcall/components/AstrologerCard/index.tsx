@@ -59,7 +59,6 @@ export const AstrologerCard: React.FC<AstrologerCardProps> = ({
   const colors = theme.colors;
 
   const {
-    name,
     rating,
     reviewCount,
     experience,
@@ -144,7 +143,7 @@ export const AstrologerCard: React.FC<AstrologerCardProps> = ({
           {/* Name and Rating */}
           <View style={styles.nameRow}>
             <Text style={[styles.name, { color: colors.text.primary }]}>
-              {name}
+              {astrologer.displayName || astrologer.name || 'Astrologer'}
             </Text>
             <View style={styles.ratingContainer}>
               <Text style={[styles.starIcon, { color: colors.warning.main }]}>

@@ -68,7 +68,7 @@ export const GiftHistoryItem: React.FC<GiftHistoryItemProps> = ({ item }) => {
             color={colors.text.primary}
             style={styles.astrologerName}
             numberOfLines={1}>
-            {item.astrologer?.name || 'Unknown Astrologer'}
+            {item.astrologer?.displayName || item.astrologer?.name || 'Astrologer'}
           </Text>
         </View>
       </View>

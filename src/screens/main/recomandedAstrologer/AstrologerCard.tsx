@@ -108,7 +108,7 @@ const AstrologerCard: React.FC<AstrologerCardProps> = ({
 
       {/* Name */}
       <Text numberOfLines={1} style={styles.name}>
-        {item?.displayName || 'Astrologer'}
+        {item?.displayName || item?.name || 'Astrologer'}
       </Text>
       <Text
         style={[

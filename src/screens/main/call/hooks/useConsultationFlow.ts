@@ -41,7 +41,7 @@ export const useConsultationFlow = ({onNavigateToTab}: any = {}) => {
       try {
         const result = await sendChatRequest({
           astrologerId: astrologer.id,
-          astrologerName: astrologer.displayName || astrologer.name,
+          astrologerName: astrologer.displayName || astrologer.name || 'Astrologer',
 
           userProfile: {
             id: user?.id || '',
@@ -104,7 +104,7 @@ export const useConsultationFlow = ({onNavigateToTab}: any = {}) => {
             callId: callId || `call_${Date.now()}`,
             participant: {
               id: astrologer.id,
-              name: astrologer.displayName || astrologer.name,
+              name: astrologer.displayName || astrologer.name || 'Astrologer',
               image: astrologer.profilePic,
             },
             isIncoming: false,
@@ -120,7 +120,7 @@ export const useConsultationFlow = ({onNavigateToTab}: any = {}) => {
         // ==========================
         useChatStore.getState().setSelectedAstrologer({
           id: astrologer.id,
-          name: astrologer.displayName || astrologer.name,
+          name: astrologer.displayName || astrologer.name || 'Astrologer',
           image: astrologer.profilePic,
           rating: astrologer.rating,
           experience: String(astrologer.experience),

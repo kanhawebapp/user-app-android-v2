@@ -90,7 +90,7 @@ const SelectAstrologerScreen: React.FC<SelectAstrologerScreenProps> = ({
         <View style={styles.infoContainer}>
           <View style={styles.nameRow}>
             <Text style={styles.name} weight="semibold">
-              {item.name}
+              {item.displayName || item.name || 'Astrologer'}
             </Text>
             <View style={styles.ratingBadge}>
               <Text style={styles.ratingText}>

@@ -61,13 +61,13 @@ export const Header: React.FC<HeaderProps> = ({
         await unfollow(data.id);
 
         showSuccess(
-          `You have unfollowed ${data?.name || 'this astrologer'}`,
+          `You have unfollowed ${data?.displayName || data?.name || 'Astrologer'}`,
         );
       } else {
         await follow(data.id);
 
         showSuccess(
-          `You are now following ${data?.name || 'this astrologer'}`,
+          `You are now following ${data?.displayName || data?.name || 'Astrologer'}`,
         );
       }
 

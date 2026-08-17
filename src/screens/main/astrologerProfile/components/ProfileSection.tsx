@@ -73,7 +73,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
       </View>
 
       <Text style={[styles.name, { color: colors.text.primary }]}>
-        {astrologerData.name || 'Astrologer'}
+        {astrologerData.displayName || astrologerData.name || 'Astrologer'}
       </Text>
 
       <View style={styles.ratingRow}>

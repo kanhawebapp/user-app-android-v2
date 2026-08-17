@@ -39,7 +39,8 @@ const ChatCallScreen: React.FC<ChatCallScreenProps> = ({
 
       return {
         id: item.id,
-        name: item.displayName,
+        name: item.displayName || item.name,
+        displayName: item.displayName,
         rating: item.rating || 0,
         reviewCount: 0,
         experience: `${item.experience}+ years`,
@@ -170,7 +171,9 @@ const handleBackFromChat = useCallback(() => {
 
         const handleProfilePress = (astrologer: Astrologer) => {
           runIfAuthenticated(
-            CHAT_CALL_LABELS.LOGIN_REQUIRED_PROFILE(astrologer.name),
+            CHAT_CALL_LABELS.LOGIN_REQUIRED_PROFILE(
+              astrologer.displayName || astrologer.name || 'Astrologer',
+            ),
             () => {
               onNavigateToAstrologerProfile?.(astrologer.id);
             },
@@ -211,7 +214,9 @@ const handleBackFromChat = useCallback(() => {
         if (showChatScreen && astroToUse && userData) {
           return (
             <ChatScreen
-              astrologerName={astroToUse.name}
+              astrologerName={
+                astroToUse.displayName || astroToUse.name || 'Astrologer'
+              }
               astrologerImage={astroToUse.image}
               astrologerRating={astroToUse.rating}
               astrologerExperience={astroToUse.experience}

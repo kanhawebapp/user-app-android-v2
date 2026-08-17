@@ -56,7 +56,7 @@ const SelectAstrologerModal = ({
 
         <View style={{ flex: 1 }}>
           <Text style={styles.name}>
-            {item.name}
+            {item.displayName || item.name || 'Astrologer'}
           </Text>
 
           <Text style={styles.info}>

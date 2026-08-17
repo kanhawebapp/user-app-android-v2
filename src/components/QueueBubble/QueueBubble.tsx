@@ -488,7 +488,7 @@ export const QueueBubble: React.FC<QueueBubbleProps> = () => {
 
             <InfoRow
               label="Astrologer"
-              value={selectedAstrologer?.name || '-'}
+              value={selectedAstrologer?.displayName || selectedAstrologer?.name || 'Astrologer'}
             />
           </View>
 

@@ -24,6 +24,7 @@ export type TabType = 'chat' | 'call';
 export interface Astrologer {
   id: string;
   name: string;
+  displayName?: string;
   rating: number;
   reviewCount: number;
   experience: string;
