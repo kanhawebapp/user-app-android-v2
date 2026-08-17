@@ -338,7 +338,7 @@ const AstrologerListScreen: React.FC<AstrologerListScreenProps> = ({
           return;
         }
 
-        showSuccess('Connecting you with astrologer...');
+        // showSuccess('Connecting you with astrologer...');
 
         const {isCall} = result;
 

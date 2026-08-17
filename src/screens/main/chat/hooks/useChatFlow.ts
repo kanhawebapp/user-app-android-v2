@@ -86,7 +86,7 @@ export const useChatFlow = ({
       });
 
       if (response?.success) {
-        showSuccess('Review submitted successfully');
+        // showSuccess('Review submitted successfully');
         onShowRatingModal(false);
         setTimeout(() => {
           onShowThankYouModal(true);

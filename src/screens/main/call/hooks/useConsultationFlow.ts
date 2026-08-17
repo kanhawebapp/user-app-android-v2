@@ -77,7 +77,7 @@ export const useConsultationFlow = ({onNavigateToTab}: any = {}) => {
           };
         }
 
-        showSuccess('Connecting you with astrologer...');
+        // showSuccess('Connecting you with astrologer...');
 
         const {isCall, isQueued, callId} = result;
 
