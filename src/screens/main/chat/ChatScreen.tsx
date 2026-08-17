@@ -193,7 +193,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     chatStatus,
     chatDuration,
   });
-console.log('timeLeft', timeLeft);
+// console.log('timeLeft', timeLeft);
   // Low-time recharge trigger
   useRechargeTrigger({
     timeLeft,
