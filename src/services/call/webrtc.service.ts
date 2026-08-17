@@ -860,10 +860,12 @@ class WebRTCService {
     const wasEnabled = audioTrack.enabled;
     audioTrack.enabled = !wasEnabled;
     InCallManager.setMicrophoneMute(wasEnabled);
-    console.log('[WebRTC] toggleMute updated isMuted to:', audioTrack.enabled);
+    // isMuted is the inverse of track.enabled, not the new enabled value
+    const isMuted = !audioTrack.enabled;
+    console.log('[WebRTC] toggleMute updated isMuted to:', isMuted);
     // Only update isMuted in store - do NOT change status
-    useCallStore.setState({isMuted: !wasEnabled});
-    return !wasEnabled;
+    useCallStore.setState({isMuted});
+    return isMuted;
   }
 
   toggleSpeaker(speakerOn: boolean): boolean {
