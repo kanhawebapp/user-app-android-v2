@@ -278,7 +278,7 @@ export const QueueBubble: React.FC<QueueBubbleProps> = () => {
 
   const animatedHeight = expandAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [170, 520],
+    outputRange: [170, 420],
   });
 
   const animatedWidth = expandAnim.interpolate({
@@ -493,7 +493,7 @@ export const QueueBubble: React.FC<QueueBubbleProps> = () => {
           </View>
 
           {/* User Details */}
-          <View style={styles.card}>
+          {/* <View style={styles.card}>
             <Text style={styles.sectionTitle}>Your Details</Text>
 
             <InfoRow label="Name" value={userData?.name || '-'} />
@@ -513,10 +513,10 @@ export const QueueBubble: React.FC<QueueBubbleProps> = () => {
             <InfoRow label="Birth Time" value={userData?.birthTime || '-'} />
 
             <InfoRow label="Place" value={userData?.placeOfBirth || '-'} />
-          </View>
+          </View> */}
 
           {/* More Details */}
-          <View style={styles.card}>
+          {/* <View style={styles.card}>
             <Text style={styles.sectionTitle}>More Details</Text>
 
             <Text style={styles.moreText}>
@@ -527,7 +527,7 @@ export const QueueBubble: React.FC<QueueBubbleProps> = () => {
             <Text style={styles.moreText}>
               You will automatically connect once your turn arrives.
             </Text>
-          </View>
+          </View> */}
 
           {/* Cancel */}
           <TouchableOpacity
