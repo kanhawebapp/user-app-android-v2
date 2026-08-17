@@ -89,8 +89,8 @@ export const getAstrologers = async (searchInput: AstrologerSearchInput) => {
   const authToken = await getAuthToken();
   const token = authToken;
 
-  console.log('ASTROLOGER API TOKEN:', token);
-  console.log('AUTH STORE TOKEN:', useAuthStore.getState().accessToken);
+  // console.log('ASTROLOGER API TOKEN:', token);
+  // console.log('AUTH STORE TOKEN:', useAuthStore.getState().accessToken);
 
   if (token) {
     try {

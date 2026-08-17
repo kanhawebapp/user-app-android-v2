@@ -49,8 +49,8 @@ const ChatCallScreen: React.FC<ChatCallScreenProps> = ({
         availability: 'online',
         // isAvailableForChat: true,
         // isAvailableForCall: true,
-        chatRate: chatPricing?.offerPrice || chatPricing?.price || 0,
-        callRate: callPricing?.offerPrice || callPricing?.price || 0,
+        chatRate: chatPricing?.price || 0,
+        callRate: callPricing?.price || 0,
         activeOffer: item.activeOffer || null,
         pricing: item.pricing || [],
         isBusy: item?.isBusy,
@@ -74,7 +74,6 @@ const ChatCallScreen: React.FC<ChatCallScreenProps> = ({
     availableLanguages,
     onlineCount,
   } = useChatCall(astrologers);
-
   const chatStatus = useChatStore(state => state.chatStatus);
   const isRatingPending = useChatStore(state => state.isRatingPending);
   const shouldNavigateToChat = useChatStore(

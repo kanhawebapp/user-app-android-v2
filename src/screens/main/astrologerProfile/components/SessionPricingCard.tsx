@@ -52,20 +52,12 @@ export const SessionPricingCard: React.FC<SessionPricingCardProps> = ({
   const colors = theme.colors;
   const config = getSessionConfig(pricing.type);
 
-  const displayPrice = pricing.offerPrice || pricing.price;
-
-  const hasDiscount =
-    pricing.offerPrice && pricing.offerPrice !== pricing.price;
-
-  const chatPriceData = useMemo(
-    () => getAstrologerPrice(astrologer, 'CHAT'),
-    [astrologer],
+  const priceData = useMemo(
+    () => getAstrologerPrice(astrologer, pricing.type),
+    [astrologer, pricing.type],
   );
-
-  const callPriceData = useMemo(
-    () => getAstrologerPrice(astrologer, 'CALL'),
-    [astrologer],
-  );
+  const currentPrice = priceData.currentPrice;
+  const oldPrice = priceData.oldPrice;
 
   return (
     <TouchableOpacity
@@ -101,19 +93,14 @@ export const SessionPricingCard: React.FC<SessionPricingCardProps> = ({
         </View>
 
         <View style={styles.priceContainer}>
-          {hasDiscount && (
+          {!!oldPrice && (
             <Text style={[styles.originalPrice, { color: colors.text.tertiary }]}>
               {Currency}
-              {pricing.price} /m
+              {oldPrice} /m
             </Text>
           )}
           <Text style={[styles.price, { color: config.color }]}>
-            {Currency}{' '}
-            {pricing.type === 'CHAT'
-              ? `${chatPriceData.currentPrice}`
-              : pricing.type === 'CALL'
-                ? `${callPriceData.currentPrice}`
-                : `${displayPrice}`} /m
+            {Currency} {currentPrice} /m
           </Text>
 
 

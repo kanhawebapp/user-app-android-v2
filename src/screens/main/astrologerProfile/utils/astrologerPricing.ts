@@ -4,7 +4,10 @@ interface PricingItem {
   offerPrice?: number;
 }
 
-export const getAstrologerPrice = (astrologer: any, type: 'CHAT' | 'CALL') => {
+export const getAstrologerPrice = (
+  astrologer: any,
+  type: 'CHAT' | 'CALL' | 'VIDEO' | 'AUDIO',
+) => {
   if (!astrologer) {
     return {
       currentPrice: 0,
@@ -16,16 +19,12 @@ export const getAstrologerPrice = (astrologer: any, type: 'CHAT' | 'CALL') => {
     (p: PricingItem) => p?.type?.toUpperCase() === type,
   );
 
-  if (astrologer?.activeOffer?.price) {
-    return {
-      currentPrice: astrologer.activeOffer.price,
-      oldPrice: pricingItem?.offerPrice || pricingItem?.price,
-    };
-  }
+  const currentPrice = pricingItem?.price || 0;
+  const oldPrice = pricingItem?.offerPrice;
 
   return {
-    currentPrice: pricingItem?.offerPrice || pricingItem?.price || 0,
-
-    oldPrice: pricingItem?.offerPrice ? pricingItem?.price : undefined,
+    currentPrice,
+    oldPrice:
+      oldPrice && oldPrice !== currentPrice ? oldPrice : undefined,
   };
 };
