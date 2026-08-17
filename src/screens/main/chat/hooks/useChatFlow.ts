@@ -20,6 +20,7 @@ interface UseChatFlowProps {
   onShowThankYouModal: (show: boolean) => void;
   onShowRechargeModal: (show: boolean) => void;
   setHasShownRecharge: (shown: boolean) => void;
+  onHideChatScreen?: () => void;
 }
 
 export const useChatFlow = ({
@@ -28,6 +29,7 @@ export const useChatFlow = ({
   onShowThankYouModal,
   onShowRechargeModal,
   setHasShownRecharge,
+  onHideChatScreen,
 }: UseChatFlowProps) => {
   const user = useAuthStore(state => state.user);
   const walletBalance = user?.walletBalance || 85;
@@ -72,6 +74,10 @@ export const useChatFlow = ({
     star: any,
     comment: any,
   ) => {
+    // Cover ChatScreen before the rating modal closes so it cannot flash
+    // during the review request or the thank-you modal delay.
+    onHideChatScreen?.();
+
     try {
       const response = await submitReview({
         astro_id: astroId,

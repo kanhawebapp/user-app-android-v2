@@ -86,6 +86,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   // Local UI state
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [showThankYouModal, setShowThankYouModal] = useState(false);
+  const [isChatUiDismissed, setIsChatUiDismissed] = useState(false);
   const [isUserInfoExpanded, setIsUserInfoExpanded] = useState(false);
   const [showRechargeModal, setRechargeModal] = useState(false);
   const [hasShownRecharge, setHasShownRecharge] = useState(false);
@@ -133,6 +134,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     onShowThankYouModal: setShowThankYouModal,
     onShowRechargeModal: setRechargeModal,
     setHasShownRecharge,
+    onHideChatScreen: () => setIsChatUiDismissed(true),
   });
 
   const { completeChat } = useChatActions();
@@ -353,6 +355,17 @@ console.log('timeLeft', timeLeft);
         onCancelReply={() => setReplyTo(null)}
       />
 
+      {isChatUiDismissed && (
+        <View
+          style={[
+            StyleSheet.absoluteFillObject,
+            styles.chatDismissOverlay,
+            {backgroundColor: colors.background.primary},
+          ]}
+          pointerEvents="auto"
+        />
+      )}
+
       <RatingModal
         visible={showRatingModal}
         onClose={handleExit}
@@ -414,6 +427,10 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+  },
+  chatDismissOverlay: {
+    zIndex: 10,
+    elevation: 10,
   },
   messagesList: {
     paddingVertical: 8,
