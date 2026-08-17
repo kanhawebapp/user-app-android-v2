@@ -20,6 +20,7 @@ import { HeaderSection } from './ChatRequestModal/components/HeaderSection';
 import { DatePickerInput } from './ChatRequestModal/components/DatePickerInput';
 import { TimePickerInput } from './ChatRequestModal/components/TimePickerInput';
 import { PlaceOfBirthInput } from './ChatRequestModal/components/PlaceOfBirthInput';
+import { OccupationInput } from './ChatRequestModal/components/OccupationInput';
 import { SkeletonLoader } from '../SkeletonLoader/ShimmerLoader';
 
 import { useAuthStore } from '../../stores/auth.store';
@@ -32,6 +33,7 @@ export interface ChatRequestData {
   dateOfBirth: string;
   placeOfBirth: string;
   birthTime: string;
+  occupation?: string;
 }
 
 export interface ChatRequestModalProps {
@@ -61,6 +63,7 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [placeOfBirth, setPlaceOfBirth] = useState('');
   const [birthTime, setBirthTime] = useState('');
+  const [occupation, setOccupation] = useState('');
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLocalLoading, setIsLocalLoading] = useState(false);
@@ -140,6 +143,7 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
     setDateOfBirth('');
     setPlaceOfBirth('');
     setBirthTime('');
+    setOccupation('');
     setErrors({});
     setShowNewForm(false);
     setLoadingIntakeId(null);
@@ -169,10 +173,14 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
       newErrors.placeOfBirth = 'Place of birth is required';
     }
 
+    if (!occupation.trim()) {
+      newErrors.occupation = 'Occupation is required';
+    }
+
     setErrors(newErrors);
 
     return Object.keys(newErrors).length === 0;
-  }, [name, gender, dateOfBirth, placeOfBirth]);
+  }, [name, gender, dateOfBirth, placeOfBirth, occupation]);
 
   useEffect(() => {
     if (queueData?.position >= 0) {
@@ -218,6 +226,8 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
     setPlaceOfBirth(prev => prev || user.birthPlace || user.placeOfBirth || '');
 
     setBirthTime(prev => prev || user.birthTime || '');
+
+    setOccupation(prev => prev || (user as any)?.occupation || '');
   }, [visible, user]);
 
   // ==========================================
@@ -266,6 +276,7 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
 
         placeOfBirth: item.birthPlace || '',
         birthTime: item.birthTime || '',
+        occupation: item.occupation || '',
       });
     },
     [onSubmit, animateCardPress],
@@ -293,6 +304,7 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
         dateOfBirth,
         placeOfBirth,
         birthTime,
+        occupation: occupation.trim(),
       });
     } finally {
       // onClose removed from here so the modal body, loader and
@@ -301,7 +313,16 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
       // API / socket / navigation pipeline has fully finished.
       requestInProgressRef.current = false;
     }
-  }, [validate, name, gender, dateOfBirth, placeOfBirth, birthTime, onSubmit]);
+  }, [
+    validate,
+    name,
+    gender,
+    dateOfBirth,
+    placeOfBirth,
+    birthTime,
+    occupation,
+    onSubmit,
+  ]);
 
   return (
     <Modal
@@ -510,6 +531,12 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
             />
 
             <TimePickerInput value={birthTime} onChangeText={setBirthTime} />
+
+            <OccupationInput
+              value={occupation}
+              onChangeText={setOccupation}
+              error={errors.occupation}
+            />
           </>
         )}
       </ScrollView>

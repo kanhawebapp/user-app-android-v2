@@ -321,7 +321,7 @@ const AstrologerListScreen: React.FC<AstrologerListScreenProps> = ({
           dateOfBirth: formData.dateOfBirth,
           placeOfBirth: formData.placeOfBirth,
           birthTime: formData.birthTime,
-          occupation: '',
+          occupation: formData.occupation || (user as any)?.occupation || '',
           consultationType: consultationType,
         });
 

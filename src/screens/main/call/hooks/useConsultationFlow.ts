@@ -60,7 +60,7 @@ export const useConsultationFlow = ({onNavigateToTab}: any = {}) => {
           dateOfBirth: formData.dateOfBirth,
           placeOfBirth: formData.placeOfBirth,
           birthTime: formData.birthTime,
-          occupation: '',
+          occupation: formData.occupation || (user as any)?.occupation || '',
           consultationType,
         });
 

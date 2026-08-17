@@ -506,6 +506,7 @@ export const sendChatRequest = async (
       dateOfBirth: input.dateOfBirth,
       placeOfBirth: input.placeOfBirth,
       birthTime: input.birthTime,
+      occupation: input.occupation,
     });
 
     setUserPayload(socketPayload);
