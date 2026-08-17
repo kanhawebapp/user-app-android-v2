@@ -12,6 +12,8 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   Image,
+  Alert,
+  BackHandler,
 } from 'react-native';
 import { useTheme } from '../../../theme';
 import { useAuthStore } from '../../../stores/auth.store';
@@ -157,6 +159,35 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   }
 }, [completeChat, handleBack]);
 
+  const confirmEndChat = useCallback(() => {
+    Alert.alert('End Chat', 'Are you sure you want to end this chat?', [
+      {text: 'Cancel', style: 'cancel'},
+      {
+        text: 'End Chat',
+        style: 'destructive',
+        onPress: handleEndChat,
+      },
+    ]);
+  }, [handleEndChat]);
+
+  useEffect(() => {
+    const onBackPress = () => {
+      if (chatStatus === 'active') {
+        confirmEndChat();
+        return true;
+      }
+
+      return false;
+    };
+
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      onBackPress,
+    );
+
+    return () => subscription.remove();
+  }, [chatStatus, confirmEndChat]);
+
   // Chat timer (provides timeLeft from store)
   const { timeLeft } = useChatTimer({
     chatStatus,
@@ -293,7 +324,7 @@ console.log('timeLeft', timeLeft);
         showProfile={false}
         onBack={handleBack}
         onToggleProfile={() => { }}
-        onEndChat={handleEndChat}
+        onEndChat={confirmEndChat}
         // onEndChat={completeChat}
         pulseAnim={pulseAnim}
         timeLeft={timeLeft}

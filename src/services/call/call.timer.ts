@@ -51,11 +51,11 @@ class CallTimerService {
 
       const remaining = initialSeconds - elapsedSeconds;
 
-      console.log('[CallTimer] ACCURATE TICK', {
-        elapsedSeconds,
-        remaining,
-        now: Date.now(),
-      });
+      // console.log('[CallTimer] ACCURATE TICK', {
+      //   elapsedSeconds,
+      //   remaining,
+      //   now: Date.now(),
+      // });
 
       if (remaining <= 0) {
         this.stopCountdown();
