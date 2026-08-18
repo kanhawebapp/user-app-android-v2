@@ -362,7 +362,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           onChangeText={handleInputChange}
           // onChangeText={onInputChange}
           multiline
-          maxLength={1000}
+          maxLength={500}
           textAlignVertical="center"
           editable={!uploading}
         />
