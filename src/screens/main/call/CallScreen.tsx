@@ -9,6 +9,7 @@ import {
   AppStateStatus,
   Platform,
   StatusBar,
+  BackHandler,
 } from 'react-native';
 import {RTCView} from 'react-native-webrtc';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -19,7 +20,7 @@ const PermissionsAndroid: typeof import('react-native').PermissionsAndroid =
     : (null as any);
 
 import {useCall} from '../../../services/call/call.hooks';
-import {useNavigation, useRoute} from '@react-navigation/native';
+import {useNavigation, useRoute, useFocusEffect} from '@react-navigation/native';
 import {useCallStore} from '../../../services/call/call.store';
 import {webRTCService} from '../../../services/call/webrtc.service';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -240,6 +241,20 @@ export const CallScreen = () => {
       });
     }
   }, [callDurationRemaining, status, participant.id, endCall]);
+
+  // Consume Android hardware back — do nothing while CallScreen is focused
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => true;
+
+      const subscription = BackHandler.addEventListener(
+        'hardwareBackPress',
+        onBackPress,
+      );
+
+      return () => subscription.remove();
+    }, []),
+  );
 
   // Navigate back when call ends or is rejected
 
