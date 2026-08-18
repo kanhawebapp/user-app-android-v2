@@ -339,11 +339,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         heightInterpolate={heightInterpolate}
       />
 
-      <UserInfoBar
+      {/* <UserInfoBar
         userData={userData}
         isExpanded={isUserInfoExpanded}
         onToggle={() => setIsUserInfoExpanded(prev => !prev)}
-      />
+      /> */}
 
       <FlatList
         ref={flatListRef}
