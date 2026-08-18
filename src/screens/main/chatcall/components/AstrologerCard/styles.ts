@@ -81,7 +81,7 @@ export const styles = StyleSheet.create({
   },
   starIcon: {
     width: 14,
-    height: 14,
+    height: 20,
     marginRight: 4,
   },
   rating: {
