@@ -173,10 +173,10 @@ export const useAuthStore = create<AuthState>()(
               isAuthenticated: true,
               isInitializing: false,
             });
-            loggingService.info('[AuthStore] Auth restored from storage', {
-              userId: user.id,
-              userName: user.name,
-            });
+            // loggingService.info('[AuthStore] Auth restored from storage', {
+            //   userId: user.id,
+            //   userName: user.name,
+            // });
           } else if (accessToken) {
             set({
               accessToken,
