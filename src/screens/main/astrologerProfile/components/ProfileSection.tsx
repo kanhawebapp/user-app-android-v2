@@ -38,7 +38,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             },
           ]}>
           <Image
-            source={imageUrl ? { uri: imageUrl } : images.mam}
+            source={imageUrl ? { uri: imageUrl } : images.astro}
             style={styles.avatarImage}
             resizeMode="cover"
           />
