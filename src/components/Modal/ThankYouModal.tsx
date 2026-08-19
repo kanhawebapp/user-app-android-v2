@@ -75,7 +75,7 @@ export const ThankYouModal: React.FC<ThankYouModalProps> = ({
           </Text>
 
           {/* WALLET CARD */}
-          <View
+          {/* <View
             style={[
               styles.walletCard,
               {backgroundColor: colors.background.secondary},
@@ -90,7 +90,7 @@ export const ThankYouModal: React.FC<ThankYouModalProps> = ({
               style={{color: colors.primary.main}}>
               ₹{balanceCoins.toFixed(2)}
             </Text>
-          </View>
+          </View> */}
 
           {/* QUESTION */}
           <Text
