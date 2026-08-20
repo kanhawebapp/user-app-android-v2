@@ -196,7 +196,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
             </Text>
           </View>
 
-          <View style={styles.statDivider} />
+          {/* <View style={styles.statDivider} />
 
           <View style={styles.statBox}>
             <Icon name="star" size={16} color={colors.primary.main} />
@@ -211,7 +211,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
               style={{ color: colors.text.primary, marginTop: 2 }}>
               {session.coinsEarned || 0}
             </Text>
-          </View>
+          </View> */}
         </View>
 
         {/* <View style={styles.cardFooter}>
