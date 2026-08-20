@@ -481,6 +481,7 @@ class SocketService {
         this.connected = true;
         this.connecting = false;
         this.registerGlobalListeners(socket);
+        useChatStore.getState().flushPendingChatCompletion();
         if (this.connectCallback) {
           this.connectCallback(socket);
         }

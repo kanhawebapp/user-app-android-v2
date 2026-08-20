@@ -75,6 +75,15 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   const setTimeLeft = useChatStore(state => state.setTimeLeft);
   const userPayload = useChatStore(state => state.userPayload);
   const isChatTimerStarted = useChatStore(state => state.isChatTimerStarted);
+  const hasSeededChatCountdown = useChatStore(
+    state => state.hasSeededChatCountdown,
+  );
+  const markTimerExpirationHandled = useChatStore(
+    state => state.markTimerExpirationHandled,
+  );
+  const setPendingAutoDisconnect = useChatStore(
+    state => state.setPendingAutoDisconnect,
+  );
 
   const roomId = storeRoomId || '';
   const astrologerName =
@@ -235,37 +244,47 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     },
   });
 
-  // Trigger AUTO_DISCONNECT when the chat time duration/timer expires
-  // Reuses the existing completeChat() + RatingModal flow (same as manual end chat)
-  const prevTimeLeftRef = useRef(timeLeft);
+  // Trigger AUTO_DISCONNECT when the chat time duration/timer expires.
+  // Expiration is based on wall-clock remaining time (timeLeft === 0 after
+  // syncing from chatTimerEndsAt), not on socket connectivity.
   useEffect(() => {
-    const prevTimeLeft = prevTimeLeftRef.current;
-    prevTimeLeftRef.current = timeLeft;
-
     if (
-      timeLeft === 0 &&
-      prevTimeLeft > 0 &&
-      isChatTimerStarted &&
-      chatStatus === 'active'
+      timeLeft !== 0 ||
+      !hasSeededChatCountdown ||
+      !isChatTimerStarted ||
+      chatStatus !== 'active'
     ) {
-      const emitted = socketService.emit(SOCKET_EVENTS.AUTO_DISCONNECT, {
-        room_id: roomId,
-        astroid: userPayload?.astro_id,
-        type: 'chat',
-      });
-      console.log(
-        '[ChatScreen] Chat timer expired, AUTO_DISCONNECT emitted:',
-        emitted,
-      );
-
-      handleEndChat();
+      return;
     }
+
+    if (!markTimerExpirationHandled()) {
+      return;
+    }
+
+    const emitted = socketService.emit(SOCKET_EVENTS.AUTO_DISCONNECT, {
+      room_id: roomId,
+      astroid: userPayload?.astro_id,
+      type: 'chat',
+    });
+    console.log(
+      '[ChatScreen] Chat timer expired, AUTO_DISCONNECT emitted:',
+      emitted,
+    );
+
+    if (!emitted) {
+      setPendingAutoDisconnect(true);
+    }
+
+    handleEndChat();
   }, [
     timeLeft,
+    hasSeededChatCountdown,
     isChatTimerStarted,
     chatStatus,
     roomId,
     userPayload,
+    markTimerExpirationHandled,
+    setPendingAutoDisconnect,
     handleEndChat,
   ]);
 

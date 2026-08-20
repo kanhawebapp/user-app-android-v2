@@ -385,6 +385,11 @@ export const useChatActions = () => {
       return false;
     }
 
+    if (!store.beginChatCompletion()) {
+      store.flushPendingChatCompletion();
+      return true;
+    }
+
     console.log('[ChatActions] Completing chat:', {
       room_id: currentRoomId,
       astroId,
@@ -408,7 +413,11 @@ export const useChatActions = () => {
       room_id: currentRoomId,
     });
 
-    return completed;
+    if (!completed) {
+      store.setPendingChatCompleted(true);
+    }
+
+    return true;
   }, []);
 
   return {

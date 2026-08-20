@@ -13,18 +13,28 @@ export const useChatTimer = ({chatStatus, chatDuration}: UseChatTimerProps) => {
   const setIsChatTimerStarted = useChatStore(
     state => state.setIsChatTimerStarted,
   );
+  const setHasSeededChatCountdown = useChatStore(
+    state => state.setHasSeededChatCountdown,
+  );
   const startChatTimer = useChatStore(state => state.startChatTimer);
   const stopChatTimer = useChatStore(state => state.stopChatTimer);
   const syncChatTimerFromWallClock = useChatStore(
     state => state.syncChatTimerFromWallClock,
   );
 
-  // Start timer when chat becomes active, stop on cleanup
+  // Start timer when chat becomes active, stop on cleanup.
+  // Do not re-seed the end timestamp on remount/foreground — that would
+  // restart the countdown from the full duration.
   useEffect(() => {
     if (chatStatus === 'active') {
-      setTimeLeft(chatDuration);
-      setIsChatTimerStarted(true);
+      const {hasSeededChatCountdown} = useChatStore.getState();
+      if (!hasSeededChatCountdown) {
+        setTimeLeft(chatDuration);
+        setHasSeededChatCountdown(true);
+        setIsChatTimerStarted(true);
+      }
       startChatTimer();
+      useChatStore.getState().syncChatTimerFromWallClock();
     }
 
     return () => {
@@ -34,6 +44,7 @@ export const useChatTimer = ({chatStatus, chatDuration}: UseChatTimerProps) => {
     chatStatus,
     chatDuration,
     setTimeLeft,
+    setHasSeededChatCountdown,
     setIsChatTimerStarted,
     startChatTimer,
     stopChatTimer,
@@ -43,6 +54,7 @@ export const useChatTimer = ({chatStatus, chatDuration}: UseChatTimerProps) => {
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
       if (nextAppState === 'active') {
         syncChatTimerFromWallClock();
+        useChatStore.getState().flushPendingChatCompletion();
       }
     };
 

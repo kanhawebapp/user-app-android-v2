@@ -58,6 +58,11 @@ interface ChatState {
   chatTimerRef: NodeJS.Timeout | null;
   chatTimerEndsAt: number | null;
   isChatTimerStarted: boolean;
+  hasSeededChatCountdown: boolean;
+  hasHandledTimerExpiration: boolean;
+  hasCompletedChat: boolean;
+  pendingAutoDisconnect: boolean;
+  pendingChatCompleted: boolean;
   queueTimeLeft: number;
   queueTimerRef: NodeJS.Timeout | null;
   pendingCallRequest: {
@@ -102,6 +107,12 @@ interface ChatState {
   stopChatTimer: () => void;
   syncChatTimerFromWallClock: () => void;
   setIsChatTimerStarted: (value: boolean) => void;
+  setHasSeededChatCountdown: (value: boolean) => void;
+  markTimerExpirationHandled: () => boolean;
+  beginChatCompletion: () => boolean;
+  setPendingAutoDisconnect: (value: boolean) => void;
+  setPendingChatCompleted: (value: boolean) => void;
+  flushPendingChatCompletion: () => void;
   setPendingCallRequest: (callRequest: ChatState['pendingCallRequest']) => void;
   cancelPendingCallQueue: () => void;
   reset: () => void;
@@ -128,6 +139,11 @@ const initialState = {
   chatTimerRef: null,
   chatTimerEndsAt: null,
   isChatTimerStarted: false,
+  hasSeededChatCountdown: false,
+  hasHandledTimerExpiration: false,
+  hasCompletedChat: false,
+  pendingAutoDisconnect: false,
+  pendingChatCompleted: false,
   queueTimeLeft: 0,
   queueTimerRef: null,
   pendingCallRequest: null,
@@ -164,7 +180,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   setTypingStatus: typingStatus => set({typingStatus}),
 
-  setChatStatus: chatStatus => set({chatStatus}),
+  setChatStatus: chatStatus => {
+    if (chatStatus === 'waiting' || chatStatus === 'idle') {
+      set({
+        chatStatus,
+        hasSeededChatCountdown: false,
+        hasHandledTimerExpiration: false,
+        hasCompletedChat: false,
+        pendingAutoDisconnect: false,
+        pendingChatCompleted: false,
+      });
+      return;
+    }
+    set({chatStatus});
+  },
 
   setTimer: timer => set({timer}),
 
@@ -269,17 +298,90 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   setIsChatTimerStarted: isChatTimerStarted => set({isChatTimerStarted}),
 
+  setHasSeededChatCountdown: hasSeededChatCountdown =>
+    set({hasSeededChatCountdown}),
+
+  markTimerExpirationHandled: () => {
+    if (get().hasHandledTimerExpiration) {
+      return false;
+    }
+    set({hasHandledTimerExpiration: true});
+    return true;
+  },
+
+  beginChatCompletion: () => {
+    if (get().hasCompletedChat) {
+      return false;
+    }
+    set({hasCompletedChat: true});
+    return true;
+  },
+
+  setPendingAutoDisconnect: pendingAutoDisconnect =>
+    set({pendingAutoDisconnect}),
+
+  setPendingChatCompleted: pendingChatCompleted => set({pendingChatCompleted}),
+
+  flushPendingChatCompletion: () => {
+    const {
+      pendingAutoDisconnect,
+      pendingChatCompleted,
+      roomId,
+      userPayload,
+      chatRoom,
+      queueData,
+    } = get();
+
+    if (!pendingAutoDisconnect && !pendingChatCompleted) {
+      return;
+    }
+
+    if (pendingAutoDisconnect) {
+      const emitted = socketService.emit(SOCKET_EVENTS.AUTO_DISCONNECT, {
+        room_id: roomId,
+        astroid: userPayload?.astro_id,
+        type: 'chat',
+      });
+      if (emitted) {
+        set({pendingAutoDisconnect: false});
+      }
+    }
+
+    if (get().pendingChatCompleted) {
+      const astroId =
+        queueData?.astrologerId ||
+        chatRoom?.astrologerId ||
+        userPayload?.astro_id;
+      const userId = userPayload?.user_id || userPayload?.id;
+      const emitted = socketService.emit(SOCKET_EVENTS.CHAT_COMPLETED, {
+        room_id: roomId,
+        astroId,
+        userId,
+      });
+      socketService.emit(SOCKET_EVENTS.LEAVE_CHAT, {
+        room_id: roomId,
+      });
+      if (emitted) {
+        set({pendingChatCompleted: false});
+      }
+    }
+  },
+
   syncChatTimerFromWallClock: () => {
-    const {chatTimerEndsAt, chatTimerRef} = get();
-    if (!chatTimerEndsAt || !chatTimerRef) {
+    const {chatTimerEndsAt, chatTimerRef, hasSeededChatCountdown} = get();
+    if (!chatTimerEndsAt || !hasSeededChatCountdown) {
       return;
     }
 
     const remainingSeconds = getRemainingChatSeconds(chatTimerEndsAt);
 
     if (remainingSeconds <= 0) {
-      clearInterval(chatTimerRef);
-      set({timeLeft: 0, chatTimerRef: null});
+      if (chatTimerRef) {
+        clearInterval(chatTimerRef);
+      }
+      if (get().timeLeft !== 0 || chatTimerRef) {
+        set({timeLeft: 0, chatTimerRef: null});
+      }
       return;
     }
 
