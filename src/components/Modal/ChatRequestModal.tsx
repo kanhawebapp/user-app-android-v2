@@ -331,6 +331,7 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
       showBackdrop={true}
       dismissOnBackdropPress={!isIntakeLoading}
       showCloseButton={false}
+      avoidKeyboard
       contentStyle={styles.modalContent}>
       <HeaderSection
         astrologer={astrologer}
@@ -341,7 +342,8 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled">
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets>
         <Text style={[styles.subtitle, { color: colors.text.secondary }]}>
           {type === 'call'
             ? 'Please provide your birth details to start the call consultation'

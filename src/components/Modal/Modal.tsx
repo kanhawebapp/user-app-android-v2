@@ -11,6 +11,8 @@ import {
   StyleSheet,
   TouchableWithoutFeedback,
   Animated,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import {useTheme, typography} from '../../theme';
 import {Text} from '../Text';
@@ -25,6 +27,7 @@ export const Modal: React.FC<ModalProps> = ({
   animationType = 'fade',
   showBackdrop = true,
   dismissOnBackdropPress = true,
+  avoidKeyboard = false,
   style,
   contentStyle,
   showCloseButton = false,
@@ -105,6 +108,15 @@ export const Modal: React.FC<ModalProps> = ({
     opacity: opacityAnim,
   };
 
+  const Container = avoidKeyboard ? KeyboardAvoidingView : View;
+  const containerProps = avoidKeyboard
+    ? {
+        style: styles.container,
+        behavior:
+          Platform.OS === 'ios' ? ('padding' as const) : ('height' as const),
+      }
+    : {style: styles.container};
+
   return (
     <RNModal
       testID={testID}
@@ -116,7 +128,7 @@ export const Modal: React.FC<ModalProps> = ({
       accessibilityViewIsModal
       accessibilityLabel={accessibilityLabel || title || 'Modal'}
       {...props}>
-      <View style={styles.container} testID="modal-wrapper">
+      <Container {...containerProps} testID="modal-wrapper">
         {/* Backdrop */}
         {showBackdrop && (
           <TouchableWithoutFeedback
@@ -179,7 +191,7 @@ export const Modal: React.FC<ModalProps> = ({
             </View>
           </View>
         </Animated.View>
-      </View>
+      </Container>
     </RNModal>
   );
 };

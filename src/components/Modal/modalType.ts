@@ -7,6 +7,8 @@ export interface ModalProps extends Omit<any, 'animationType' | 'transparent'> {
   animationType?: 'fade' | 'slide' | 'none';
   showBackdrop?: boolean;
   dismissOnBackdropPress?: boolean;
+  /** Lift bottom-sheet content above the keyboard when an input is focused. */
+  avoidKeyboard?: boolean;
   style?: ViewStyle;
   contentStyle?: ViewStyle;
   showCloseButton?: boolean;
