@@ -20,7 +20,7 @@ interface SendGiftScreenProps {
   gifts: Gift[];
   astrologerName?: string;
   astrologerProfilePic?: string;
-  onSendGift: (gift: Gift, message: string) => void;
+  onSendGift: (gift: Gift, message: string) => void | Promise<void>;
   onGoBack: () => void;
   loading?: boolean;
 }
@@ -37,7 +37,8 @@ export const SendGiftScreen: React.FC<SendGiftScreenProps> = ({
   const colors = theme.colors;
 
   // Wallet
-  const { wallet, loading: walletBalanceLoading } = useWallet();
+  const { wallet, loading: walletBalanceLoading, refresh: refreshWallet } =
+    useWallet();
   const balanceCoins = wallet?.balanceCoins ?? 0;
   const [activeTab, setActiveTab] = React.useState<'gift' | 'history'>('gift');
   // Recharge packs
@@ -48,6 +49,7 @@ export const SendGiftScreen: React.FC<SendGiftScreenProps> = ({
   const {
     data: giftHistory,
     loading: getGiftHistoryLoading,
+    refresh: refreshGiftHistory,
   } = useGiftHistory();
 
   // Local state for gift selection
@@ -59,13 +61,28 @@ export const SendGiftScreen: React.FC<SendGiftScreenProps> = ({
   const { createOrder, loading: orderLoading } = useRechargeOrder();
 
   // Handle send gift
-  const handleSendGift = useCallback(() => {
-    if (selectedGift) {
-      onSendGift(selectedGift, message);
+  const handleSendGift = useCallback(async () => {
+    if (!selectedGift) {
+      return;
+    }
+
+    try {
+      await onSendGift(selectedGift, message);
       setSelectedGift(null);
       setMessage('');
+      // Re-fetch in case mutation omitted userBalance; shared cache already
+      // updated from applyWalletBalanceCoins in the send handler.
+      await Promise.all([refreshWallet(), refreshGiftHistory()]);
+    } catch (error) {
+      console.log('SEND GIFT SCREEN ERROR:', error);
     }
-  }, [selectedGift, message, onSendGift]);
+  }, [
+    selectedGift,
+    message,
+    onSendGift,
+    refreshWallet,
+    refreshGiftHistory,
+  ]);
 
   // Handle pack selection
   const handlePackSelect = useCallback((pack: RechargePack) => {

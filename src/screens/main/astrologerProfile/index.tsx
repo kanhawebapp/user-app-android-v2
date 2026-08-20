@@ -34,6 +34,8 @@ import { useFollowersCount } from '../../../services/api/followersCount/follower
 import { API_BASE_URL } from '../../../constants/api.constants';
 import { getAstrologerStatus } from '../chat/utils/astrologerStatus';
 import { useToast } from '../../../context/ToastContext';
+import { applyWalletBalanceCoins } from '../../../services/api/wallet/wallet.hooks';
+import { useAuthStore } from '../../../stores/auth.store';
 
 const AstrologerProfileScreen: React.FC<AstrologerProfileScreenProps> = ({
   astrologer,
@@ -170,12 +172,12 @@ const AstrologerProfileScreen: React.FC<AstrologerProfileScreenProps> = ({
     async (gift: Gift, message: string): Promise<void> => {
       if (!data?.id) {
         showError('Astrologer not found');
-        return;
+        throw new Error('Astrologer not found');
       }
 
       if (!profile?.id) {
         showError('User not found');
-        return;
+        throw new Error('User not found');
       }
 
       showInfo(`Sending ${gift.name}...`);
@@ -193,9 +195,18 @@ const AstrologerProfileScreen: React.FC<AstrologerProfileScreenProps> = ({
 
       console.log('Gift Response:', response);
 
-      showSuccess(
-        `${gift.name} sent successfully 🎁`,
-      );
+      if (!response?.success) {
+        showError(response?.message || 'Failed to send gift');
+        throw new Error(response?.message || 'Failed to send gift');
+      }
+
+      // Keep wallet UI + auth store in sync with mutation response
+      if (typeof response.userBalance === 'number') {
+        applyWalletBalanceCoins(response.userBalance);
+        useAuthStore.getState().updateWalletBalance(response.userBalance);
+      }
+
+      showSuccess(`${gift.name} sent successfully 🎁`);
     },
     [
       data?.id,

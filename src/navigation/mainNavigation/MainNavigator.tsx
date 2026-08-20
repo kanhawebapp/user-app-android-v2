@@ -121,7 +121,7 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
     gifts: Gift[];
     astrologerName?: string;
     astrologerProfilePic?: string;
-    onSendGift: (gift: Gift, message: string) => void;
+    onSendGift: (gift: Gift, message: string) => void | Promise<void>;
     loading?: boolean;
   } | null>(null);
 
@@ -250,7 +250,7 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
     gifts: Gift[];
     astrologerName?: string;
     astrologerProfilePic?: string;
-    onSendGift: (gift: Gift, message: string) => void;
+    onSendGift: (gift: Gift, message: string) => void | Promise<void>;
     loading?: boolean;
   }) => {
     // navigation-only fix: ensure profile screen is fully unmounted
