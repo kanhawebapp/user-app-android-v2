@@ -5,7 +5,7 @@ import { Icon } from '../../../Icon';
 import type { Astrologer } from '../types';
 import { DEFAULTS, ICONS } from '../../../../constants/app.constants';
 import { API_BASE_URL } from '../../../../constants/api.constants';
-import { getAstrologerPrice } from '../../../../screens/main/astrologerProfile/utils/astrologerPricing';
+import { getAstrologerPrice, isFreeCurrentPrice } from '../../../../screens/main/astrologerProfile/utils/astrologerPricing';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 
 interface HeaderSectionProps {
@@ -71,8 +71,14 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
             </Text>
             <Text style={[styles.priceText, { color: colors.secondary.main }]}>
               {/* ₹{astrologer?.price || 0}/min */}
-              {DEFAULTS.CURRENCY}
-              {currentPrice}/min
+              {isFreeCurrentPrice(currentPrice) ? (
+                'Free'
+              ) : (
+                <>
+                  {DEFAULTS.CURRENCY}
+                  {currentPrice}/min
+                </>
+              )}
             </Text>
           </View>
         </View>

@@ -26,7 +26,7 @@ import { SessionPricingCard } from './components/SessionPricingCard';
 import { useConsultationFlow } from '../call/hooks/useConsultationFlow';
 import { ChatRequestModal } from '../../../components/Modal';
 import { DEFAULTS } from '../../../constants/app.constants';
-import { getAstrologerPrice } from './utils/astrologerPricing';
+import { getAstrologerPrice, isFreeCurrentPrice } from './utils/astrologerPricing';
 import { useSendGift } from '../../../services/api/sendGift/useSendGift';
 import { useProfile } from '../../../services/api/profile/profile.hooks';
 import { useFollowAstrologer } from '../../../services/api/followAstrologer/useFollowAstrologer';
@@ -58,7 +58,7 @@ const AstrologerProfileScreen: React.FC<AstrologerProfileScreenProps> = ({
 
   const { showSuccess, showError, showInfo } = useToast();
 
-console.log('ASTROLOGER DATA =>>>', data);
+// console.log('ASTROLOGER DATA =>>>', data);
 
   const astrologerData = useMemo(() => {
     if (!data) {
@@ -358,8 +358,14 @@ console.log('ASTROLOGER DATA =>>>', data);
             />
             <Text style={styles.actionButtonText}>
               {/* Call {Currency}{callPricing?.offerPrice || callPricing?.price}/m */}
-              Call {Currency}
-              {callPriceData.currentPrice}/m
+              {isFreeCurrentPrice(callPriceData.currentPrice) ? (
+                'Call Free'
+              ) : (
+                <>
+                  Call {Currency}
+                  {callPriceData.currentPrice}/m
+                </>
+              )}
             </Text>
           </TouchableOpacity>
         )}
@@ -382,8 +388,14 @@ console.log('ASTROLOGER DATA =>>>', data);
             />
             <Text style={styles.actionButtonText}>
               {/* Chat {Currency}{chatPricing?.offerPrice || chatPricing?.price}/m */}
-              Chat {Currency}
-              {chatPriceData.currentPrice}/m
+              {isFreeCurrentPrice(chatPriceData.currentPrice) ? (
+                'Chat Free'
+              ) : (
+                <>
+                  Chat {Currency}
+                  {chatPriceData.currentPrice}/m
+                </>
+              )}
             </Text>
           </TouchableOpacity>
         )}

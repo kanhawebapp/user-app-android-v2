@@ -3,7 +3,7 @@ import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { AstrologerPricing } from '../../../../services/api/astrologerProfile/astrologer-details.types';
 import { colors, useTheme } from '../../../../theme';
 import { Icon, Text } from '../../../../components';
-import { getAstrologerPrice } from '../utils/astrologerPricing';
+import { getAstrologerPrice, isFreeCurrentPrice } from '../utils/astrologerPricing';
 
 type SessionPricingCardProps = {
   pricing: AstrologerPricing;
@@ -100,7 +100,14 @@ export const SessionPricingCard: React.FC<SessionPricingCardProps> = ({
             </Text>
           )}
           <Text style={[styles.price, { color: config.color }]}>
-            {Currency} {currentPrice} /m
+            {(pricing.type === 'CHAT' || pricing.type === 'CALL') &&
+            isFreeCurrentPrice(currentPrice) ? (
+              'Free'
+            ) : (
+              <>
+                {Currency} {currentPrice} /m
+              </>
+            )}
           </Text>
 
 

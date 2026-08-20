@@ -28,3 +28,6 @@ export const getAstrologerPrice = (
       oldPrice && oldPrice !== currentPrice ? oldPrice : undefined,
   };
 };
+
+export const isFreeCurrentPrice = (price: unknown): boolean =>
+  Number(price) === 0;

@@ -11,7 +11,7 @@ import {
 import { Card, Icon } from '../../../../../components';
 import images from '../../../../../assets/images';
 import { API_BASE_URL } from '../../../../../constants/api.constants';
-import { getAstrologerPrice } from '../../../astrologerProfile/utils/astrologerPricing';
+import { getAstrologerPrice, isFreeCurrentPrice } from '../../../astrologerProfile/utils/astrologerPricing';
 import { getAstrologerStatus } from '../../../chat/utils/astrologerStatus';
 import AstrologerStatusBadge from '../../../chat/utils/AstrologerStatusBadge';
 
@@ -182,9 +182,15 @@ export const AstrologerCard: React.FC<AstrologerCardProps> = ({
                 Chat:
               </Text>
               <Text style={[styles.priceValue, { color: colors.primary.main }]}>
-                {DEFAULTS.CURRENCY}
-                {chatRate}
-                {CHAT_CALL_LABELS.CARD_PER_MINUTE}
+                {isFreeCurrentPrice(chatRate) ? (
+                  'Free'
+                ) : (
+                  <>
+                    {DEFAULTS.CURRENCY}
+                    {chatRate}
+                    {CHAT_CALL_LABELS.CARD_PER_MINUTE}
+                  </>
+                )}
               </Text>
             </View>
             <View style={styles.priceItem}>
@@ -192,9 +198,15 @@ export const AstrologerCard: React.FC<AstrologerCardProps> = ({
                 Call:
               </Text>
               <Text style={[styles.priceValue, { color: colors.primary.main }]}>
-                {DEFAULTS.CURRENCY}
-                {callRate}
-                {CHAT_CALL_LABELS.CARD_PER_MINUTE}
+                {isFreeCurrentPrice(callRate) ? (
+                  'Free'
+                ) : (
+                  <>
+                    {DEFAULTS.CURRENCY}
+                    {callRate}
+                    {CHAT_CALL_LABELS.CARD_PER_MINUTE}
+                  </>
+                )}
               </Text>
             </View>
           </View>

@@ -4,7 +4,7 @@ import { Icon } from '../../../components';
 import images from '../../../assets/images';
 import { colors } from '../../../theme';
 import { API_BASE_URL } from '../../../constants/api.constants';
-import { getAstrologerPrice } from '../astrologerProfile/utils/astrologerPricing';
+import { getAstrologerPrice, isFreeCurrentPrice } from '../astrologerProfile/utils/astrologerPricing';
 import { getAstrologerStatus } from '../chat/utils/astrologerStatus';
 
 interface PricingItem {
@@ -163,9 +163,15 @@ const AstrologerCard: React.FC<AstrologerCardProps> = ({
               <Text style={styles.oldPrice}>₹{oldChatPrice}</Text>
             )}
 
-            <Text style={styles.price}>₹{chatPrice}</Text>
+            {isFreeCurrentPrice(chatPrice) ? (
+              <Text style={styles.price}>Free</Text>
+            ) : (
+              <>
+                <Text style={styles.price}>₹{chatPrice}</Text>
 
-            <Text style={styles.perMin}>/min</Text>
+                <Text style={styles.perMin}>/min</Text>
+              </>
+            )}
           </View>
         </View>
 
@@ -181,9 +187,15 @@ const AstrologerCard: React.FC<AstrologerCardProps> = ({
               <Text style={styles.oldPrice}>₹{oldCallPrice}</Text>
             )}
 
-            <Text style={styles.price}>₹{callPrice}</Text>
+            {isFreeCurrentPrice(callPrice) ? (
+              <Text style={styles.price}>Free</Text>
+            ) : (
+              <>
+                <Text style={styles.price}>₹{callPrice}</Text>
 
-            <Text style={styles.perMin}>/min</Text>
+                <Text style={styles.perMin}>/min</Text>
+              </>
+            )}
           </View>
         </View>
       </View>
