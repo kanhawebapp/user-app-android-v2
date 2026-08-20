@@ -21,6 +21,7 @@ import { Header } from './components/Header';
 import { ProfileSection } from './components/ProfileSection';
 import { SkillsSection } from './components/SkillsSection';
 import { LanguagesSection } from './components/LanguagesSection';
+import { ReviewsSection } from './components/ReviewsSection';
 import { SessionPricingCard } from './components/SessionPricingCard';
 import { useConsultationFlow } from '../call/hooks/useConsultationFlow';
 import { ChatRequestModal } from '../../../components/Modal';
@@ -57,6 +58,7 @@ const AstrologerProfileScreen: React.FC<AstrologerProfileScreenProps> = ({
 
   const { showSuccess, showError, showInfo } = useToast();
 
+console.log('ASTROLOGER DATA =>>>', data);
 
   const astrologerData = useMemo(() => {
     if (!data) {
@@ -68,7 +70,6 @@ const AstrologerProfileScreen: React.FC<AstrologerProfileScreenProps> = ({
       displayName: (data as any).displayName || astrologer?.displayName,
     };
   }, [data, astrologer]);
-
   const { submitConsultationRequest, loading: consultationLoading } =
     useConsultationFlow();
 
@@ -319,6 +320,8 @@ const AstrologerProfileScreen: React.FC<AstrologerProfileScreenProps> = ({
             />
           </View>
         </View>
+
+        <ReviewsSection reviews={astrologerData?.reviews} />
 
         {/* <View style={{ height: 120 }} /> */}
       </ScrollView>

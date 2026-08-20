@@ -22,7 +22,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
 }) => {
   const theme = useTheme();
   const colors = theme.colors;
-  // console.log("statuususus",astrologerData)
+  const reviewCount = astrologerData.reviews?.length ?? 0;
 
 
   return (
@@ -83,7 +83,9 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
         <Text style={[styles.ratingText, { color: colors.text.primary }]}>
           {Number(astrologerData.rating || 0).toFixed(1)}
         </Text>
-
+        <Text style={[styles.reviewText, { color: colors.text.secondary }]}>
+          ({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})
+        </Text>
       </View>
       <Text style={[styles.reviewText, { color: colors.text.secondary }]}>Total folowers:- {followersCount}</Text>
 

@@ -11,6 +11,15 @@ export interface AstrologerPricing {
   isActive: boolean;
 }
 
+export interface AstrologerReview {
+  id: string;
+  rating: number;
+  comment: string;
+  reply?: string | null;
+  userName: string;
+  createdAt: string;
+}
+
 export interface AstrologerDetails {
   id: string;
 
@@ -35,6 +44,8 @@ export interface AstrologerDetails {
   vtags?: string;
 
   pricing: AstrologerPricing[];
+
+  reviews?: AstrologerReview[];
 }
 
 export interface GetAstrologerByIdResponse {

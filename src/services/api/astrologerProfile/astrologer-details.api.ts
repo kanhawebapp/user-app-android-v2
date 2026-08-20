@@ -11,41 +11,48 @@ import { GetAstrologerByIdResponse } from './astrologer-details.types';
 const GET_ASTROLOGER_BY_ID = `
 query GetAstrologerById($id: String!) {
   getAstrologerById(id: $id) {
-
     id
-
     name
-
+    displayName
     profilePic
-
     experience
-
     rating
-
     about
-
     tags
-
     vtags
- 
     skills
-
     languages
+    problems
+
     isBusy
     isOnline
     isChatActive
     isCallActive
     isLiveActive
+
+    activeOffer {
+      id
+      offerName
+      price
+      description
+    }
+
     pricing {
       type
-
       price
-
+      originalPrice
       offerPrice
-
       commissionPercent
-
       isActive
+    }
+
+    reviews {
+      id
+      rating
+      comment
+      reply
+      userName
+      createdAt
     }
   }
 }
