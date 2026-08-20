@@ -116,6 +116,11 @@ export const SessionCard: React.FC<SessionCardProps> = ({
                 style={{ color: colors.text.primary }}>
                 {session.displayName || session.astrologerName || 'Astrologer'}
               </Text>
+              <Text
+                variant="captionSmall"
+                style={{ color: colors.text.secondary, marginTop: 2 }}>
+                Session ID: {session.id?.slice(0, 8) || 'N/A'}
+              </Text>
               {/* <Text
                 variant="captionSmall"
                 style={{ color: colors.text.secondary, marginTop: 2 }}>

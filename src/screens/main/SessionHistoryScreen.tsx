@@ -228,7 +228,7 @@ const SessionHistoryScreen = ({ onNavigateBack }: any) => {
 
   const { data, loading, applyStatusFilter, loadMore, refresh } =
     useUserSessions();
-// console.log("data>>>>>",data)
+console.log("data>>>>>",data)
   const [activeTab, setActiveTab] = useState<SessionStatus | 'all'>('all');
   const [refreshing, setRefreshing] = useState(false);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
