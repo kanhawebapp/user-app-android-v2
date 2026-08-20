@@ -37,11 +37,13 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
               elevation: 8,
             },
           ]}>
-          <Image
-            source={imageUrl ? { uri: imageUrl } : images.astro}
-            style={styles.avatarImage}
-            resizeMode="cover"
-          />
+          {imageUrl && (
+            <Image
+              source={{ uri: imageUrl }}
+              style={styles.avatarImage}
+              resizeMode="cover"
+            />
+          )}
         </View>
 
         <View
