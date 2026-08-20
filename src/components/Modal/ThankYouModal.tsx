@@ -109,12 +109,12 @@ export const ThankYouModal: React.FC<ThankYouModalProps> = ({
               style={{flex: 1}}
             /> */}
 
-            <Button
+            {/* <Button
               title="Chat Again"
               variant="outline"
               onPress={handleChatAgain}
               style={{flex: 1}}
-            />
+            /> */}
           </View>
 
           {/* EXIT */}
