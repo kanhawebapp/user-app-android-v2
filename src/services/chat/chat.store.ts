@@ -8,6 +8,13 @@ import type {
 import { socketService } from '../socket/socket.service';
 import { SOCKET_EVENTS } from '../socket/socket.events';
 
+const getRemainingChatSeconds = (endsAt: number | null): number => {
+  if (!endsAt) {
+    return 0;
+  }
+  return Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+};
+
 // Minimal astrologer info for chat flow
 export interface AstrologerInfo {
   id: string;
@@ -49,6 +56,7 @@ interface ChatState {
   selectedAstrologer: AstrologerInfo | null;
   chatDuration: number;
   chatTimerRef: NodeJS.Timeout | null;
+  chatTimerEndsAt: number | null;
   isChatTimerStarted: boolean;
   queueTimeLeft: number;
   queueTimerRef: NodeJS.Timeout | null;
@@ -92,6 +100,7 @@ interface ChatState {
   setTimeLeft: (time: number) => void;
   startChatTimer: () => void;
   stopChatTimer: () => void;
+  syncChatTimerFromWallClock: () => void;
   setIsChatTimerStarted: (value: boolean) => void;
   setPendingCallRequest: (callRequest: ChatState['pendingCallRequest']) => void;
   cancelPendingCallQueue: () => void;
@@ -117,6 +126,7 @@ const initialState = {
   selectedAstrologer: null,
   chatDuration: 0,
   chatTimerRef: null,
+  chatTimerEndsAt: null,
   isChatTimerStarted: false,
   queueTimeLeft: 0,
   queueTimerRef: null,
@@ -248,29 +258,52 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   setChatDuration: duration => set({chatDuration: duration}),
 
-  setTimeLeft: time => set({timeLeft: time}),
+  setTimeLeft: time => {
+    const nextTime = Math.max(0, time);
+    set({
+      timeLeft: nextTime,
+      chatTimerEndsAt:
+        nextTime > 0 ? Date.now() + nextTime * 1000 : null,
+    });
+  },
 
   setIsChatTimerStarted: isChatTimerStarted => set({isChatTimerStarted}),
 
+  syncChatTimerFromWallClock: () => {
+    const {chatTimerEndsAt, chatTimerRef} = get();
+    if (!chatTimerEndsAt || !chatTimerRef) {
+      return;
+    }
+
+    const remainingSeconds = getRemainingChatSeconds(chatTimerEndsAt);
+
+    if (remainingSeconds <= 0) {
+      clearInterval(chatTimerRef);
+      set({timeLeft: 0, chatTimerRef: null});
+      return;
+    }
+
+    if (get().timeLeft !== remainingSeconds) {
+      set({timeLeft: remainingSeconds});
+    }
+  },
+
   startChatTimer: () => {
-    const {chatTimerRef} = get();
+    const {chatTimerRef, chatTimerEndsAt, timeLeft} = get();
     if (chatTimerRef) {
       return;
     }
 
+    const endsAt =
+      chatTimerEndsAt ?? Date.now() + Math.max(0, timeLeft) * 1000;
+
     console.log('[ChatTimer] Starting chat countdown timer');
 
     const interval = setInterval(() => {
-      set(state => {
-        if (state.timeLeft <= 1) {
-          clearInterval(interval);
-          return {timeLeft: 0, chatTimerRef: null};
-        }
-        return {timeLeft: state.timeLeft - 1};
-      });
+      get().syncChatTimerFromWallClock();
     }, 1000);
 
-    set({chatTimerRef: interval});
+    set({chatTimerRef: interval, chatTimerEndsAt: endsAt});
   },
 
   stopChatTimer: () => {
@@ -290,7 +323,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
       queueData: null,
     }),
 
-  reset: () => set(initialState),
+  reset: () => {
+    get().stopChatTimer();
+    set(initialState);
+  },
 }));
 
 export const selectMessages = (state: ChatState) => state.messages;

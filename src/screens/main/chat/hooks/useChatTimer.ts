@@ -1,4 +1,5 @@
 import {useEffect} from 'react';
+import {AppState, AppStateStatus} from 'react-native';
 import {useChatStore} from '../../../../services/chat/chat.store';
 
 interface UseChatTimerProps {
@@ -14,6 +15,9 @@ export const useChatTimer = ({chatStatus, chatDuration}: UseChatTimerProps) => {
   );
   const startChatTimer = useChatStore(state => state.startChatTimer);
   const stopChatTimer = useChatStore(state => state.stopChatTimer);
+  const syncChatTimerFromWallClock = useChatStore(
+    state => state.syncChatTimerFromWallClock,
+  );
 
   // Start timer when chat becomes active, stop on cleanup
   useEffect(() => {
@@ -34,6 +38,23 @@ export const useChatTimer = ({chatStatus, chatDuration}: UseChatTimerProps) => {
     startChatTimer,
     stopChatTimer,
   ]);
+
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        syncChatTimerFromWallClock();
+      }
+    };
+
+    const subscription = AppState.addEventListener(
+      'change',
+      handleAppStateChange,
+    );
+
+    return () => {
+      subscription.remove();
+    };
+  }, [syncChatTimerFromWallClock]);
 
   return {timeLeft, chatDuration, chatStatus};
 };
