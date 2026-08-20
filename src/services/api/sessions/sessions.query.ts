@@ -5,6 +5,7 @@ query GetUserSessions($filter: SessionFilterInput) {
       id
       userName
       astrologerName
+      displayName
       astrologerImage
       status
       startedAt

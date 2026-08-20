@@ -4,6 +4,7 @@ export interface Session {
   id: string;
   userName: string;
   astrologerName: string;
+  displayName: string;
   astrologerImage: string;
   status: SessionStatus;
   startedAt: string;

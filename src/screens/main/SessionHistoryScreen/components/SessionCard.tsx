@@ -114,7 +114,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
                 weight="semibold"
                 numberOfLines={1}
                 style={{ color: colors.text.primary }}>
-                {session.astrologerName || 'Astrologer'}
+                {session.displayName || session.astrologerName || 'Astrologer'}
               </Text>
               {/* <Text
                 variant="captionSmall"
@@ -354,23 +354,23 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   cardFooter: {
-  flexDirection: 'row',
-  marginTop: 12,
-  paddingTop: 12,
-  borderTopWidth: 1,
-  borderTopColor: 'rgba(0,0,0,0.05)',
-  gap: 10,
-},
+    flexDirection: 'row',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.05)',
+    gap: 10,
+  },
 
-footerButton: {
-  flex: 1,
-  height: 42,
-  borderRadius: 10,
-  borderWidth: 1,
-  flexDirection: 'row',
-  justifyContent: 'center',
-  alignItems: 'center',
-},
+  footerButton: {
+    flex: 1,
+    height: 42,
+    borderRadius: 10,
+    borderWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 });
 
 export default SessionCard;
