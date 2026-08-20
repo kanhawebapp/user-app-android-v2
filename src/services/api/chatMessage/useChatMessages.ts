@@ -18,7 +18,7 @@ export const useChatMessages = () => {
       setSelectedSessionId(sessionId);
 
       const res = await getChatMessagesBySessionId(sessionId);
-
+console.log('CHAT MESSAGES HOOK RESPONSE:>>>>', res);
       setData(res || []);
     } catch (error) {
       console.log('CHAT MESSAGES HOOK ERROR:', error);

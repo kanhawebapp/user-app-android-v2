@@ -79,6 +79,8 @@ const ChatMessagesModal: React.FC<Props> = ({
   //   };
 
   const renderMessage = ({item}: any) => {
+
+    console.log('item>>>>>', item);
     const isUser = item?.sender?.toLowerCase() === 'user';
 
     const hasImage = !!item?.image && item?.image?.trim() !== '';
@@ -149,6 +151,20 @@ const ChatMessagesModal: React.FC<Props> = ({
             }}>
             {item?.sender || 'Unknown'}
           </Text>
+
+          {/* TIME */}
+          {!!item?.time && (
+            <Text
+              variant="captionSmall"
+              style={{
+                marginTop: 4,
+                opacity: 0.55,
+                fontSize: 11,
+                color: isUser ? '#FFFFFF' : colors.text.secondary,
+              }}>
+              {item.time}
+            </Text>
+          )}
         </View>
       </View>
     );

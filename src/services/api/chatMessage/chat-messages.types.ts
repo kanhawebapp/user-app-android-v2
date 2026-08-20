@@ -36,6 +36,8 @@ export interface ChatMessage {
   message?: string;
 
   image?: string;
+
+  time?: string;
 }
 
 export interface GetChatMessagesResponse {

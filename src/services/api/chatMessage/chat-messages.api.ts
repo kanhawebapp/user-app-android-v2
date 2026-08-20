@@ -77,6 +77,7 @@ query GetChatMessagesBySessionId($sessionId: String!) {
     message
 
     image
+    time
   }
 }
 `;
