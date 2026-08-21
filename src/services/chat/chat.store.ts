@@ -8,6 +8,8 @@ import type {
 import { socketService } from '../socket/socket.service';
 import { SOCKET_EVENTS } from '../socket/socket.events';
 
+const INITIAL_QUEUE_WAIT_SECONDS = 60;
+
 const getRemainingChatSeconds = (endsAt: number | null): number => {
   if (!endsAt) {
     return 0;
@@ -90,6 +92,7 @@ interface ChatState {
   setTimer: (time: number) => void;
   decrementTimer: () => void;
   startTimer: (seconds: number) => void;
+  startInitialQueueTimer: (roomId?: string | null) => void;
   stopTimer: () => void;
   setQueueTimeLeft: (time: number) => void;
   setQueueTimerRef: (ref: NodeJS.Timeout | null) => void;
@@ -257,6 +260,21 @@ export const useChatStore = create<ChatState>((set, get) => ({
       queueTimeLeft: seconds,
       queueTimerRef: interval,
     });
+  },
+
+  startInitialQueueTimer: roomId => {
+    const state = get();
+    state.setChatStatus('queued');
+    state.setQueueData({
+      position: 0,
+      waitTime: INITIAL_QUEUE_WAIT_SECONDS,
+      estimatedWaitTime: INITIAL_QUEUE_WAIT_SECONDS,
+      astrologerId: '',
+      astrologerName: '',
+      roomId: roomId ?? state.roomId ?? '',
+      message: 'Connecting you with astrologer...',
+    });
+    state.startTimer(INITIAL_QUEUE_WAIT_SECONDS);
   },
 
   stopTimer: () => {

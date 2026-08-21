@@ -530,17 +530,7 @@ export const sendChatRequest = async (
       console.warn('[ChatService] Some emits failed, but continuing...');
     }
 
-    setChatStatus('queued');
-    useChatStore.getState().setQueueData({
-      position: 0,
-      waitTime: 60,
-      estimatedWaitTime: 60,
-      astrologerId: '',
-      astrologerName: '',
-      roomId: intakeResponse.roomId,
-      message: 'Connecting you with astrologer...',
-    });
-    useChatStore.getState().startTimer(60);
+    useChatStore.getState().startInitialQueueTimer(intakeResponse.roomId);
 
     return {
       success: true,

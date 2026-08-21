@@ -216,8 +216,10 @@ class SocketService {
         return;
       }
 
+      const position = data?.position ?? 0;
+
       storeState.setQueueData({
-        position: data?.position ?? 0,
+        position,
         waitTime,
         estimatedWaitTime: waitTime,
         astrologerId: data?.astrologerId ?? '',
@@ -229,6 +231,10 @@ class SocketService {
       storeState.setChatStatus('queued');
       if (waitTime > 0) {
         storeState.startTimer(waitTime);
+      } else if (position === 0 && waitTime === 0) {
+        storeState.stopTimer();
+        storeState.clearQueue();
+        storeState.startInitialQueueTimer(storeState.roomId ?? normalizeRoomId(data));
       }
     });
 
