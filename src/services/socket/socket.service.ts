@@ -296,7 +296,7 @@ class SocketService {
         const currentRoomId = useChatStore.getState().roomId;
 
         if (roomId && roomId === currentRoomId) {
-          console.log('[SocketService] Chat rejected:', data);
+      // console.log('[ChatSocket] Chat rejected:>>>>', data.roomId,roomId);
           store.setChatStatus('rejected');
           store.setError(data?.reason || 'Chat request was rejected');
         }

@@ -258,14 +258,19 @@ export const QueueBubble: React.FC<QueueBubbleProps> = () => {
     } catch (e) { }
 
     if (parsedPayload?.consultationType === 'call') {
-      cancelCallRequest({
+       cancelCallRequest({
         roomId: parsedPayload?.room_id,
         astroId: parsedPayload?.astro_id,
         userId: parsedPayload?.user_id,
       });
     } else {
-      cancelChatRequest();
-    }
+        cancelChatRequest({
+        roomId: parsedPayload?.room_id,
+        astroId: parsedPayload?.astro_id,
+        userId: parsedPayload?.user_id,
+        type:"chat"
+      });
+        }
 
     stopTimer();
   }, [userPayload, cancelCallRequest, cancelChatRequest, stopTimer]);

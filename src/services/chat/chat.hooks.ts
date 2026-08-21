@@ -122,7 +122,7 @@ export const useChatSocket = (socket: Socket | null) => {
     });
 
     socket.on(SOCKET_EVENTS.CHAT_REJECTED, data => {
-      console.log('[ChatSocket] Chat rejected:', data);
+      console.log('[ChatSocket] Chat rejected:', data.roomId,roomId);
       if (data.roomId === roomId) {
         setChatStatus('rejected');
         setError(data.reason || 'Chat request was rejected');
@@ -320,33 +320,41 @@ export const useChatActions = () => {
     return socketService.emit(SOCKET_EVENTS.JOIN_CHAT, { roomId });
   }, [roomId]);
 
-  // const cancelCallRequest = useCallback(
-  //   (astroId: any, roomId: any): boolean => {
-  //     console.log('i am here in cancel call request');
-  //     if (!roomId) {
-  //       console.warn('[ChatActions] No roomId to cancel call');
-  //       return false;
-  //     }
 
-  //     console.log('[ChatActions] Cancelling call request:', roomId);
-  //     return socketService.emit(SOCKET_EVENTS.CALL_CANCEL_BY_USER, {
-  //       room_id: roomId,
-  //       astro_id: astroId,
-  //     });
-  //   },
-  //   [roomId],
-  // );
 
-  const cancelChatRequest = useCallback((): boolean => {
-    console.log('i am here in cancel chat request');
+ const cancelChatRequest = useCallback(
+  ({
+    roomId,
+    astroId,
+    userId,
+    type,
+  }: {
+    roomId?: string;
+    astroId?: string;
+    userId?: string;
+    type?: string;
+  }): boolean => {
     if (!roomId) {
       console.warn('[ChatActions] No roomId to cancel');
       return false;
     }
 
-    console.log('[ChatActions] Cancelling chat request:', roomId);
-    return socketService.emit(SOCKET_EVENTS.CANCEL_CHAT_REQUEST, { roomId });
-  }, [roomId]);
+    const payload = {
+      room_id: roomId,
+      astro_id: astroId,
+      user_id: userId,
+      type: type || 'chat',
+    };
+
+    console.log('[ChatActions] Cancelling chat request:', payload);
+
+    return socketService.emit(
+      SOCKET_EVENTS.CANCEL_CHAT_REQUEST,
+      payload,
+    );
+  },
+  [],
+);
 
   const leaveChat = useCallback((): boolean => {
     if (!roomId) {
