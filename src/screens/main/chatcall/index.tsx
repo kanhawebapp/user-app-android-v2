@@ -310,7 +310,7 @@ const handleBackFromChat = useCallback(() => {
               keyExtractor={item => item.id}
               contentContainerStyle={styles.listContent}
               showsVerticalScrollIndicator={false}
-              ListEmptyComponent={renderEmptyState}
+              ListEmptyComponent={!loading ? renderEmptyState : null}
               refreshing={loading}
               onRefresh={refresh}
             />
