@@ -19,6 +19,8 @@ const getRemainingChatSeconds = (endsAt: number | null): number => {
 export interface AstrologerInfo {
   id: string;
   name: string;
+  displayName: string;
+
   image?: string;
   rating: number;
   experience: string;
