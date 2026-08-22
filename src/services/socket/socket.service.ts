@@ -1,8 +1,8 @@
-import {io, Socket} from 'socket.io-client';
-import {ServerToClientEvents, ClientToServerEvents} from './socket.types';
-import {API_BASE_URL} from '../../constants/api.constants';
-import {SOCKET_EVENTS} from './socket.events';
-import {useChatStore} from '../chat/chat.store';
+import { io, Socket } from 'socket.io-client';
+import { ServerToClientEvents, ClientToServerEvents } from './socket.types';
+import { API_BASE_URL } from '../../constants/api.constants';
+import { SOCKET_EVENTS } from './socket.events';
+import { useChatStore } from '../chat/chat.store';
 
 export interface SocketServiceState {
   socket: Socket<ServerToClientEvents, ClientToServerEvents> | null;
@@ -95,8 +95,7 @@ class SocketService {
     const incomingRoomId = normalizeRoomId(data);
     if (!incomingRoomId) {
       console.warn(
-        `[SocketService] Invalid roomId in chatAccepted${
-          isAlias ? ' (alias)' : ''
+        `[SocketService] Invalid roomId in chatAccepted${isAlias ? ' (alias)' : ''
         }, ignoring`,
         data,
       );
@@ -120,6 +119,22 @@ class SocketService {
           incoming: incomingRoomId,
           current: currentRoomId,
           status: storeState.chatStatus,
+        },
+      );
+      return;
+    }
+
+
+    // ADD HERE
+    const queuePosition = storeState.queueData?.position;
+
+    if (queuePosition !== undefined && queuePosition > 0) {
+      console.warn(
+        '[SocketService] Chat acceptance ignored - user is still in queue',
+        {
+          incoming: incomingRoomId,
+          current: currentRoomId,
+          position: queuePosition,
         },
       );
       return;
@@ -296,7 +311,7 @@ class SocketService {
         const currentRoomId = useChatStore.getState().roomId;
 
         if (roomId && roomId === currentRoomId) {
-      // console.log('[ChatSocket] Chat rejected:>>>>', data.roomId,roomId);
+          // console.log('[ChatSocket] Chat rejected:>>>>', data.roomId,roomId);
           store.setChatStatus('rejected');
           store.setError(data?.reason || 'Chat request was rejected');
         }
@@ -418,8 +433,7 @@ class SocketService {
         if (roomId && roomId === currentRoomId) {
           console.log('[SocketService] user_disconnected:', data);
           store.setError(
-            `${
-              data?.userType === 'astrologer' ? 'Astrologer' : 'User'
+            `${data?.userType === 'astrologer' ? 'Astrologer' : 'User'
             } disconnected`,
           );
         }
@@ -428,7 +442,7 @@ class SocketService {
 
     (socket as any).on(
       SOCKET_EVENTS.ERROR,
-      (data: {message?: string; code?: string}) => {
+      (data: { message?: string; code?: string }) => {
         console.log('[SocketService] Error event:', data);
         store.setError(data?.message || 'An error occurred');
       },

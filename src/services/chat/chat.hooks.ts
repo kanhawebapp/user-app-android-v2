@@ -341,7 +341,7 @@ export const useChatActions = () => {
 
     const payload = {
       room_id: roomId,
-      astro_id: astroId,
+      astroid: astroId,
       user_id: userId,
       type: type || 'chat',
     };
