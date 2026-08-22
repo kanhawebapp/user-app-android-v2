@@ -4,7 +4,7 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
-  RefreshControl, 
+  RefreshControl,
 } from 'react-native';
 import { Text } from '../../components/Text';
 import { colors } from '../../theme';
@@ -18,7 +18,7 @@ import CategoryChip from '../../components/cards/CategoryChip';
 
 interface RemediesScreenProps {
   onNavigateToLogin?: () => void;
-  onNavigateToSignup?: () => void; 
+  onNavigateToSignup?: () => void;
   onNavigateToMyBookings?: () => void;
   onNavigateToServiceDetails?: (service: any) => void;
 }
@@ -53,7 +53,7 @@ const RemediesScreen: React.FC<RemediesScreenProps> = ({
       item => item?.category?.id === selectedCategory,
     );
   }, [services, selectedCategory]);
-  console.log("all category",categories)
+  console.log("all category", categories)
 
   const handleServicePress = (service: any) => {
     onNavigateToServiceDetails?.(service);
@@ -136,9 +136,11 @@ const RemediesScreen: React.FC<RemediesScreenProps> = ({
           </>
         }
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No Services Found</Text>
-          </View>
+          !bookingLoading ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No Services Found</Text>
+            </View>
+          ) : null
         }
       />
     </View>
