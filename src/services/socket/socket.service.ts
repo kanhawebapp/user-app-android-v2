@@ -3,6 +3,7 @@ import { ServerToClientEvents, ClientToServerEvents } from './socket.types';
 import { API_BASE_URL } from '../../constants/api.constants';
 import { SOCKET_EVENTS } from './socket.events';
 import { useChatStore } from '../chat/chat.store';
+import { useCallStore } from '../call/call.store';
 
 export interface SocketServiceState {
   socket: Socket<ServerToClientEvents, ClientToServerEvents> | null;
@@ -211,6 +212,21 @@ class SocketService {
       'cancelled',
     ]);
 
+    const callTerminalOrActiveStates: Set<string> = new Set([
+      'calling',
+      'ringing',
+      'connecting',
+      'connecting_webrtc',
+      'creating_offer',
+      'sending_offer',
+      'waiting_answer',
+      'creating_answer',
+      'waiting_connection',
+      'connected',
+      'ended',
+      'rejected',
+    ]);
+
     (socket as any).on(SOCKET_EVENTS.QUEUE_POSITION, (data: RawQueueData) => {
       if (!data) {
         console.warn('[SocketService] Empty queue_position data');
@@ -219,6 +235,15 @@ class SocketService {
 
       const storeState = useChatStore.getState();
       if (terminalOrActiveStates.has(storeState.chatStatus)) {
+        // console.log('[ChatSocket] Queue position>>:');
+
+        return;
+      }
+
+      const callStoreState = useCallStore.getState();
+      if (callTerminalOrActiveStates.has(callStoreState.status)) {
+        // console.log('[CallSocket] Queue position>>:');
+
         return;
       }
 
