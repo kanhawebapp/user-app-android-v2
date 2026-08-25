@@ -67,7 +67,7 @@ export const TabFilter: React.FC<TabFilterProps> = ({
 export const DEFAULT_TABS: TabItem[] = [
   {key: 'all', label: 'All'},
   {key: 'COMPLETED', label: 'Completed'},
-  {key: 'ONGOING', label: 'Ongoing'},
+  // {key: 'ONGOING', label: 'Ongoing'},
   {key: 'CANCELLED', label: 'Cancelled'},
   // {key: 'SCHEDULED', label: 'Scheduled'},
 ];

@@ -93,12 +93,12 @@ export const ThankYouModal: React.FC<ThankYouModalProps> = ({
           </View> */}
 
           {/* QUESTION */}
-          <Text
+          {/* <Text
             variant="body"
             weight="medium"
             style={[styles.question, {color: colors.text.primary}]}>
             What would you like to do next?
-          </Text>
+          </Text> */}
 
           {/* ACTION BUTTONS */}
           <View style={styles.actions}>

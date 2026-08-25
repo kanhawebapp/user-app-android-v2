@@ -81,7 +81,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
   return (
     <TouchableOpacity
       activeOpacity={0.7}
-      onPress={() => onPress(session)}
+      // onPress={() => onPress(session)}
       style={[styles.cardOuterWrapper, { paddingHorizontal: 16 }]}>
       <View
         style={[

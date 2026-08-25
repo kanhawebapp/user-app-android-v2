@@ -9,9 +9,9 @@ import {
   Image,
 } from 'react-native';
 
-import {useTheme} from '../../../../theme';
-import {Text} from '../../../../components/Text';
-import {Icon} from '../../../../components/Icon';
+import { useTheme } from '../../../../theme';
+import { Text } from '../../../../components/Text';
+import { Icon } from '../../../../components/Icon';
 
 interface Props {
   visible: boolean;
@@ -26,7 +26,7 @@ const ChatMessagesModal: React.FC<Props> = ({
   messages = [],
   onClose,
 }) => {
-  const {colors, isDark} = useTheme();
+  const { colors, isDark } = useTheme();
 
   //   const renderMessage = ({item, index}: any) => {
   //     const isUser =
@@ -78,7 +78,7 @@ const ChatMessagesModal: React.FC<Props> = ({
   //     );
   //   };
 
-  const renderMessage = ({item}: any) => {
+  const renderMessage = ({ item }: any) => {
 
     console.log('item>>>>>', item);
     const isUser = item?.sender?.toLowerCase() === 'user';
@@ -100,8 +100,8 @@ const ChatMessagesModal: React.FC<Props> = ({
               backgroundColor: isUser
                 ? colors.primary.main
                 : isDark
-                ? '#1E293B'
-                : '#F3F4F6',
+                  ? '#1E293B'
+                  : '#F3F4F6',
             },
           ]}>
           {/* IMAGE */}
@@ -116,6 +116,17 @@ const ChatMessagesModal: React.FC<Props> = ({
               />
             </TouchableOpacity>
           )}
+
+          {/* SENDER */}
+          <Text
+            variant="captionSmall"
+            style={{
+              marginTop: 6,
+              opacity: 0.7,
+              color: isUser ? '#FFFFFF' : colors.text.secondary,
+            }}>
+            {item?.sender || 'Unknown'}
+          </Text>
 
           {/* MESSAGE */}
           {hasMessage && (
@@ -141,16 +152,7 @@ const ChatMessagesModal: React.FC<Props> = ({
             </Text>
           )}
 
-          {/* SENDER */}
-          <Text
-            variant="captionSmall"
-            style={{
-              marginTop: 6,
-              opacity: 0.7,
-              color: isUser ? '#FFFFFF' : colors.text.secondary,
-            }}>
-            {item?.sender || 'Unknown'}
-          </Text>
+
 
           {/* TIME */}
           {!!item?.time && (
