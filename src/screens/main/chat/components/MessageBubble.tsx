@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
   replyBoxMessage: {
     fontSize: 13,
     opacity: 0.8,
-    color: 'gray',
+    color: 'white',
   },
 
   text: {

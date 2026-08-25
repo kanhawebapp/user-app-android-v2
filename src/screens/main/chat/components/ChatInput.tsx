@@ -240,10 +240,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                   }),
                 },
               ],
-              opacity: inputFocusAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [1, 0],
-              }),
             },
           ]}>
           <View style={styles.replyContent}>
