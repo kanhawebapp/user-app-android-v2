@@ -244,13 +244,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           ]}>
           <View style={styles.replyContent}>
             <Text style={[styles.replyLabel, { color: colors.text.tertiary }]}>
-              Replying to
-            </Text>
-            <Text
+              Replying to  <Text
               style={[styles.replySender, { color: colors.primary.main }]}
               numberOfLines={1}>
               {replyTo.sender}
             </Text>
+            </Text>
+          
             {replyTo.message ? (
               <Text
                 style={[styles.replyMessage, { color: colors.text.secondary }]}
@@ -441,8 +441,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   replySender: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
     marginBottom: 2,
   },
   replyMessage: {
