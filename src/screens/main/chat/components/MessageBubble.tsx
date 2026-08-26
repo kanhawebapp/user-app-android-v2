@@ -1,4 +1,4 @@
-import React, {useState, useRef, useEffect, memo} from 'react';
+import React, { useState, useRef, useEffect, memo } from 'react';
 import {
   View,
   Text,
@@ -7,9 +7,9 @@ import {
   StyleSheet,
   Animated,
 } from 'react-native';
-import {useTheme} from '../../../../theme';
-import {Icon} from '../../../../components/Icon';
-import {ChatMessage} from '../types';
+import { useTheme } from '../../../../theme';
+import { Icon } from '../../../../components/Icon';
+import { ChatMessage } from '../types';
 
 interface MessageBubbleProps {
   item: ChatMessage;
@@ -17,7 +17,7 @@ interface MessageBubbleProps {
   astrologerImage?: string;
   onLike: (messageId: string) => void;
   onReply: (message: ChatMessage) => void;
-  onImagePress?: (url: string) => void; 
+  onImagePress?: (url: string) => void;
   isLiked?: boolean;
   isGrouped?: boolean;
 }
@@ -94,7 +94,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = memo(
       if (!(date instanceof Date) || isNaN(date.getTime())) {
         return '--:--';
       }
-      return date.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
     const renderReadReceipt = () => {
@@ -130,7 +130,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = memo(
           name={iconName}
           size={14}
           color={iconColor}
-          style={{marginLeft: 3}}
+          style={{ marginLeft: 3 }}
         />
       );
     };
@@ -168,7 +168,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = memo(
           {showToggle && (
             <TouchableOpacity
               onPress={() => setExpanded(!expanded)}
-              hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <Text
                 style={[
                   styles.showMoreText,
@@ -195,7 +195,23 @@ export const MessageBubble: React.FC<MessageBubbleProps> = memo(
         item.replyTo.sender === 'user' ? 'You' : item.replyTo.sender;
 
       return (
-        <View style={styles.replyBox}>
+        <View
+          style={[
+            styles.replyBox,
+            {
+              // 👇 User message ke andar light transparent white
+              // 👇 Astrologer message ke andar light dark
+              backgroundColor: isUser
+                ? 'rgba(255,255,255,0.15)'
+                : 'rgba(0,0,0,0.05)',
+
+              // 👇 Left border bhi message ke according
+              borderLeftColor: isUser
+                ? 'rgba(255,255,255,0.9)'
+                : colors.primary.main,
+            },
+          ]}>
+
           {/* <Text style={styles.replyBoxSender}>{replySender}</Text> */}
 
           {/* ✅ IMAGE FIRST */}
@@ -216,7 +232,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = memo(
             <TouchableOpacity
               onPress={() => onImagePress?.(item.replyTo.image!)}>
               <Image
-                source={{uri: item.replyTo.image}}
+                source={{ uri: item.replyTo.image }}
                 style={{
                   width: 120,
                   height: 120,
@@ -246,18 +262,18 @@ export const MessageBubble: React.FC<MessageBubbleProps> = memo(
           isGrouped && styles.groupedContainer,
           {
             opacity: fadeAnim,
-            transform: [{scale: scaleAnim}],
+            transform: [{ scale: scaleAnim }],
           },
         ]}>
         {!isUser && !isGrouped && (
           <View style={styles.avatarWrapper}>
             {astrologerImage ? (
-              <Image source={{uri: astrologerImage}} style={styles.avatar} />
+              <Image source={{ uri: astrologerImage }} style={styles.avatar} />
             ) : (
               <View
                 style={[
                   styles.avatarPlaceholder,
-                  {backgroundColor: colors.primary.light},
+                  { backgroundColor: colors.primary.light },
                 ]}>
                 <Text
                   style={{
@@ -273,7 +289,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = memo(
         )}
 
         <View
-          style={[styles.bubbleWrapper, isUser && {alignItems: 'flex-end'}]}>
+          style={[styles.bubbleWrapper, isUser && { alignItems: 'flex-end' }]}>
           <View
             style={[
               styles.bubble,
@@ -306,7 +322,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = memo(
                 onPress={() => onImagePress?.(item.image!)}
                 activeOpacity={0.9}>
                 <Image
-                  source={{uri: item.image}}
+                  source={{ uri: item.image }}
                   style={{
                     width: 200,
                     height: 200,
@@ -327,11 +343,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = memo(
                       : colors.text.tertiary,
                   },
                 ]}>
-                <Text style={{color: 'gray'}}>
+                <Text style={{ color: 'gray' }}>
                   {' '}
                   {Astro && formatTime(item.timestamp)}{' '}
                 </Text>
-                <Text style={{color: 'white'}}>
+                <Text style={{ color: 'white' }}>
                   {isUser && formatTime(item.timestamp)}{' '}
                 </Text>
               </Text>
@@ -352,7 +368,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = memo(
             <TouchableOpacity
               onPress={() => onLike(item.id)}
               style={styles.actionBtn}
-              hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               {/* <Icon
                 name={isLiked ? 'heart' : 'heart-outline'}
                 size={18}
@@ -364,7 +380,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = memo(
             <TouchableOpacity
               onPress={() => onReply(item)}
               style={styles.actionBtn}
-              hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <Icon name="reply" size={20} color={colors.primary.main} />
             </TouchableOpacity>
           </View>
@@ -427,7 +443,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.06,
     shadowRadius: 4,
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
 

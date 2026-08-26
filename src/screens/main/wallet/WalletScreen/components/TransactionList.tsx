@@ -34,7 +34,7 @@ const TransactionItem = ({ item, colors }: any) => {
             },
           ]}>
           <Icon
-            name={isCredit ? 'arrow-up-right' : 'arrow-down-left'}
+            name={isCredit ? 'arrow-down-left' : 'arrow-up-right'}
             size={18}
             color={isCredit ? colors.success.main : colors.error.main}
             library="Feather"
