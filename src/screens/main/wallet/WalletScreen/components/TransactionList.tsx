@@ -16,7 +16,12 @@ import type { WalletTransaction } from '../../../../../services/api/walletTransa
 
 const TransactionItem = ({ item, colors }: any) => {
   const isCredit = item.type === 'CREDIT';
+  // Generate/display 8-digit transaction ID from UUID
+  const transactionId = item.id
+    ? item.id.replace(/-/g, '').slice(0, 8).toUpperCase()
+    : 'N/A';
 
+  const transactionDate = new Date(Number(item.createdAt));
   return (
     <View style={styles.transactionItem}>
       <View style={styles.transactionLeft}>
@@ -59,14 +64,34 @@ const TransactionItem = ({ item, colors }: any) => {
             </Text>
           ) : null}
 
+          {/* Date + Time */}
           <Text
             variant="captionSmall"
-            style={{ color: colors.text.tertiary, marginTop: 2 }}>
-            {new Date(Number(item.createdAt)).toLocaleDateString('en-IN', {
+            style={{
+              color: colors.text.tertiary,
+              marginTop: 2,
+            }}>
+            {transactionDate.toLocaleDateString('en-IN', {
               day: 'numeric',
               month: 'short',
               year: 'numeric',
+            })}{' '}
+            •{' '}
+            {transactionDate.toLocaleTimeString('en-IN', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true,
             })}
+          </Text>
+
+          {/* 8 Digit Transaction ID */}
+          <Text
+            variant="captionSmall"
+            style={{
+              color: colors.text.tertiary,
+              marginTop: 2,
+            }}>
+            Transaction ID: {transactionId}
           </Text>
         </View>
 
@@ -80,7 +105,7 @@ const TransactionItem = ({ item, colors }: any) => {
         }}>
         {isCredit ? '+' : '-'}
         {DEFAULTS.CURRENCY}
-        {item.amount ?? item.coins}
+        {item.coins ?? item.amount}
       </Text>
     </View>
   );
@@ -90,7 +115,7 @@ const TransactionList = ({ onRechargePress }: any) => {
   const { colors } = useTheme();
 
   const { data, loading, applyFilter, loadMore } = useWalletTransactions();
-
+  console.log("data>>>", data)
   const [activeTab, setActiveTab] = React.useState<'all' | 'credit' | 'debit'>(
     'all',
   );

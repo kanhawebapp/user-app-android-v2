@@ -802,13 +802,13 @@ const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
         </View>
 
         <View style={styles.buttonsContainer}>
-          <Button
+          {/* <Button
             title="Chat again"
             variant="primary"
             size="large"
             onPress={onGoToWallet}
             style={styles.primaryButton}
-          />
+          /> */}
 
           <Button
             title="Back to Home"
