@@ -136,15 +136,17 @@ export const SessionCard: React.FC<SessionCardProps> = ({
                   </Text>
                 </View>
 
-                <View style={[styles.timeRow, { marginTop: 4 }]}>
-                  <Icon name="stop-circle" size={14} color="#EF4444" />
+                {session.status !== 'CANCELLED' && (
+                  <View style={[styles.timeRow, { marginTop: 4 }]}>
+                    <Icon name="stop-circle" size={14} color="#EF4444" />
 
-                  <Text
-                    variant="captionSmall"
-                    style={[styles.timeText, { color: colors.text.secondary }]}>
-                    Ended: {formatDateTime(session.endedAt)}
-                  </Text>
-                </View>
+                    <Text
+                      variant="captionSmall"
+                      style={[styles.timeText, { color: colors.text.secondary }]}>
+                      Ended: {formatDateTime(session.endedAt)}
+                    </Text>
+                  </View>
+                )}
               </View>
             </View>
           </View>
@@ -225,43 +227,45 @@ export const SessionCard: React.FC<SessionCardProps> = ({
           <Icon name="chevron-right" size={18} color={colors.text.secondary} />
         </View> */}
 
-        <View style={styles.cardFooter}>
-          <TouchableOpacity
-            style={[
-              styles.footerButton,
-              {
-                borderColor: colors.border.light,
-              },
-            ]}
-            onPress={() => onPress(session)}>
-            <Text
-              variant="captionSmall"
-              style={{ color: colors.text.secondary }}>
-              My Chat History
-            </Text>
+        {session.type === 'CHAT' && (
+          <View style={styles.cardFooter}>
+            <TouchableOpacity
+              style={[
+                styles.footerButton,
+                {
+                  borderColor: colors.border.light,
+                },
+              ]}
+              onPress={() => onPress(session)}>
+              <Text
+                variant="captionSmall"
+                style={{ color: colors.text.secondary }}>
+                My Chat History
+              </Text>
 
-            <Icon
-              name="chevron-right"
-              size={18}
-              color={colors.text.secondary}
-            />
-          </TouchableOpacity>
+              <Icon
+                name="chevron-right"
+                size={18}
+                color={colors.text.secondary}
+              />
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[
-              styles.footerButton,
-              {
-                backgroundColor: colors.primary.main,
-              },
-            ]}
-            onPress={() => onRemediesPress(session)}>
-            <Text
-              variant="captionSmall"
-              style={{ color: '#fff' }}>
-              My Remedies
-            </Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              style={[
+                styles.footerButton,
+                {
+                  backgroundColor: colors.primary.main,
+                },
+              ]}
+              onPress={() => onRemediesPress(session)}>
+              <Text
+                variant="captionSmall"
+                style={{ color: '#fff' }}>
+                My Remedies
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
