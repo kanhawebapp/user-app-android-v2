@@ -7,6 +7,7 @@ query GetUserSessions($filter: SessionFilterInput) {
       astrologerName
       displayName
       astrologerImage
+      type
       status
       startedAt
       endedAt

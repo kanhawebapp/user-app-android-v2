@@ -13,6 +13,7 @@ import { useUserSessions } from '../../services/api/sessions/sessions.hooks';
 import {
   Session,
   SessionStatus,
+  SessionType,
 } from '../../services/api/sessions/sessions.types';
 
 import {
@@ -20,6 +21,7 @@ import {
   StatsSection,
   TabFilter,
   DEFAULT_TABS,
+  TYPE_TABS,
   SessionCard,
   SessionDetailModal,
   EmptyState,
@@ -34,9 +36,10 @@ const SessionHistoryScreen = ({ onNavigateBack }: any) => {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
 
-  const { data, loading, applyStatusFilter, loadMore, refresh } =
+  const { data, loading, applyStatusFilter, applyTypeFilter, loadMore, refresh } =
     useUserSessions();
-// console.log("data>>>>>",data)
+  // console.log("data>>>>>",data)
+  const [activeTypeTab, setActiveTypeTab] = useState<SessionType>('CALL');
   const [activeTab, setActiveTab] = useState<SessionStatus | 'all'>('all');
   const [refreshing, setRefreshing] = useState(false);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
@@ -68,6 +71,11 @@ const SessionHistoryScreen = ({ onNavigateBack }: any) => {
   };
 
   //end for msg
+
+  const handleTypeTabChange = (tab: SessionType) => {
+    setActiveTypeTab(tab);
+    applyTypeFilter(tab);
+  };
 
   const handleTabChange = (tab: SessionStatus | 'all') => {
     setActiveTab(tab);
@@ -164,9 +172,15 @@ const SessionHistoryScreen = ({ onNavigateBack }: any) => {
       {/* <StatsSection stats={stats} /> */}
 
       <TabFilter
+        tabs={TYPE_TABS}
+        activeTab={activeTypeTab}
+        onTabChange={tab => handleTypeTabChange(tab as SessionType)}
+      />
+
+      <TabFilter
         tabs={DEFAULT_TABS}
         activeTab={activeTab}
-        onTabChange={handleTabChange}
+        onTabChange={tab => handleTabChange(tab as SessionStatus | 'all')}
       />
 
       <FlatList

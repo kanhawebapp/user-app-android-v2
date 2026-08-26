@@ -2,17 +2,20 @@ import React from 'react';
 import {View, StyleSheet, TouchableOpacity} from 'react-native';
 import {useTheme} from '../../../../theme';
 import {Text} from '../../../../components/Text';
-import {SessionStatus} from '../../../../services/api/sessions/sessions.types';
+import {
+  SessionStatus,
+  SessionType,
+} from '../../../../services/api/sessions/sessions.types';
 
 export interface TabItem {
-  key: SessionStatus | 'all';
+  key: SessionStatus | SessionType | 'all';
   label: string;
 }
 
 interface TabFilterProps {
   tabs: TabItem[];
-  activeTab: SessionStatus | 'all';
-  onTabChange: (tab: SessionStatus | 'all') => void;
+  activeTab: SessionStatus | SessionType | 'all';
+  onTabChange: (tab: SessionStatus | SessionType | 'all') => void;
 }
 
 export const TabFilter: React.FC<TabFilterProps> = ({
@@ -70,6 +73,11 @@ export const DEFAULT_TABS: TabItem[] = [
   // {key: 'ONGOING', label: 'Ongoing'},
   {key: 'CANCELLED', label: 'Cancelled'},
   // {key: 'SCHEDULED', label: 'Scheduled'},
+];
+
+export const TYPE_TABS: TabItem[] = [
+  {key: 'CALL', label: 'Call'},
+  {key: 'CHAT', label: 'Chat'},
 ];
 
 const styles = StyleSheet.create({

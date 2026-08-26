@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 import {getUserSessions} from './sessions.api';
-import {Session, SessionStatus} from './sessions.types';
+import {Session, SessionStatus, SessionType} from './sessions.types';
 
 export const useUserSessions = () => {
   const [data, setData] = useState<Session[]>([]);
@@ -8,6 +8,7 @@ export const useUserSessions = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [status, setStatus] = useState<SessionStatus | null>(null);
+  const [type, setType] = useState<SessionType>('CALL');
 
   const fetchSessions = async (
     pageNumber = 1,
@@ -26,6 +27,7 @@ export const useUserSessions = () => {
         limit: 10,
         status: selectedStatus || undefined,
         ...extraFilters, // ✅ for date filters
+        type,
       });
 
       if (pageNumber === 1) {
@@ -45,11 +47,17 @@ export const useUserSessions = () => {
 
   useEffect(() => {
     fetchSessions(1, status);
-  }, [status]);
+  }, [status, type]);
 
   // 🔥 FILTER BY STATUS
   const applyStatusFilter = (newStatus: SessionStatus | null) => {
     setStatus(newStatus);
+    setPage(1);
+  };
+
+  // 🔥 FILTER BY TYPE
+  const applyTypeFilter = (newType: SessionType) => {
+    setType(newType);
     setPage(1);
   };
 
@@ -77,6 +85,7 @@ export const useUserSessions = () => {
     page,
     totalPages,
     applyStatusFilter,
+    applyTypeFilter,
     applyDateFilter,
     loadMore,
     refresh,

@@ -1,11 +1,14 @@
 export type SessionStatus = 'COMPLETED' | 'ONGOING' | 'CANCELLED' | 'SCHEDULED';
 
+export type SessionType = 'CALL' | 'CHAT';
+
 export interface Session {
   id: string;
   userName: string;
   astrologerName: string;
   displayName: string;
   astrologerImage: string;
+  type: SessionType;
   status: SessionStatus;
   startedAt: string;
   endedAt: string;
@@ -27,6 +30,7 @@ export interface SessionResponse {
 
 export interface SessionFilterInput {
   status?: SessionStatus;
+  type?: SessionType;
   fromDate?: string;
   toDate?: string;
   page?: number;
