@@ -39,7 +39,7 @@ export interface ChatRequestData {
 export interface ChatRequestModalProps {
   visible: boolean;
   onClose: () => void;
-  onSubmit: (data: ChatRequestData) => void;
+onSubmit: (data: ChatRequestData) => void | Promise<void>;
   astrologer?: any;
   loading?: boolean;
   type?: 'chat' | 'call';
@@ -182,23 +182,25 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
     return Object.keys(newErrors).length === 0;
   }, [name, gender, dateOfBirth, placeOfBirth, occupation]);
 
-  useEffect(() => {
-    if (queueData?.position >= 0) {
-      setIsLocalLoading(false);
-      if (isIntakeLoading && loadingIntakeId) {
-        requestInProgressRef.current = false;
-        setLoadingIntakeId(null);
-        animateCardLoading(false);
-        handleClose();
-      }
-    }
-  }, [
-    queueData,
-    isIntakeLoading,
-    loadingIntakeId,
-    animateCardLoading,
-    handleClose,
-  ]);
+
+  // 26aug comment
+  // useEffect(() => {
+  //   if (queueData?.position >= 0) {
+  //     setIsLocalLoading(false);
+  //     if (isIntakeLoading && loadingIntakeId) {
+  //       requestInProgressRef.current = false;
+  //       setLoadingIntakeId(null);
+  //       animateCardLoading(false);
+  //       handleClose();
+  //     }
+  //   }
+  // }, [
+  //   queueData,
+  //   isIntakeLoading,
+  //   loadingIntakeId,
+  //   animateCardLoading,
+  //   handleClose,
+  // ]);
 
   // useEffect(() => {
   //   if (queueData?.position >= 1) {
@@ -246,24 +248,60 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
     }
   };
 
+// comment 26aug
+  // const handleRecentIntakeSelect = useCallback(
+  //   (item: any) => {
+  //     if (requestInProgressRef.current) {
+  //       return;
+  //     }
+
+  //     requestInProgressRef.current = true;
+  //     setLoadingIntakeId(item.id);
+  //     animateCardPress();
+
+  //     const formattedDate = item.birthDate
+  //       ? new Date(Number(item.birthDate)).toLocaleDateString('en-GB')
+  //       : '';
+
+  //     console.log('RECENT INTAKE DATE:', formattedDate);
+
+  //     onSubmit({
+  //       name: item.name || '',
+  //       gender:
+  //         item.gender?.toLowerCase() === 'female'
+  //           ? 'female'
+  //           : item.gender?.toLowerCase() === 'other'
+  //             ? 'other'
+  //             : 'male',
+
+  //       dateOfBirth: formattedDate,
+
+  //       placeOfBirth: item.birthPlace || '',
+  //       birthTime: item.birthTime || '',
+  //       occupation: item.occupation || '',
+  //     });
+  //   },
+  //   [onSubmit, animateCardPress],
+  // );
 
   const handleRecentIntakeSelect = useCallback(
-    (item: any) => {
-      if (requestInProgressRef.current) {
-        return;
-      }
+  async (item: any) => {
+    if (requestInProgressRef.current) {
+      return;
+    }
 
-      requestInProgressRef.current = true;
-      setLoadingIntakeId(item.id);
-      animateCardPress();
+    requestInProgressRef.current = true;
+    setLoadingIntakeId(item.id);
+    animateCardPress();
 
-      const formattedDate = item.birthDate
-        ? new Date(Number(item.birthDate)).toLocaleDateString('en-GB')
-        : '';
+    const formattedDate = item.birthDate
+      ? new Date(Number(item.birthDate)).toLocaleDateString('en-GB')
+      : '';
 
-      console.log('RECENT INTAKE DATE:', formattedDate);
+    console.log('RECENT INTAKE DATE:', formattedDate);
 
-      onSubmit({
+    try {
+      await onSubmit({
         name: item.name || '',
         gender:
           item.gender?.toLowerCase() === 'female'
@@ -271,58 +309,102 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
             : item.gender?.toLowerCase() === 'other'
               ? 'other'
               : 'male',
-
         dateOfBirth: formattedDate,
-
         placeOfBirth: item.birthPlace || '',
         birthTime: item.birthTime || '',
         occupation: item.occupation || '',
       });
-    },
-    [onSubmit, animateCardPress],
-  );
+    } catch (error) {
+      console.error('[ChatRequestModal] Recent intake error:', error);
+      requestInProgressRef.current = false;
+      setLoadingIntakeId(null);
+      animateCardLoading(false);
+    }
+  },
+  [onSubmit, animateCardPress, animateCardLoading],
+);
+
 
   // ==========================================
   // FORM SUBMIT
   // ==========================================
 
+
+  // comment 26aug
+  // const handleSubmit = useCallback(async () => {
+  //   if (!validate()) {
+  //     return;
+  //   }
+
+  //   if (requestInProgressRef.current) {
+  //     return;
+  //   }
+
+  //   requestInProgressRef.current = true;
+
+  //   try {
+  //     onSubmit({
+  //       name,
+  //       gender: gender!,
+  //       dateOfBirth,
+  //       placeOfBirth,
+  //       birthTime,
+  //       occupation: occupation.trim(),
+  //     });
+  //   } finally {
+  //     // onClose removed from here so the modal body, loader and
+  //     // submit button unmount animation don't race with each other.
+  //     // Modal closes via the queueData useEffect below once the
+  //     // API / socket / navigation pipeline has fully finished.
+  //     requestInProgressRef.current = false;
+  //   }
+  // }, [
+  //   validate,
+  //   name,
+  //   gender,
+  //   dateOfBirth,
+  //   placeOfBirth,
+  //   birthTime,
+  //   occupation,
+  //   onSubmit,
+  // ]);
+
+
   const handleSubmit = useCallback(async () => {
-    if (!validate()) {
-      return;
-    }
+  if (!validate()) {
+    return;
+  }
 
-    if (requestInProgressRef.current) {
-      return;
-    }
+  if (requestInProgressRef.current) {
+    return;
+  }
 
-    requestInProgressRef.current = true;
+  requestInProgressRef.current = true;
 
-    try {
-      onSubmit({
-        name,
-        gender: gender!,
-        dateOfBirth,
-        placeOfBirth,
-        birthTime,
-        occupation: occupation.trim(),
-      });
-    } finally {
-      // onClose removed from here so the modal body, loader and
-      // submit button unmount animation don't race with each other.
-      // Modal closes via the queueData useEffect below once the
-      // API / socket / navigation pipeline has fully finished.
-      requestInProgressRef.current = false;
-    }
-  }, [
-    validate,
-    name,
-    gender,
-    dateOfBirth,
-    placeOfBirth,
-    birthTime,
-    occupation,
-    onSubmit,
-  ]);
+  try {
+    await onSubmit({
+      name,
+      gender: gender!,
+      dateOfBirth,
+      placeOfBirth,
+      birthTime,
+      occupation: occupation.trim(),
+    });
+  } catch (error) {
+    console.error('[ChatRequestModal] Submit error:', error);
+  } finally {
+    requestInProgressRef.current = false;
+  }
+}, [
+  validate,
+  name,
+  gender,
+  dateOfBirth,
+  placeOfBirth,
+  birthTime,
+  occupation,
+  onSubmit,
+]);
 
   return (
     <Modal

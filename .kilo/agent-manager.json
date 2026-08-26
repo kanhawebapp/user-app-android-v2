@@ -264,6 +264,13 @@
       "parentBranch": "freeservice-api-ui",
       "createdAt": "2026-08-03T09:17:51.676Z",
       "branchOwned": true
+    },
+    "wt-1787718680674-1": {
+      "branch": "sustaining-nose",
+      "path": "/Users/sudoraj/Desktop/DhwaniAstro/.kilo/worktrees/sustaining-nose",
+      "parentBranch": "fix/queue-flow-error-25aug",
+      "createdAt": "2026-08-25T13:02:43.235Z",
+      "remote": "origin"
     }
   },
   "sessions": {
@@ -478,6 +485,10 @@
     "ses_03915ac98ffe01F6mLFKCB6hPL": {
       "worktreeId": "wt-1785748671676-1",
       "createdAt": "2026-08-03T09:17:53.741Z"
+    },
+    "ses_fc6fb3991ffegWeKY1EM5IxwQY": {
+      "worktreeId": "wt-1787718680674-1",
+      "createdAt": "2026-08-26T04:31:20.674Z"
     }
   },
   "tabOrder": {
@@ -577,7 +588,8 @@
     "wt-1781761155956-1",
     "wt-1781765938799-2",
     "wt-1785559054518-1",
-    "wt-1785748671676-1"
+    "wt-1785748671676-1",
+    "wt-1787718680674-1"
   ],
   "sessionsCollapsed": false
 }
