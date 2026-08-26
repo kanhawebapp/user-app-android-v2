@@ -10,7 +10,9 @@ export const useSidebarAnimation = (visible: boolean) => {
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const profileBorderAnim = useRef(new Animated.Value(0)).current;
   const [shouldRender, setShouldRender] = useState(visible);
-
+  const visibleRef = useRef(visible);
+  visibleRef.current = visible;
+console.log('visible>>', visible);
   useEffect(() => {
     if (visible) {
       setShouldRender(true);
@@ -43,7 +45,7 @@ export const useSidebarAnimation = (visible: boolean) => {
           useNativeDriver: true,
         }),
       ).start();
-    } else {
+    } else if (shouldRender) {
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: -SIDEBAR_WIDTH,
@@ -62,7 +64,9 @@ export const useSidebarAnimation = (visible: boolean) => {
           useNativeDriver: true,
         }),
       ]).start(() => {
-        setShouldRender(false);
+        if (!visibleRef.current) {
+          setShouldRender(false);
+        }
       });
 
       profileBorderAnim.stopAnimation();

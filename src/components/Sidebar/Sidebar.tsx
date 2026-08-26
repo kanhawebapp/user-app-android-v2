@@ -47,7 +47,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }
 
   return (
-    <View style={sidebarStyle.container} pointerEvents="box-none">
+    <View
+      style={sidebarStyle.container}
+      pointerEvents={visible ? 'box-none' : 'none'}>
       {/* Overlay */}
       <SidebarOverlay opacityAnim={overlayAnim} onPress={handleOverlayPress} />
 
