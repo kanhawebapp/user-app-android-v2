@@ -62,7 +62,6 @@ export const SessionCard: React.FC<SessionCardProps> = ({
 }) => {
   const { colors, isDark } = useTheme();
   const statusColors = STATUS_COLORS[session.status] || STATUS_COLORS.COMPLETED;
-
   const formatDateTime = (ms: string): string => {
     if (!ms) {
       return '-';

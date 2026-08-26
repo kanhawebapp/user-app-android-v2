@@ -157,17 +157,17 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
       </Text>
 
       {/* Order */}
-      <Text
+      {/* <Text
         variant="captionSmall"
         style={{
           color: colors.text.secondary,
           marginTop: 4,
         }}>
         Display Order: {item.order}
-      </Text>
+      </Text> */}
 
       {/* Slug */}
-      <Text
+      {/* <Text
         numberOfLines={1}
         variant="captionSmall"
         style={{
@@ -178,7 +178,7 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
       </Text>
 
       {/* Href */}
-      <Text
+      {/* <Text
         numberOfLines={1}
         variant="captionSmall"
         style={{
@@ -186,10 +186,10 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
           marginTop: 2,
         }}>
         {item.href}
-      </Text>
+      </Text> */}
 
       {/* Footer */}
-      <View style={styles.footerRow}>
+      {/* <View style={styles.footerRow}>
         <Text
           variant="captionSmall"
           style={{
@@ -205,7 +205,7 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
           }}>
           {new Date(item.createdAt).toLocaleDateString()}
         </Text>
-      </View>
+      </View> */}
     </TouchableOpacity>
   );
 
