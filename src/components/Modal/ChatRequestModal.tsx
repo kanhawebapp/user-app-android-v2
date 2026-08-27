@@ -480,7 +480,7 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
             : 'Please provide your birth details for accurate chat readings'}
         </Text>
 
-        {submitError ? (
+        {/* {submitError ? (
           <View
             style={[
               styles.errorBanner,
@@ -490,7 +490,7 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
               {submitError}
             </Text>
           </View>
-        ) : null}
+        ) : null} */}
 
         {/* ========================================== */}
         {/* RECENT INTAKES */}

@@ -67,17 +67,21 @@ export const useConsultationFlow = ({onNavigateToTab}: any = {}) => {
         console.log('[ConsultationFlow] Request result:', result);
 
         if (!result.success) {
-          console.log('[ConsultationFlow] Intake failed:', result.error);
+          const errorMessage =
+            result?.error ||
+            'Something went wrong';
+
+          console.log('[ConsultationFlow] Intake failed:', errorMessage);
           console.log('[ConsultationFlow] Stopping preparation loader');
 
-          // showError(
-          //   result.error ||
-          //     'Unable to connect with astrologer. Please try again.',
-          // );
+          showError(errorMessage);
+          // Close the intake modal so the toast is visible and the user
+          // is not stuck on Preparing consultation...
+          onClose?.();
 
           return {
             success: false,
-            error: result.error,
+            error: errorMessage,
           };
         }
 
@@ -85,7 +89,6 @@ export const useConsultationFlow = ({onNavigateToTab}: any = {}) => {
 
         const {isCall, isQueued, callId} = result;
 
-        // CLOSE MODAL ONLY AFTER SUCCESS
         onClose?.();
 
         // ==========================
@@ -140,13 +143,15 @@ export const useConsultationFlow = ({onNavigateToTab}: any = {}) => {
       } catch (error: any) {
         const errorMessage =
           error?.message ||
-          'Unable to connect with astrologer. Please try again.';
+          error?.error ||
+          'Something went wrong';
 
         console.error('[ConsultationFlow] Request error:', error);
         console.log('[ConsultationFlow] Intake failed:', errorMessage);
         console.log('[ConsultationFlow] Stopping preparation loader');
 
         showError(errorMessage);
+        onClose?.();
 
         return {
           success: false,
