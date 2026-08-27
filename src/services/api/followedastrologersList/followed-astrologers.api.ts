@@ -15,7 +15,7 @@ query GetFollowedAstrologers(
       id
 
       name
-
+      skills
       displayName
 
       profilePic

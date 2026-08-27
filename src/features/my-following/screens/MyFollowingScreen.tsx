@@ -43,6 +43,7 @@ const MyFollowingScreen: React.FC<MyFollowingScreenProps> = ({
     loadMore,
   } = useFollowedAstrologers();
 
+
   return (
     <ConsultationFlowLayer>
       {({ startChat, startCall }) => {
@@ -280,7 +281,7 @@ const MyFollowingScreen: React.FC<MyFollowingScreenProps> = ({
                                 'Astrologer'}
                             </Text>
 
-                            <Text
+                            {/* <Text
                               variant="captionSmall"
                               style={{
                                 color:
@@ -290,7 +291,7 @@ const MyFollowingScreen: React.FC<MyFollowingScreenProps> = ({
                                 marginTop: 2,
                               }}>
                               Astrology Expert
-                            </Text>
+                            </Text> */}
 
                             <View
                               style={
@@ -320,7 +321,7 @@ const MyFollowingScreen: React.FC<MyFollowingScreenProps> = ({
                                         .secondary,
                                     marginLeft: 2,
                                   }}>
-                                  {Number(astrologer.rating ?? 0).toFixed(1)}
+                                {Number(astrologer.rating ?? 0).toFixed(1)}
                                 </Text>
                               </View>
 
@@ -436,7 +437,7 @@ const MyFollowingScreen: React.FC<MyFollowingScreenProps> = ({
                           },
                         ]}>
 
-                        <View
+                        {/* <View
                           style={
                             styles.actionButtons
                           }>
@@ -479,7 +480,7 @@ const MyFollowingScreen: React.FC<MyFollowingScreenProps> = ({
                               borderWidth: 1,
                             }}
                           />
-                        </View>
+                        </View> */}
                       </View>
                     </Card>
                   );
