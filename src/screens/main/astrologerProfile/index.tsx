@@ -446,8 +446,8 @@ const AstrologerProfileScreen: React.FC<AstrologerProfileScreenProps> = ({
         onClose={() => {
           setShowChatRequestModal(false);
         }}
-        onSubmit={formData => {
-          submitConsultationRequest({
+        onSubmit={async formData => {
+          return submitConsultationRequest({
             astrologer: astrologerData,
             consultationType,
             formData,

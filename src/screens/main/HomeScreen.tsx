@@ -437,10 +437,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           setShowChatRequestModal(false);
           setChatTargetAstrologer(null);
         }}
-        onSubmit={formData => {
-          if (!chatTargetAstrologer) return;
+        onSubmit={async formData => {
+          if (!chatTargetAstrologer) {
+            return {success: false};
+          }
 
-          submitConsultationRequest({
+          return submitConsultationRequest({
             astrologer: chatTargetAstrologer,
             consultationType,
             formData,

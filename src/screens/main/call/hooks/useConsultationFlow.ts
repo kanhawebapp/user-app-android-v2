@@ -67,13 +67,17 @@ export const useConsultationFlow = ({onNavigateToTab}: any = {}) => {
         console.log('[ConsultationFlow] Request result:', result);
 
         if (!result.success) {
-          showError(
-            result.error ||
-              'Unable to connect with astrologer. Please try again.',
-          );
+          console.log('[ConsultationFlow] Intake failed:', result.error);
+          console.log('[ConsultationFlow] Stopping preparation loader');
+
+          // showError(
+          //   result.error ||
+          //     'Unable to connect with astrologer. Please try again.',
+          // );
 
           return {
             success: false,
+            error: result.error,
           };
         }
 
@@ -134,17 +138,22 @@ export const useConsultationFlow = ({onNavigateToTab}: any = {}) => {
           success: true,
         };
       } catch (error: any) {
-        console.error('[ConsultationFlow] Request error:', error);
-
-        showError(
+        const errorMessage =
           error?.message ||
-            'Unable to connect with astrologer. Please try again.',
-        );
+          'Unable to connect with astrologer. Please try again.';
+
+        console.error('[ConsultationFlow] Request error:', error);
+        console.log('[ConsultationFlow] Intake failed:', errorMessage);
+        console.log('[ConsultationFlow] Stopping preparation loader');
+
+        showError(errorMessage);
 
         return {
           success: false,
+          error: errorMessage,
         };
       } finally {
+        console.log('[ConsultationFlow] Stopping preparation loader');
         submitLockRef.current = false;
         setLoading(false);
       }

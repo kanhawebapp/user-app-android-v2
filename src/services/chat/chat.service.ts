@@ -126,6 +126,21 @@ export const sendChatRequest = async (
 
     const intakeResponse = await createIntake(apiPayload);
 
+    if (
+      !intakeResponse ||
+      (intakeResponse as {success?: boolean}).success === false
+    ) {
+      const errorMessage =
+        (intakeResponse as {error?: string})?.error ||
+        'Failed to create intake';
+      console.log('[ChatService] Intake failed:', errorMessage);
+      useChatStore.getState().setChatStatus('idle');
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    }
+
     // console.log('intake response', intakeResponse);
 
     // try {
@@ -538,11 +553,17 @@ export const sendChatRequest = async (
       socketEmitted: emitted1 && emitted2,
     };
   } catch (error: any) {
-    console.log('[ChatService] ERROR:', error?.message || error);
+    const errorMessage =
+      error?.message ||
+      error?.response?.data?.errors?.[0]?.message ||
+      'Failed to send chat request';
+    console.log('[ChatService] ERROR:', errorMessage);
+    console.log('[ChatService] Intake failed:', errorMessage);
     useChatStore.getState().setChatStatus('idle');
+    useCallStore.getState().reset();
     return {
       success: false,
-      error: error?.message || 'Failed to send chat request',
+      error: errorMessage,
     };
   }
 };

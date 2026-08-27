@@ -127,12 +127,12 @@ export const ConsultationFlowLayer: React.FC<ConsultationFlowLayerProps> = ({
   );
 
   const handleSubmit = useCallback(
-    (formData: ChatRequestData) => {
+    async (formData: ChatRequestData) => {
       if (!selectedAstrologer) {
-        return;
+        return {success: false as const};
       }
 
-      submitConsultationRequest({
+      return submitConsultationRequest({
         astrologer: selectedAstrologer,
         consultationType,
         formData,

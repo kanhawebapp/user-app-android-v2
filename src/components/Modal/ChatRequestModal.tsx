@@ -36,10 +36,17 @@ export interface ChatRequestData {
   occupation?: string;
 }
 
+export interface ChatRequestSubmitResult {
+  success?: boolean;
+  error?: string;
+}
+
 export interface ChatRequestModalProps {
   visible: boolean;
   onClose: () => void;
-onSubmit: (data: ChatRequestData) => void | Promise<void>;
+  onSubmit: (
+    data: ChatRequestData,
+  ) => void | Promise<void | ChatRequestSubmitResult>;
   astrologer?: any;
   loading?: boolean;
   type?: 'chat' | 'call';
@@ -67,6 +74,7 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLocalLoading, setIsLocalLoading] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const [showNewForm, setShowNewForm] = useState(false);
 
@@ -123,13 +131,23 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
     };
   }, []);
 
+  const stopPreparationLoader = useCallback(() => {
+    console.log('[ChatRequestModal] Stopping preparation loader');
+    requestInProgressRef.current = false;
+    setLoadingIntakeId(null);
+    setIsLocalLoading(false);
+    animateCardLoading(false);
+  }, [animateCardLoading]);
+
   useEffect(() => {
-    if (!visible && loadingIntakeId) {
+    if (!visible) {
       requestInProgressRef.current = false;
       setLoadingIntakeId(null);
+      setIsLocalLoading(false);
+      setSubmitError(null);
       animateCardLoading(false);
     }
-  }, [visible, loadingIntakeId, animateCardLoading]);
+  }, [visible, animateCardLoading]);
 
   useEffect(() => {
     if (type === 'call' && visible) {
@@ -147,6 +165,9 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
     setErrors({});
     setShowNewForm(false);
     setLoadingIntakeId(null);
+    setIsLocalLoading(false);
+    setSubmitError(null);
+    requestInProgressRef.current = false;
   }, []);
 
   const handleClose = useCallback(() => {
@@ -285,44 +306,56 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
   // );
 
   const handleRecentIntakeSelect = useCallback(
-  async (item: any) => {
-    if (requestInProgressRef.current) {
-      return;
-    }
+    async (item: any) => {
+      if (requestInProgressRef.current) {
+        return;
+      }
 
-    requestInProgressRef.current = true;
-    setLoadingIntakeId(item.id);
-    animateCardPress();
+      requestInProgressRef.current = true;
+      setSubmitError(null);
+      setLoadingIntakeId(item.id);
+      animateCardPress();
 
-    const formattedDate = item.birthDate
-      ? new Date(Number(item.birthDate)).toLocaleDateString('en-GB')
-      : '';
+      const formattedDate = item.birthDate
+        ? new Date(Number(item.birthDate)).toLocaleDateString('en-GB')
+        : '';
 
-    console.log('RECENT INTAKE DATE:', formattedDate);
+      console.log('RECENT INTAKE DATE:', formattedDate);
 
-    try {
-      await onSubmit({
-        name: item.name || '',
-        gender:
-          item.gender?.toLowerCase() === 'female'
-            ? 'female'
-            : item.gender?.toLowerCase() === 'other'
-              ? 'other'
-              : 'male',
-        dateOfBirth: formattedDate,
-        placeOfBirth: item.birthPlace || '',
-        birthTime: item.birthTime || '',
-        occupation: item.occupation || '',
-      });
-    } catch (error) {
-      console.error('[ChatRequestModal] Recent intake error:', error);
-      requestInProgressRef.current = false;
-      setLoadingIntakeId(null);
-      animateCardLoading(false);
-    }
-  },
-  [onSubmit, animateCardPress, animateCardLoading],
-);
+      try {
+        const result = await onSubmit({
+          name: item.name || '',
+          gender:
+            item.gender?.toLowerCase() === 'female'
+              ? 'female'
+              : item.gender?.toLowerCase() === 'other'
+                ? 'other'
+                : 'male',
+          dateOfBirth: formattedDate,
+          placeOfBirth: item.birthPlace || '',
+          birthTime: item.birthTime || '',
+          occupation: item.occupation || '',
+        });
+
+        if (result && result.success === false) {
+          console.log('[ChatRequestModal] Intake failed:', result.error);
+          setSubmitError(
+            result.error ||
+              'Unable to connect with astrologer. Please try again.',
+          );
+        }
+      } catch (error: any) {
+        console.error('[ChatRequestModal] Recent intake error:', error);
+        setSubmitError(
+          error?.message ||
+            'Unable to connect with astrologer. Please try again.',
+        );
+      } finally {
+        stopPreparationLoader();
+      }
+    },
+    [onSubmit, animateCardPress, stopPreparationLoader],
+  );
 
 
   // ==========================================
@@ -371,47 +404,62 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
 
 
   const handleSubmit = useCallback(async () => {
-  if (!validate()) {
-    return;
-  }
+    if (!validate()) {
+      return;
+    }
 
-  if (requestInProgressRef.current) {
-    return;
-  }
+    if (requestInProgressRef.current) {
+      return;
+    }
 
-  requestInProgressRef.current = true;
+    requestInProgressRef.current = true;
+    setSubmitError(null);
+    setIsLocalLoading(true);
 
-  try {
-    await onSubmit({
-      name,
-      gender: gender!,
-      dateOfBirth,
-      placeOfBirth,
-      birthTime,
-      occupation: occupation.trim(),
-    });
-  } catch (error) {
-    console.error('[ChatRequestModal] Submit error:', error);
-  } finally {
-    requestInProgressRef.current = false;
-  }
-}, [
-  validate,
-  name,
-  gender,
-  dateOfBirth,
-  placeOfBirth,
-  birthTime,
-  occupation,
-  onSubmit,
-]);
+    try {
+      const result = await onSubmit({
+        name,
+        gender: gender!,
+        dateOfBirth,
+        placeOfBirth,
+        birthTime,
+        occupation: occupation.trim(),
+      });
+
+      if (result && result.success === false) {
+        console.log('[ChatRequestModal] Intake failed:', result.error);
+        setSubmitError(
+          result.error ||
+            'Unable to connect with astrologer. Please try again.',
+        );
+      }
+    } catch (error: any) {
+      console.error('[ChatRequestModal] Submit error:', error);
+      setSubmitError(
+        error?.message ||
+          'Unable to connect with astrologer. Please try again.',
+      );
+    } finally {
+      stopPreparationLoader();
+    }
+  }, [
+    validate,
+    name,
+    gender,
+    dateOfBirth,
+    placeOfBirth,
+    birthTime,
+    occupation,
+    onSubmit,
+    stopPreparationLoader,
+  ]);
 
   return (
     <Modal
       visible={visible}
-      onClose={isIntakeLoading ? () => { } : handleClose}
+      onClose={handleClose}
       showBackdrop={true}
-      dismissOnBackdropPress={!isIntakeLoading}
+      dismissOnBackdropPress={true}
       showCloseButton={false}
       avoidKeyboard
       contentStyle={styles.modalContent}>
@@ -431,6 +479,18 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
             ? 'Please provide your birth details to start the call consultation'
             : 'Please provide your birth details for accurate chat readings'}
         </Text>
+
+        {submitError ? (
+          <View
+            style={[
+              styles.errorBanner,
+              {backgroundColor: colors.error.background},
+            ]}>
+            <Text style={[styles.errorBannerText, {color: colors.error.main}]}>
+              {submitError}
+            </Text>
+          </View>
+        ) : null}
 
         {/* ========================================== */}
         {/* RECENT INTAKES */}
@@ -673,6 +733,19 @@ const styles = StyleSheet.create({
   subtitle: {
     marginBottom: 16,
     lineHeight: 20,
+  },
+
+  errorBanner: {
+    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+
+  errorBannerText: {
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 
   // ==========================================
