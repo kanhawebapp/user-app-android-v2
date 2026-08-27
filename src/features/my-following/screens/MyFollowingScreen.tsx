@@ -43,7 +43,6 @@ const MyFollowingScreen: React.FC<MyFollowingScreenProps> = ({
     loadMore,
   } = useFollowedAstrologers();
 
-
   return (
     <ConsultationFlowLayer>
       {({ startChat, startCall }) => {
@@ -321,8 +320,7 @@ const MyFollowingScreen: React.FC<MyFollowingScreenProps> = ({
                                         .secondary,
                                     marginLeft: 2,
                                   }}>
-                                  {astrologer.rating ??
-                                    0}
+                                  {Number(astrologer.rating ?? 0).toFixed(1)}
                                 </Text>
                               </View>
 
