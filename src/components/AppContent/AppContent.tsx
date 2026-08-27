@@ -1,5 +1,6 @@
 import React, {useEffect, useState, Suspense, lazy} from 'react';
 import {View, StatusBar, StyleSheet, ActivityIndicator} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {NavigationContainer, useNavigation} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {colors, typography, useTheme} from '../../theme';
@@ -115,6 +116,11 @@ const ONBOARDING_VARIANTS: SplashScreenVariant[] = [
   'onboarding1',
   'onboarding2',
 ];
+const HAS_SEEN_ONBOARDING2_KEY = 'hasSeenOnboarding2';
+
+const persistHasSeenOnboarding2 = async () => {
+  await AsyncStorage.setItem(HAS_SEEN_ONBOARDING2_KEY, 'true');
+};
 
 // Screen names for navigation
 export type RootStackParamList = {
@@ -163,36 +169,76 @@ const AppContent: React.FC = () => {
   } = useAppStore();
   const [showSplash, setShowSplash] = useState(true);
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [onboardingCheckComplete, setOnboardingCheckComplete] = useState(false);
+  const [hasSeenOnboarding2, setHasSeenOnboarding2] = useState(false);
 
   // Toast hook for showing welcome message
   const {showSuccess} = useToast();
 
+  const onboardingVariants: SplashScreenVariant[] = hasSeenOnboarding2
+    ? ['onboarding1']
+    : ONBOARDING_VARIANTS;
+
   // Get splash variant based on current index
   const getSplashVariant = (): SplashScreenVariant => {
-    return ONBOARDING_VARIANTS[currentSplashIndex] || 'onboarding1';
+    return onboardingVariants[currentSplashIndex] || 'onboarding1';
+  };
+
+  const completeOnboarding = () => {
+    setOnboardingCompleted(true);
+    setShowSplash(false);
   };
 
   // Handle next button press
-  const handleNext = () => {
-    if (currentSplashIndex < ONBOARDING_VARIANTS.length - 1) {
+  const handleNext = async () => {
+    if (currentSplashIndex < onboardingVariants.length - 1) {
       setCurrentSplashIndex(currentSplashIndex + 1);
     } else {
-      setOnboardingCompleted(true);
-      setShowSplash(false);
+      if (onboardingVariants[currentSplashIndex] === 'onboarding2') {
+        await persistHasSeenOnboarding2();
+      }
+      completeOnboarding();
     }
   };
 
   // Handle continue button press
-  const handleContinue = () => {
-    setOnboardingCompleted(true);
-    setShowSplash(false);
+  const handleContinue = async () => {
+    await persistHasSeenOnboarding2();
+    completeOnboarding();
   };
 
   // Handle skip button press
-  const handleSkip = () => {
-    setOnboardingCompleted(true);
-    setShowSplash(false);
+  const handleSkip = async () => {
+    await persistHasSeenOnboarding2();
+    completeOnboarding();
   };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const checkHasSeenOnboarding2 = async () => {
+      try {
+        const value = await AsyncStorage.getItem(HAS_SEEN_ONBOARDING2_KEY);
+        if (isMounted) {
+          setHasSeenOnboarding2(value === 'true');
+        }
+      } catch {
+        if (isMounted) {
+          setHasSeenOnboarding2(false);
+        }
+      } finally {
+        if (isMounted) {
+          setOnboardingCheckComplete(true);
+        }
+      }
+    };
+
+    checkHasSeenOnboarding2();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     const initApp = async () => {
@@ -241,10 +287,20 @@ const AppContent: React.FC = () => {
     initApp();
   }, []);
 
+  // Wait for the persisted onboarding2 flag before choosing a splash variant
+  if (!onboardingCheckComplete) {
+    return (
+      <>
+        <StatusBar barStyle="light-content" backgroundColor="#000000" />
+        <View style={styles.splashGate} />
+      </>
+    );
+  }
+
   // Show onboarding splash screens
   if (showSplash && !onboardingCompleted) {
     const currentVariant = getSplashVariant();
-    const isLastScreen = currentSplashIndex === ONBOARDING_VARIANTS.length - 1;
+    const isLastScreen = currentSplashIndex === onboardingVariants.length - 1;
 
     return (
       <>
@@ -547,6 +603,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: typography.align.center,
     alignItems: typography.align.center,
+  },
+  splashGate: {
+    flex: 1,
+    backgroundColor: '#000000',
   },
   loadingContainer: {
     flex: 1,
