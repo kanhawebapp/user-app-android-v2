@@ -152,10 +152,10 @@ export const AstrologerCard: React.FC<AstrologerCardProps> = ({
               <Text style={[styles.rating, { color: colors.text.primary }]}>
                 {rating.toFixed(1)}
               </Text>
-              <Text
+              {/* <Text
                 style={[styles.reviewCount, { color: colors.text.secondary }]}>
                 ({reviewCount})
-              </Text>
+              </Text> */}
             </View>
           </View>
 
