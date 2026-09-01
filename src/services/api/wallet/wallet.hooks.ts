@@ -12,6 +12,8 @@ interface WalletApiState {
   loading: boolean;
   fetchWallet: () => Promise<void>;
   applyBalanceCoins: (balanceCoins: number) => void;
+  clearWallet: () => void;
+
 }
 
 const useWalletApiStore = create<WalletApiState>((set, get) => ({
@@ -44,6 +46,14 @@ const useWalletApiStore = create<WalletApiState>((set, get) => ({
         : {balanceCoins, lockedCoins: 0},
     });
   },
+
+   clearWallet: () => {
+    set({
+      wallet: null,
+      loading: false,
+    });
+  },
+
 }));
 
 /** Apply balance from a mutation response (e.g. sendGift.userBalance). */
@@ -56,6 +66,9 @@ export const refreshWalletBalance = () => {
   return useWalletApiStore.getState().fetchWallet();
 };
 
+export const clearWalletCache = () => {
+  useWalletApiStore.getState().clearWallet();
+};
 export const useWallet = () => {
   const wallet = useWalletApiStore(state => state.wallet);
   const loading = useWalletApiStore(state => state.loading);

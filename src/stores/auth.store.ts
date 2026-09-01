@@ -9,6 +9,7 @@ import {secureStorage} from '../services/storage/secure.storage';
 import {STORAGE_KEYS} from '../constants/app.constants';
 import {loggingService} from '../services/logging';
 import type {User} from '../types/global.types';
+import { clearWalletCache } from '../services/api/wallet/wallet.hooks';
 
 interface AuthState {
   // State
@@ -132,7 +133,7 @@ export const useAuthStore = create<AuthState>()(
         await secureStorage.deleteItem(STORAGE_KEYS.ACCESS_TOKEN);
         await secureStorage.deleteItem(STORAGE_KEYS.REFRESH_TOKEN);
         await secureStorage.deleteItem(STORAGE_KEYS.USER_DATA);
-
+        clearWalletCache();
         loggingService.info('[AuthStore] Logged out successfully');
 
         set({
