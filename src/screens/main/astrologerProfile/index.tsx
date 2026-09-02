@@ -376,8 +376,9 @@ const displayIndicatorColor = isOffline ? '#EF4444' : indicatorColor;
                 'Call Free'
               ) : (
                 <>
-                  Call {Currency}
-                  {callPriceData.currentPrice}/m
+                  {/* Call {Currency}
+                  {callPriceData.currentPrice}/m */}
+                  Call
                 </>
               )}
             </Text>
@@ -406,8 +407,9 @@ const displayIndicatorColor = isOffline ? '#EF4444' : indicatorColor;
                 'Chat Free'
               ) : (
                 <>
-                  Chat {Currency}
-                  {chatPriceData.currentPrice}/m
+                  {/* Chat {Currency}
+                  {chatPriceData.currentPrice}/m */}
+                  Chat
                 </>
               )}
             </Text>
