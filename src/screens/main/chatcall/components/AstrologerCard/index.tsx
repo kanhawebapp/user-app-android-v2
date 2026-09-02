@@ -82,6 +82,10 @@ export const AstrologerCard: React.FC<AstrologerCardProps> = ({
     canCall,
   } = getAstrologerStatus(astrologer);
 
+  const isOffline = !canChat && !canCall;
+
+  const displayIndicatorColor = isOffline ? '#EF4444' : indicatorColor;
+
   // const canTakeConsultation = isOnline && !isBusy;
 
   const profileImage = astrologer.image
@@ -130,7 +134,7 @@ export const AstrologerCard: React.FC<AstrologerCardProps> = ({
             style={[
               styles[indicatorStyle],
               {
-                backgroundColor: indicatorColor,
+                backgroundColor: displayIndicatorColor,
                 borderColor: colors.common.white,
               },
             ]}
@@ -294,8 +298,8 @@ export const AstrologerCard: React.FC<AstrologerCardProps> = ({
           <Icon name="call" size={22} color={colors.primary.main} />
           <Text
             style={[
-              styles.buttonText, 
-              !isAvailableForCall 
+              styles.buttonText,
+              !isAvailableForCall
                 ? { color: colors.primary.main }
                 : { color: colors.primary.main },
             ]}>

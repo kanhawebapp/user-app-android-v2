@@ -35,7 +35,7 @@ const AstrologerCard: React.FC<AstrologerCardProps> = ({
   |--------------------------------------------------------------------------
   */
   // console.log("itemitemitemitem", item)
- // console.log("item>>>>",item)
+  // console.log("item>>>>",item)
   const rating =
     item?.rating && item?.rating > 0 ? Number(item.rating).toFixed(1) : '4.8';
 
@@ -73,8 +73,16 @@ const AstrologerCard: React.FC<AstrologerCardProps> = ({
     canChat,
     canCall,
   } = getAstrologerStatus(item);
+  console.log("item", item)
+  console.log("status", status)
+  console.log("color", indicatorColor)
 
+  console.log("canChat", canChat)
+  console.log("canCall", canCall)
+  const isOffline = !canChat && !canCall;
 
+  const displayStatus = isOffline ? 'offline' : status;
+  const displayColor = isOffline ? '#EF4444' : indicatorColor;
   return (
     <TouchableOpacity
       activeOpacity={0.92}
@@ -96,7 +104,7 @@ const AstrologerCard: React.FC<AstrologerCardProps> = ({
           style={[
             styles.statusDot,
             {
-              backgroundColor: indicatorColor
+              backgroundColor: displayColor
 
             },
           ]}
@@ -114,10 +122,10 @@ const AstrologerCard: React.FC<AstrologerCardProps> = ({
         style={[
           styles.statusText,
           {
-            color: indicatorColor,
+            color: displayColor,
           },
         ]}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)}
       </Text>
       {/* <Text
         style={[

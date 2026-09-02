@@ -187,7 +187,10 @@ const MyFollowingScreen: React.FC<MyFollowingScreenProps> = ({
                     canChat,
                     canCall,
                   } = getAstrologerStatus(astrologer);
-                  // console.log("astrologer inmy follow",astrologer)
+                  const isOffline = !canChat && !canCall;
+
+                  const displayIndicatorColor = isOffline ? '#EF4444' : indicatorColor;
+                  // console.log("astrologer inmy follow",isOffline)
                   return (
                     <Card
                       key={astrologer.id}
@@ -252,7 +255,7 @@ const MyFollowingScreen: React.FC<MyFollowingScreenProps> = ({
                             style={[
                               styles.onlineIndicator,
                               {
-                                backgroundColor: indicatorColor
+                                backgroundColor: displayIndicatorColor
                                 // colors
                                 //   .success
                                 //   .main,
@@ -321,7 +324,7 @@ const MyFollowingScreen: React.FC<MyFollowingScreenProps> = ({
                                         .secondary,
                                     marginLeft: 2,
                                   }}>
-                                {Number(astrologer.rating ?? 0).toFixed(1)}
+                                  {Number(astrologer.rating ?? 0).toFixed(1)}
                                 </Text>
                               </View>
 

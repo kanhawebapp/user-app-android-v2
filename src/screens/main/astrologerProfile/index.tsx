@@ -140,6 +140,9 @@ const AstrologerProfileScreen: React.FC<AstrologerProfileScreenProps> = ({
     canCall,
   } = getAstrologerStatus(data);
 
+const isOffline = !canChat && !canCall;
+
+const displayIndicatorColor = isOffline ? '#EF4444' : indicatorColor;
 
   const onRefresh = useCallback(async () => {
     try {
@@ -270,7 +273,7 @@ const AstrologerProfileScreen: React.FC<AstrologerProfileScreenProps> = ({
           <ProfileSection
             astrologerData={astrologerData} imageUrl={imageUrl}
             followersCount={followersCount}
-            indicatorColor={indicatorColor}
+            indicatorColor={displayIndicatorColor}
             status={status}
           />
 
