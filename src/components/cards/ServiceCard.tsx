@@ -58,9 +58,9 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ service, onPress }) =>
         </Text>
 
         <View style={styles.bottomRow}>
-          <Text style={styles.price} weight="semibold">
+          {/* <Text style={styles.price} weight="semibold">
             ₹{service.price}
-          </Text>
+          </Text> */}
 
           <TouchableOpacity style={styles.button} onPress={onPress}>
             <Text style={styles.buttonText} weight="semibold">
@@ -118,8 +118,8 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   bottomRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    // flexDirection: 'row',
+    // justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 14,
   },

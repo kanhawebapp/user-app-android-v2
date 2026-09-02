@@ -252,12 +252,12 @@ export const FeatureHealings: React.FC<FeaturedRemediesProps> = ({
               </View> */}
 
               <View style={styles.footer}>
-                <Text
+                {/* <Text
                   variant="label"
                   weight="bold"
                   style={{ color: colors.text.primary }}>
                   ₹{remedy.price}
-                </Text>
+                </Text> */}
 
                 <Button
                   onPress={() => onRemedyPress?.(remedy)}
@@ -314,10 +314,11 @@ const styles = StyleSheet.create({
   },
 
   footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    // flexDirection: 'row',
+    // justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 6,
+    marginBottom: 10
   },
 
   bookBtn: {

@@ -91,11 +91,11 @@ const ServiceDetailsScreen: React.FC<
                 {service.name}
               </Text>
 
-              <Text
+              {/* <Text
                 style={styles.heroPrice}
                 weight="semibold">
                 ₹{service.price}
-              </Text>
+              </Text> */}
             </View>
           </View>
 
@@ -169,7 +169,7 @@ const ServiceDetailsScreen: React.FC<
 
             {/* Pricing Card */}
 
-            <View style={styles.priceCard}>
+            {/* <View style={styles.priceCard}>
               <Text
                 style={styles.priceLabel}
                 weight="medium">
@@ -186,14 +186,14 @@ const ServiceDetailsScreen: React.FC<
               <Text style={styles.priceNote}>
                 One-time service booking fee
               </Text>
-            </View>
+            </View> */}
           </View>
         </ScrollView>
 
         {/* Sticky Footer */}
 
         <View style={styles.footer}>
-          <View>
+          {/* <View>
             <Text style={styles.footerLabel}>
               Total Price
             </Text>
@@ -203,7 +203,7 @@ const ServiceDetailsScreen: React.FC<
               weight="semibold">
               ₹{service.price}
             </Text>
-          </View>
+          </View> */}
 
           <TouchableOpacity
             style={styles.confirmButton}
@@ -369,8 +369,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
 
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    // flexDirection: 'row',
+    // justifyContent: 'space-between',
     alignItems: 'center',
 
     borderTopWidth: 1,
