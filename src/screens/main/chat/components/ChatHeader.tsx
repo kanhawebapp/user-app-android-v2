@@ -74,7 +74,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         onPress={onToggleProfile}
         activeOpacity={0.8}>
         <View style={styles.avatarSmallContainer}>
-          {!astrologerImage ? (
+          {astrologerImage ? (
             <Image source={{uri: astrologerImage}} style={styles.avatarSmall} />
           ) : (
             <View
