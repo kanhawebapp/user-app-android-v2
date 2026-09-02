@@ -336,12 +336,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         />
 
         {/* 4. Ongoing Live Sessions */}
-        <OngoingLive
+        {/* <OngoingLive
           sessions={ongoingLives}
           onSessionPress={handleLiveSessionPress}
           onViewAllPress={handleViewAllLive}
           style={styles.section}
-        />
+        /> */}
 
         {/* 5. Upcoming Live Sessions */}
         <UpcomingLive
