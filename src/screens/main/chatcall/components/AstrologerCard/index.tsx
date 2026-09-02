@@ -103,6 +103,9 @@ export const AstrologerCard: React.FC<AstrologerCardProps> = ({
   const chatRate = chatPriceData.currentPrice;
   const callRate = callPriceData.currentPrice;
 
+  const disabledColor = '#D1D5DB';
+  const disabledTextColor = '#9CA3AF';
+
   return (
     <Card style={[styles.card]}>
       <View style={styles.cardContent}>
@@ -246,62 +249,77 @@ export const AstrologerCard: React.FC<AstrologerCardProps> = ({
 
       {/* Action Buttons */}
       <View style={styles.actionButtons}>
+
+
         {/* Chat Button */}
+
         <TouchableOpacity
           style={[
             styles.chatButton,
-            // !isAvailableForChat
-            //   ? { backgroundColor: colors.common.gray[400] }
-            //   : { backgroundColor: colors.common.white },
-            !canChat
-              ? { backgroundColor: colors.common.gray[400] }
-              : { backgroundColor: colors.common.white }
-            // : {backgroundColor: colors.primary.main},
+            {
+              borderColor: canChat
+                ? colors.primary.main
+                : disabledColor,
+
+              backgroundColor: canChat
+                ? colors.common.white
+                : '#F3F4F6',
+            },
           ]}
           onPress={() => onChatPress?.(astrologer)}
           disabled={!canChat}
-          // disabled={!isAvailableForChat}
           activeOpacity={0.7}>
           <Icon
             name="chatbubble-ellipses-outline"
             library="Ionicons"
-            color={colors.primary.main}
+            color={canChat ? colors.primary.main : disabledTextColor}
           />
-          <Text style={[styles.buttonText, { color: colors.primary.main }]}>
+
+          <Text
+            style={[
+              styles.buttonText,
+              {
+                color: canChat
+                  ? colors.primary.main
+                  : disabledTextColor,
+              },
+            ]}>
             {CHAT_CALL_LABELS.CARD_CHAT}
           </Text>
         </TouchableOpacity>
 
         {/* Call Button */}
+
         <TouchableOpacity
           style={[
             styles.callButton,
-            // !isAvailableForCall
-            //   ? {
-            //     borderColor: colors.common.gray[400],
-            //     backgroundColor: colors.background.secondary,
-            //   }
-            //   : { borderColor: colors.primary.main },
-            !canCall
-              ? {
-                borderColor: colors.common.gray[400],
-                backgroundColor: colors.background.secondary,
-              }
-              : {
-                borderColor: colors.primary.main,
-              }
+            {
+              borderColor: canCall
+                ? colors.primary.main
+                : disabledColor,
+
+              backgroundColor: canCall
+                ? colors.background.primary
+                : '#F3F4F6',
+            },
           ]}
           onPress={() => onCallPress?.(astrologer)}
-          // disabled={!isAvailableForCall}
           disabled={!canCall}
           activeOpacity={0.7}>
-          <Icon name="call" size={22} color={colors.primary.main} />
+          <Icon
+            name="call"
+            size={22}
+            color={canCall ? colors.primary.main : disabledTextColor}
+          />
+
           <Text
             style={[
               styles.buttonText,
-              !isAvailableForCall
-                ? { color: colors.primary.main }
-                : { color: colors.primary.main },
+              {
+                color: canCall
+                  ? colors.primary.main
+                  : disabledTextColor,
+              },
             ]}>
             {CHAT_CALL_LABELS.CARD_CALL}
           </Text>
