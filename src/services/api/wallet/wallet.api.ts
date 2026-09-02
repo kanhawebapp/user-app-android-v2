@@ -22,7 +22,7 @@ export const getUserWallet = async () => {
       {},
     );
 
-    // console.log('WALLET RESPONSE:', response);
+    console.log('WALLET RESPONSE:>>>>>', response);
 
     return response.getUserWallet;
   } catch (error: any) {

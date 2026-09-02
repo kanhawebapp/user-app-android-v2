@@ -102,6 +102,8 @@ const WalletScreen: React.FC<WalletScreenProps> = ({
 
   // Handle payment success from recharge pack screen
   const handlePaymentSuccess = useCallback((data: any) => {
+
+    console.log('Payment Success Data:', data);
     setShowRechargePack(false);
     setPaymentSuccessData(data);
   }, []);

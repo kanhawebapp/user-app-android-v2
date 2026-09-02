@@ -28,6 +28,8 @@ const useWalletApiStore = create<WalletApiState>((set, get) => ({
         set({loading: true});
       }
       const res = await getUserWallet();
+
+      // console.log('WALLET HOOK - Fetched wallet:', res);
       set({wallet: res});
     } catch (error) {
       console.log('WALLET HOOK ERROR:', error);

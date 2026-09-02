@@ -43,10 +43,12 @@ export const openRazorpayCheckout = async ({
   order,
   user,
   selectedPack,
+  amount
 }: {
   order: any;
   user: any;
   selectedPack: any;
+  amount: number;
 }) => {
   const options = {
     description: 'Wallet Recharge',
@@ -54,7 +56,7 @@ export const openRazorpayCheckout = async ({
 
     key: 'rzp_test_SNXjhTOgP1CIx0',
 
-    amount: order?.amount,
+    amount: amount,
 
     order_id: order?.orderId,
 

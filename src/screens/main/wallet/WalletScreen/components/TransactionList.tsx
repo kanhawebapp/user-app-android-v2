@@ -15,6 +15,7 @@ import { useWalletTransactions } from '../../../../../services/api/walletTransac
 import type { WalletTransaction } from '../../../../../services/api/walletTransactions/walletTransactions.types';
 
 const TransactionItem = ({ item, colors }: any) => {
+
   const isCredit = item.type === 'CREDIT';
   // Generate/display 8-digit transaction ID from UUID
   const transactionId = item.id
@@ -115,7 +116,7 @@ const TransactionList = ({ onRechargePress }: any) => {
   const { colors } = useTheme();
 
   const { data, loading, applyFilter, loadMore } = useWalletTransactions();
-  console.log("data>>>", data)
+  // console.log("data>>>", data)
   const [activeTab, setActiveTab] = React.useState<'all' | 'credit' | 'debit'>(
     'all',
   );

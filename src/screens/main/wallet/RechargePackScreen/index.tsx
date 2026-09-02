@@ -58,7 +58,7 @@ const RechargePackScreen: React.FC<RechargePackScreenProps> = ({
     setCustomAmount('');
   }, []);
 
-  console.log('selectedPack', selectedPack);
+  // console.log('selectedPack', selectedPack);
 
   const handleProceedToPay = useCallback(async () => {
     if (!selectedPack) {
@@ -70,20 +70,22 @@ const RechargePackScreen: React.FC<RechargePackScreenProps> = ({
       // Step 1: Create Order
       const order = await createOrder(selectedPack.id);
 
-      console.log('ORDER CREATED:', order);
+      // console.log('ORDER CREATED:', order);
 
       // Step 2: Open Razorpay (with notes)
       const paymentResult = await openRazorpayCheckout({
         order,
         user: profile,
         selectedPack,
+        amount: totalAmount,
+
       });
 
-      console.log('PAYMENT SUCCESS:', paymentResult);
+      // console.log('PAYMENT SUCCESS:', paymentResult);
 
       onPaymentSuccess?.({
         ...paymentResult,
-        amount: selectedPack?.price,
+        amount: totalAmount,
         packName: selectedPack?.name,
       });
     } catch (error: any) {
@@ -94,14 +96,14 @@ const RechargePackScreen: React.FC<RechargePackScreenProps> = ({
   const finalAmount = isCustomAmount
     ? parseInt(customAmount, 10) || 0
     : selectedPack?.price || 0;
-  const gstAmount = Math.round(finalAmount * 0.18);
-  const totalAmount = finalAmount + gstAmount;
 
+  const gstAmount = finalAmount * 0.18;
+  const totalAmount = finalAmount + gstAmount;
   return (
     <View
       style={[styles.container, { backgroundColor: colors.background.primary }]}>
       {/* Header */}
-     
+
       <GoBack onBack={onNavigateBack} title='Recharge Wallet' />
 
       <ScrollView
@@ -141,7 +143,7 @@ const RechargePackScreen: React.FC<RechargePackScreenProps> = ({
             Recharge Amount
           </Text>
           <Text variant="body" style={{ color: colors.text.primary }}>
-            ₹{finalAmount}
+            ₹{finalAmount.toFixed(2)}
           </Text>
         </View>
         <View style={styles.summaryRow}>
@@ -149,7 +151,7 @@ const RechargePackScreen: React.FC<RechargePackScreenProps> = ({
             GST (18%)
           </Text>
           <Text variant="body" style={{ color: colors.text.primary }}>
-            ₹{gstAmount}
+            ₹{gstAmount.toFixed(2)}
           </Text>
         </View>
         <View
@@ -166,7 +168,7 @@ const RechargePackScreen: React.FC<RechargePackScreenProps> = ({
             variant="h6"
             weight="bold"
             style={{ color: colors.primary.main }}>
-            ₹{totalAmount}
+            ₹{totalAmount.toFixed(2)}
           </Text>
         </View>
 
