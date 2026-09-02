@@ -297,7 +297,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({onNavigateBack}) => {
                 library="MaterialIcons"
               />
             </TouchableOpacity>
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={[
                 styles.settingItem,
                 {
@@ -323,7 +323,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({onNavigateBack}) => {
                 color={colors.icon.tertiary}
                 library="MaterialIcons"
               />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </Card>
         </View>
       </ScrollView>
