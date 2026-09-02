@@ -299,7 +299,7 @@ export const AstrologerCard: React.FC<AstrologerCardProps> = ({
                 : disabledColor,
 
               backgroundColor: canCall
-                ? colors.background.primary
+                ? colors.common.white
                 : '#F3F4F6',
             },
           ]}
