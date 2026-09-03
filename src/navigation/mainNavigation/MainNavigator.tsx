@@ -150,6 +150,8 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
       console.log('[MainNavigator] Chat accepted, navigating to chatCall tab');
       setIsProblemBaseAstroScreenVisible(false);
       setSelectedCategory(null);
+      setIsAstrologerProfileVisible(false);
+      setSelectedAstrologer(null);
       handleNavigateToTab('chatCall');
       // Note: Do NOT reset flag here; ChatCallScreen will reset after rendering ChatScreen
     }
