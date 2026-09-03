@@ -276,9 +276,9 @@ const styles = StyleSheet.create({
 
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
-    // paddingHorizontal: 20,
-    marginTop: -60,
+    // justifyContent: 'center',
+    // // paddingHorizontal: 20,
+    marginTop: 30,
   },
 
   cardContainer: {

@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -34,7 +34,7 @@ const RechargePaymentModal: React.FC<Props> = ({
 }) => {
   const [selectedPack, setSelectedPack] = useState<RechargePack | null>(null);
 
-  const renderItem = ({item}: {item: RechargePack}) => {
+  const renderItem = ({ item }: { item: RechargePack }) => {
     const isSelected = selectedPack?.id === item.id;
 
     return (
@@ -81,7 +81,7 @@ const RechargePaymentModal: React.FC<Props> = ({
 
           {/* Footer Button */}
           <TouchableOpacity
-            style={[styles.payButton, !selectedPack && {opacity: 0.5}]}
+            style={[styles.payButton, !selectedPack && { opacity: 0.5 }]}
             disabled={!selectedPack}
             onPress={() => selectedPack && onProceed(selectedPack)}>
             <Text style={styles.payText}>
@@ -115,10 +115,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: '#000'
+
   },
   close: {
     fontSize: 18,
-    color:'#000'
+    color: '#000'
   },
   card: {
     padding: 14,
@@ -138,14 +140,17 @@ const styles = StyleSheet.create({
   packName: {
     fontSize: 16,
     fontWeight: '600',
+    color: "#000"
   },
   price: {
     fontSize: 16,
     fontWeight: 'bold',
+    color: "#000"
+
   },
   desc: {
     fontSize: 12,
-    color: '#777',
+    color: '#444',
     marginVertical: 6,
   },
   footer: {
