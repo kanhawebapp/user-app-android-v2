@@ -79,6 +79,12 @@ export const DEFAULT_MENU_ITEMS: SidebarMenuItem[] = [
     icon: 'help',
     iconLibrary: 'MaterialIcons',
   },
+  {
+    key: 'privacy',
+    label: 'Privacy Policy',
+    icon: 'privacy-tip',
+    iconLibrary: 'MaterialIcons',
+  },
 ];
 
 // Social media icons

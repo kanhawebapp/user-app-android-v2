@@ -114,6 +114,11 @@ const FaqScreen = lazy(() =>
     default: module.default,
   })),
 );
+const PrivacyPolicyScreen = lazy(() =>
+  import('../../screens/legal/PrivacyPolicyScreen').then(module => ({
+    default: module.default,
+  })),
+);
 const UpdateProfileScreen = lazy(() =>
   import('../../screens/main/UpdateProfileScreen').then(module => ({
     default: module.default,
@@ -360,6 +365,12 @@ export const renderSidebarScreen = ({
       return (
         <Suspense fallback={shimmerFallback}>
           <FaqScreen onNavigateBack={handleSidebarBack} />
+        </Suspense>
+      );
+    case 'privacy':
+      return (
+        <Suspense fallback={shimmerFallback}>
+          <PrivacyPolicyScreen onBack={handleSidebarBack} />
         </Suspense>
       );
     case 'edit_profile':

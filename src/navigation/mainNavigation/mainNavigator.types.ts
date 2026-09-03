@@ -21,6 +21,7 @@ export type SidebarScreenKey =
   | 'game'
   | 'edit_profile'
   | 'faq'
+  | 'privacy'
   | null;
 
 // Game screen navigation keys

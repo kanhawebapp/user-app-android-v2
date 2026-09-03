@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -7,28 +7,38 @@ import {
   StatusBar,
   Switch,
 } from 'react-native';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {useTheme} from '../../theme';
-import {Text} from '../../components/Text';
-import {Icon} from '../../components/Icon';
-import {Card} from '../../components/Card';
-import {useAppStore} from '../../stores';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../theme';
+import { Text } from '../../components/Text';
+import { Icon } from '../../components/Icon';
+import { Card } from '../../components/Card';
+import { useAppStore } from '../../stores';
 import { GoBack } from '../../components';
+import PrivacyPolicyScreen from '../../screens/legal/PrivacyPolicyScreen';
 
 interface SettingsScreenProps {
   onNavigateBack?: () => void;
 }
 
-const SettingsScreen: React.FC<SettingsScreenProps> = ({onNavigateBack}) => {
+const SettingsScreen: React.FC<SettingsScreenProps> = ({ onNavigateBack }) => {
   const theme = useTheme();
   const colors = theme.colors;
   const insets = useSafeAreaInsets();
 
-  const {isDarkMode, toggleTheme, language, setLanguage} = useAppStore();
+  const { isDarkMode, toggleTheme, language, setLanguage } = useAppStore();
 
   const [notifications, setNotifications] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [vibration, setVibration] = useState(true);
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+
+  const openPrivacyPolicy = () => {
+    setShowPrivacyPolicy(true);
+  };
+
+  const closePrivacyPolicy = () => {
+    setShowPrivacyPolicy(false);
+  };
 
   const settingSections = [
     {
@@ -114,13 +124,13 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({onNavigateBack}) => {
     {
       title: 'App',
       items: [
-        {
-          key: 'clear_cache',
-          label: 'Clear Cache',
-          icon: 'delete-sweep',
-          iconLibrary: 'MaterialIcons' as const,
-          type: 'navigation',
-        },
+        // {
+        //   key: 'clear_cache',
+        //   label: 'Clear Cache',
+        //   icon: 'delete-sweep',
+        //   iconLibrary: 'MaterialIcons' as const,
+        //   type: 'navigation',
+        // },
         {
           key: 'version',
           label: 'App Version',
@@ -133,9 +143,17 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({onNavigateBack}) => {
     },
   ];
 
+  if (showPrivacyPolicy) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background.primary }]}>
+        <PrivacyPolicyScreen onBack={closePrivacyPolicy} />
+      </View>
+    );
+  }
+
   return (
     <View
-      style={[styles.container, {backgroundColor: colors.background.primary}]}>
+      style={[styles.container, { backgroundColor: colors.background.primary }]}>
       <StatusBar
         barStyle={theme.isDark ? 'light-content' : 'dark-content'}
         backgroundColor={colors.background.primary}
@@ -164,12 +182,12 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({onNavigateBack}) => {
         <View style={styles.placeholder} />
       </View> */}
 
-       <GoBack onBack={onNavigateBack} title='Settings' />
+      <GoBack onBack={onNavigateBack} title='Settings' />
 
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          {paddingBottom: insets.bottom + 100},
+          { paddingBottom: insets.bottom + 100 },
         ]}
         showsVerticalScrollIndicator={false}>
         {settingSections.map((section, sectionIndex) => (
@@ -177,7 +195,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({onNavigateBack}) => {
             <Text
               variant="caption"
               weight="semibold"
-              style={[styles.sectionTitle, {color: colors.text.secondary}]}>
+              style={[styles.sectionTitle, { color: colors.text.secondary }]}>
               {section.title}
             </Text>
             <Card style={styles.sectionCard}>
@@ -191,7 +209,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({onNavigateBack}) => {
                       borderBottomColor: colors.border.light,
                     },
                   ]}
-                  onPress={() => {}}
+                  onPress={() => { }}
                   activeOpacity={0.7}
                   disabled={item.type === 'switch'}>
                   <Icon
@@ -202,7 +220,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({onNavigateBack}) => {
                   />
                   <Text
                     variant="body"
-                    style={[styles.settingLabel, {color: colors.text.primary}]}>
+                    style={[styles.settingLabel, { color: colors.text.primary }]}>
                     {item.label}
                   </Text>
                   {item.type === 'switch' ? (
@@ -224,7 +242,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({onNavigateBack}) => {
                       {item.value && (
                         <Text
                           variant="body"
-                          style={{color: colors.text.secondary}}>
+                          style={{ color: colors.text.secondary }}>
                           {item.value}
                         </Text>
                       )}
@@ -247,11 +265,11 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({onNavigateBack}) => {
           <Text
             variant="caption"
             weight="semibold"
-            style={[styles.sectionTitle, {color: colors.text.secondary}]}>
+            style={[styles.sectionTitle, { color: colors.text.secondary }]}>
             Legal
           </Text>
           <Card style={styles.sectionCard}>
-            <TouchableOpacity style={styles.settingItem} onPress={() => {}}>
+            {/* <TouchableOpacity style={styles.settingItem} onPress={() => {}}>
               <Icon
                 name="description"
                 size={22}
@@ -269,7 +287,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({onNavigateBack}) => {
                 color={colors.icon.tertiary}
                 library="MaterialIcons"
               />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <TouchableOpacity
               style={[
                 styles.settingItem,
@@ -278,7 +296,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({onNavigateBack}) => {
                   borderTopColor: colors.border.light,
                 },
               ]}
-              onPress={() => {}}>
+              onPress={openPrivacyPolicy}>
               <Icon
                 name="privacy-tip"
                 size={22}
@@ -287,7 +305,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({onNavigateBack}) => {
               />
               <Text
                 variant="body"
-                style={[styles.settingLabel, {color: colors.text.primary}]}>
+                style={[styles.settingLabel, { color: colors.text.primary }]}>
                 Privacy Policy
               </Text>
               <Icon
@@ -334,22 +352,6 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({onNavigateBack}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
-  },
-  backButton: {
-    padding: 8,
-    marginLeft: -8,
-  },
-  placeholder: {
-    width: 40,
   },
   scrollContent: {
     padding: 16,

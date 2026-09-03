@@ -128,6 +128,9 @@ export const useSidebarNavigation = ({
         case 'faq':
           setSidebarScreen('faq');
           break;
+        case 'privacy':
+          setSidebarScreen('privacy');
+          break;
         default:
           break;
       }
