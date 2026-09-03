@@ -1,57 +1,28 @@
-// import RazorpayCheckout from 'react-native-razorpay';
 
-// export const openRazorpayCheckout = async ({
-//   order,
-//   user,
-//   selectedPack,
-// }: {
-//   order: any;
-//   user: any;
-//   selectedPack: any;
-// }) => {
-//   const options = {
-//     description: 'Wallet Recharge',
-//     currency: 'INR',
-//     key: 'rzp_test_SNXjhTOgP1CIx0',
-//     amount: order.amount,
-//     order_id: order.id,
-//     name: 'Dhwani Astro',
-
-//     prefill: {
-//       name: user?.name || '',
-//       contact: user?.mobile || '',
-//     },
-
-//     notes: {
-//       userId: user?.id || '',
-//       rechargePackId: selectedPack?.id || '',
-//       coins: selectedPack?.talktime || 0,
-//       source: 'dhwaniastro',
-//     },
-
-//     theme: {
-//       color: '#3399cc',
-//     },
-//   };
-
-//   return RazorpayCheckout.open(options);
-// };
-
+import { Platform } from 'react-native';
 import RazorpayCheckout from 'react-native-razorpay';
+import { getIPLocation } from '../../location/location.service';
 
 export const openRazorpayCheckout = async ({
   order,
   user,
   selectedPack,
-  amount
+  amount,
 }: {
   order: any;
   user: any;
   selectedPack: any;
   amount: number;
+
 }) => {
+  // Get IP + City + State + Country
+  const ipData = await getIPLocation();
+
+  console.log('FINAL IP DATA:', ipData);
+
   const options = {
     description: 'Wallet Recharge',
+
     currency: order?.currency || 'INR',
 
     key: 'rzp_test_SNXjhTOgP1CIx0',
@@ -72,6 +43,14 @@ export const openRazorpayCheckout = async ({
       rechargePackId: selectedPack?.id || '',
       coins: selectedPack?.talktime || 0,
       source: 'dhwaniastro',
+
+      // Location details
+      ip: ipData.ip,
+      city: ipData.city,
+      state: ipData.state,
+      country: ipData.country,
+      platform: Platform.OS,
+
     },
 
     theme: {
@@ -79,7 +58,10 @@ export const openRazorpayCheckout = async ({
     },
   };
 
-  console.log('RAZORPAY OPTIONS:', options);
+  console.log(
+    'RAZORPAY OPTIONS:',
+    JSON.stringify(options, null, 2),
+  );
 
   return RazorpayCheckout.open(options);
 };
