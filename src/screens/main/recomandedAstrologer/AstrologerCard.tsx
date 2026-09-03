@@ -73,12 +73,12 @@ const AstrologerCard: React.FC<AstrologerCardProps> = ({
     canChat,
     canCall,
   } = getAstrologerStatus(item);
-  console.log("item", item)
-  console.log("status", status)
-  console.log("color", indicatorColor)
+  // console.log("item", item)
+  // console.log("status", status)
+  // console.log("color", indicatorColor)
 
-  console.log("canChat", canChat)
-  console.log("canCall", canCall)
+  // console.log("canChat", canChat)
+  // console.log("canCall", canCall)
   const isOffline = !canChat && !canCall;
 
   const displayStatus = isOffline ? 'offline' : status;
