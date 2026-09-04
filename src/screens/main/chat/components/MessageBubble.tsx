@@ -49,7 +49,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = memo(
     const colors = theme.colors;
     const isUser = item.sender === 'user';
     const Astro = item.sender === 'astrologer';
-    // console.log("iteeeeee----=-=-=-=-,",item)
+    console.log("iteeeeee----=-=-=-=-,",astrologerImage)
 
     const [expanded, setExpanded] = useState(false);
     const [showToggle, setShowToggle] = useState(false);

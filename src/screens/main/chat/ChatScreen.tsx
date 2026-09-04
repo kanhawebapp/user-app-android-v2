@@ -18,6 +18,7 @@ import {
 import { useTheme } from '../../../theme';
 import { useAuthStore } from '../../../stores/auth.store';
 import { useChatStore } from '../../../services/chat/chat.store';
+import { API_BASE_URL } from '../../../constants/api.constants';
 import { socketService } from '../../../services/socket/socket.service';
 import { SOCKET_EVENTS } from '../../../services/socket/socket.events';
 import { RatingModal, ThankYouModal } from '../../../components/Modal';
@@ -88,8 +89,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   const roomId = storeRoomId || '';
   const astrologerName =
     chatRoom?.astrologerName || propAstrologerName || 'Astrologer';
-  const astrologerImage = chatRoom?.astrologerId
-    ? propAstrologerImage
+  const astrologerImage = propAstrologerImage
+    ? propAstrologerImage.startsWith('http')
+      ? propAstrologerImage
+      : `${API_BASE_URL.DEVELOPMENT}${propAstrologerImage}`
     : propAstrologerImage;
 
   const { data, loading } = useRechargePacks();

@@ -56,7 +56,7 @@ const AstrologerCard: React.FC<AstrologerCardProps> = ({
     }
     : images.Logo;
 
-
+// console.log("profileImage", profileImage)
   const { currentPrice: chatPrice, oldPrice: oldChatPrice } = getAstrologerPrice(
     item,
     'CHAT',
