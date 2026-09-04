@@ -1,5 +1,11 @@
 import React from 'react';
-import {TouchableOpacity, View, StyleProp, ViewStyle} from 'react-native';
+import {
+  Linking,
+  TouchableOpacity,
+  View,
+  StyleProp,
+  ViewStyle,
+} from 'react-native';
 import {Icon} from '../../Icon';
 import {useTheme} from '../../../theme';
 import {sidebarStyle} from '../sidebarStyle';
@@ -23,10 +29,10 @@ const SocialIcon: React.FC<SocialIconProps> = ({social, onPress, style}) => {
           default: '#1877F2',
           pressed: '#0C4B9C',
         };
-      case 'twitter':
+      case 'linkedin':
         return {
-          default: isDarkMode ? '#FFFFFF' : '#1DA1F2',
-          pressed: isDarkMode ? '#CCCCCC' : '#0C6B9A',
+          default: '#0A66C2',
+          pressed: '#004170',
         };
       case 'instagram':
         return {
@@ -49,16 +55,17 @@ const SocialIcon: React.FC<SocialIconProps> = ({social, onPress, style}) => {
   const brandColors = getBrandColors();
 
   const socialMediaUrls: Record<string, string> = {
-    facebook: 'https://www.facebook.com/',
-    twitter: 'https://twitter.com/',
-    instagram: 'https://www.instagram.com/',
-    youtube: 'https://www.youtube.com/',
+    facebook: 'https://www.facebook.com/dhwaniastro',
+    linkedin: 'https://www.linkedin.com/company/dhwani-astro11/',
+    instagram: 'https://www.instagram.com/healer.dhwaaani/',
+    youtube: 'https://www.youtube.com/@dhwaniastro',
   };
 
   const handlePress = () => {
     const url = socialMediaUrls[social.key];
-    if (url && onPress) {
-      onPress();
+    if (url) {
+      onPress?.();
+      Linking.openURL(url);
     }
   };
 

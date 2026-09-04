@@ -90,7 +90,7 @@ export const DEFAULT_MENU_ITEMS: SidebarMenuItem[] = [
 // Social media icons
 export const SOCIAL_MEDIA = [
   {key: 'facebook', icon: 'facebook', library: 'FontAwesome' as const},
-  {key: 'twitter', icon: 'twitter', library: 'FontAwesome' as const},
+  {key: 'linkedin', icon: 'linkedin', library: 'FontAwesome' as const},
   {key: 'instagram', icon: 'instagram', library: 'FontAwesome' as const},
   {key: 'youtube', icon: 'youtube-play', library: 'FontAwesome' as const},
 ];
