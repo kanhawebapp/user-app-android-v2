@@ -222,7 +222,7 @@ export const AstrologerCard: React.FC<AstrologerCardProps> = ({
 
       {/* Skills */}
       <View style={styles.skillsContainer}>
-        {skills.slice(0, 4).map((skill, index) => (
+        {skills.slice(0, 3).map((skill, index) => (
           <View
             key={index}
             style={[
