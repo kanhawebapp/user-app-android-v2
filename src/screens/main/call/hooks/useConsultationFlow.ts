@@ -27,9 +27,9 @@ export const useConsultationFlow = ({onNavigateToTab}: any = {}) => {
 
   const submitConsultationRequest = useCallback(
     async ({astrologer, consultationType, formData, onClose}: SubmitParams) => {
-      console.log('[ConsultationFlow] Submitting consultation request:', {
-        astrologer,
-      });
+      // console.log('[ConsultationFlow] Submitting consultation request:', {
+      //   astrologer,
+      // });
       if (!astrologer) {
         return {success: false};
       }
