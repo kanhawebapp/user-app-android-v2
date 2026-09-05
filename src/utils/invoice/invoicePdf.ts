@@ -54,10 +54,14 @@ export const formatDate = (v: string | null | undefined): string => {
 /** Always two decimal places; safe for null/undefined/invalid. */
 export const money = (v: number | null | undefined): string => {
   const n = num(v);
-  return n.toLocaleString('en-IN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  // Force ASCII grouping so Helvetica WinAnsi never fails on NBSP etc.
+  return n
+    .toLocaleString('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+      useGrouping: true,
+    })
+    .replace(/[\u00a0\u202f]/g, ',');
 };
 
 /**
@@ -462,24 +466,27 @@ export const buildInvoiceBase64 = async (
     },
   ];
 
-  for (const row of totalRows) {
-    const valueLines = row.value
-      ? wrapParagraph(helv, 10, row.value, tw * 0.55)
-      : [''];
-    const rowH =
-      row.label === 'Total amount (in words)'
-        ? Math.max(18, 8 + valueLines.length * 12)
-        : 18;
-    const by = y - rowH;
-    strokeBox(page, tableX, by, tw, rowH, 0.9);
+  // Label spans Description→Taxable (cols 0–3); values use remaining columns.
+  const totalsLabelW = colW.slice(0, 4).reduce((a, b) => a + b, 0);
+  const totalsValueX = tableX + totalsLabelW;
+  const totalsValueW = tw - totalsLabelW;
 
+  for (const row of totalRows) {
     if (row.taxAmounts) {
-      drawRight(page, 'Total', colX(4) - 4, by + 5, 10, bold);
+      const rowH = 18;
+      const by = y - rowH;
+      strokeBox(page, tableX, by, tw, rowH, 0.9);
+      // Vertical guides under SGST/CGST/IGST amount columns
+      for (const i of [4, 5, 6, 7, 8, 9]) {
+        strokeBox(page, colX(i), by, colW[i], rowH, 0.7);
+      }
+      const textY = by + 5;
+      drawRight(page, 'Total', totalsValueX - 4, textY, 10, bold);
       drawAligned(
         page,
         row.taxAmounts[0],
         colX(5),
-        by + 5,
+        textY,
         colW[5],
         9,
         helv,
@@ -489,7 +496,7 @@ export const buildInvoiceBase64 = async (
         page,
         row.taxAmounts[1],
         colX(7),
-        by + 5,
+        textY,
         colW[7],
         9,
         helv,
@@ -499,25 +506,39 @@ export const buildInvoiceBase64 = async (
         page,
         row.taxAmounts[2],
         colX(9),
-        by + 5,
+        textY,
         colW[9],
         9,
         helv,
         'right',
       );
-    } else {
-      const labelW = tw * 0.4;
-      drawRight(page, row.label, tableX + labelW - 4, by + rowH - 12, 10, bold);
-      let vy = by + rowH - 12;
-      for (const l of valueLines) {
-        drawText(page, l, tableX + labelW + 4, vy, 10, helv);
-        vy -= 12;
-      }
+      y = by;
+      continue;
+    }
+
+    const valueLines = wrapParagraph(
+      helv,
+      10,
+      row.value && String(row.value).trim() !== '' ? String(row.value) : '-',
+      totalsValueW - 8,
+    );
+    const rowH = Math.max(20, 8 + valueLines.length * 12);
+    const by = y - rowH;
+    strokeBox(page, tableX, by, tw, rowH, 0.9);
+    strokeBox(page, tableX, by, totalsLabelW, rowH, 0.7);
+    strokeBox(page, totalsValueX, by, totalsValueW, rowH, 0.7);
+
+    const textY = by + rowH - 13;
+    drawRight(page, row.label, totalsValueX - 6, textY, 10, bold);
+    let vy = textY;
+    for (const l of valueLines) {
+      drawText(page, l, totalsValueX + 6, vy, 10, helv);
+      vy -= 12;
     }
     y = by;
   }
 
-  y -= 18;
+  y -= 20;
 
   // ---- TRANSACTION HISTORY ----
   drawText(
@@ -528,43 +549,57 @@ export const buildInvoiceBase64 = async (
     11,
     helv,
   );
-  y -= 15;
-  const historyUrl = str(invoice.transactionHistoryUrl);
+  y -= 16;
+  const rawHistoryUrl = invoice.transactionHistoryUrl;
+  const historyUrl =
+    rawHistoryUrl != null && String(rawHistoryUrl).trim() !== ''
+      ? String(rawHistoryUrl).trim()
+      : '-';
+  const historyIsLink = historyUrl !== '-' && /^https?:\/\//i.test(historyUrl);
   for (const l of wrapParagraph(helv, 11, historyUrl, contentWidth)) {
     drawText(page, l, PAD_X, y, 11, helv);
-    page.drawLine({
-      start: {x: PAD_X, y: y - 1},
-      end: {x: PAD_X + helv.widthOfTextAtSize(l, 11), y: y - 1},
-      color: BLACK,
-      thickness: 0.6,
-    });
+    if (historyIsLink) {
+      const lineW = helv.widthOfTextAtSize(l, 11);
+      page.drawLine({
+        start: {x: PAD_X, y: y - 1.5},
+        end: {x: PAD_X + lineW, y: y - 1.5},
+        color: BLACK,
+        thickness: 0.6,
+      });
+    }
     y -= 14;
   }
 
-  y -= 12;
+  y -= 14;
 
   // ---- OTHER DETAILS ----
+  // Three columns: label on first line(s), ": value" on the following line
+  // so wrapping never splits "HSN/SAC" away from its value oddly.
   drawText(page, 'Other details:', PAD_X, y, 11, bold);
-  y -= 16;
-  const otherCols = [
-    `HSN/SAC : ${str(invoice.hsnSac, '999799')}`,
-    `Whether tax is payable on reverse charge basis : ${
-      invoice.reverseCharge === true ? 'Yes' : 'No'
-    }`,
-    `PAN Number : ${str(invoice.panNumber)}`,
+  y -= 18;
+  const otherDetails: {label: string; value: string}[] = [
+    {label: 'HSN/SAC', value: str(invoice.hsnSac, '999799')},
+    {
+      label: 'Whether tax is payable on reverse charge basis',
+      value: invoice.reverseCharge === true ? 'Yes' : 'No',
+    },
+    {label: 'PAN Number', value: str(invoice.panNumber)},
   ];
   const otherColW = contentWidth / 3;
   let maxOtherDrop = 0;
-  otherCols.forEach((text, i) => {
-    const lines = wrapParagraph(helv, 9, text, otherColW - 6);
+  otherDetails.forEach((item, i) => {
+    const x = PAD_X + i * otherColW;
+    const labelLines = wrapParagraph(helv, 9, item.label, otherColW - 8);
     let oy = y;
-    for (const l of lines) {
-      drawText(page, l, PAD_X + i * otherColW, oy, 9, helv);
-      oy -= 12;
+    for (const l of labelLines) {
+      drawText(page, l, x, oy, 9, helv);
+      oy -= 11;
     }
+    drawText(page, `: ${item.value}`, x, oy, 9, bold);
+    oy -= 11;
     maxOtherDrop = Math.max(maxOtherDrop, y - oy);
   });
-  y -= maxOtherDrop + 24;
+  y -= maxOtherDrop + 28;
 
   // ---- FOOTER ----
   const footer =
