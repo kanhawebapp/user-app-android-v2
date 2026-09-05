@@ -27,6 +27,9 @@ export const useConsultationFlow = ({onNavigateToTab}: any = {}) => {
 
   const submitConsultationRequest = useCallback(
     async ({astrologer, consultationType, formData, onClose}: SubmitParams) => {
+      console.log('[ConsultationFlow] Submitting consultation request:', {
+        astrologer,
+      });
       if (!astrologer) {
         return {success: false};
       }
@@ -112,7 +115,8 @@ export const useConsultationFlow = ({onNavigateToTab}: any = {}) => {
             participant: {
               id: astrologer.id,
               name: astrologer.displayName || astrologer.name || 'Astrologer',
-              image: astrologer.profilePic,
+              image: astrologer.profilePic || astrologer.image,
+
             },
             isIncoming: false,
           });
@@ -128,7 +132,7 @@ export const useConsultationFlow = ({onNavigateToTab}: any = {}) => {
         useChatStore.getState().setSelectedAstrologer({
           id: astrologer.id,
           name: astrologer.displayName || astrologer.name || 'Astrologer',
-          image: astrologer.profilePic,
+          image: astrologer.profilePic || astrologer.image,
           rating: astrologer.rating,
           experience: String(astrologer.experience),
           skills: astrologer.skills,
