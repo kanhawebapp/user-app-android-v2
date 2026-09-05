@@ -124,7 +124,7 @@ const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
 
         <View style={styles.successTextContainer}>
           <Text variant="h4" weight="semibold" style={styles.successTitle}>
-            Payment Successful!
+            Recharge Successful!
           </Text>
 
           <Text variant="body" style={styles.successSubtitle}>
@@ -259,7 +259,7 @@ const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
             style={styles.primaryButton}
           /> */}
 
-          <Button
+          {/* <Button
             // title={isDownloading ? 'Downloading...' : 'Download Invoice'}
             title={'Download Invoice'}
 
@@ -268,7 +268,7 @@ const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = ({
             // onPress={handleDownloadInvoice}
             // disabled={isDownloading}
             style={styles.invoiceButton}
-          />
+          /> */}
 
           <Button
             title="Back to Home"
