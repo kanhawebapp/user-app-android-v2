@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, {useCallback, useState} from 'react';
 import {
   View,
   StyleSheet,
@@ -6,22 +6,35 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { colors, useTheme } from '../../../../../theme';
-import { Text } from '../../../../../components/Text';
-import { Icon } from '../../../../../components/Icon';
-import { WALLET_LABELS, DEFAULTS } from '../../../../../constants/app.constants';
-import { Button } from '../../../../../components';
-import { useWalletTransactions } from '../../../../../services/api/walletTransactions/walletTransactions.hooks';
-import type { WalletTransaction } from '../../../../../services/api/walletTransactions/walletTransactions.types';
+import {colors, useTheme} from '../../../../../theme';
+import {Text} from '../../../../../components/Text';
+import {Icon} from '../../../../../components/Icon';
+import {WALLET_LABELS, DEFAULTS} from '../../../../../constants/app.constants';
+import {Button} from '../../../../../components';
+import {useToast} from '../../../../../context/ToastContext';
+import {useWalletTransactions} from '../../../../../services/api/walletTransactions/walletTransactions.hooks';
+import {usePaymentInvoice} from '../../../../../services/api/walletTransactions/paymentInvoice.hooks';
+import {generateAndShareInvoice} from '../../../../../utils/invoice/invoicePdf';
+import type {WalletTransaction} from '../../../../../services/api/walletTransactions/walletTransactions.types';
 
-const TransactionItem = ({ item, colors }: any) => {
-
+const TransactionItem = ({
+  item,
+  colors,
+  onDownloadInvoice,
+  downloadingId,
+}: any) => {
   const isCredit = item.type === 'CREDIT';
   // Generate/display 8-digit transaction ID from UUID
   const transactionId = item.id
     ? item.id.replace(/-/g, '').slice(0, 8).toUpperCase()
     : 'N/A';
 
+  const isRecharge = item.description === 'Recharge successful';
+  const isDownloading = isRecharge && downloadingId === item.id;
+  const amountColor = isCredit ? colors.success.main : colors.error.main;
+  const showDownload = isRecharge;
+
+  // console.log('Transaction Item:', item); // Debugging line to check the structure of item
   const transactionDate = new Date(Number(item.createdAt));
   return (
     <View style={styles.transactionItem}>
@@ -42,13 +55,11 @@ const TransactionItem = ({ item, colors }: any) => {
           />
         </View>
 
-
-
         <View style={styles.transactionInfo}>
           <Text
             variant="body"
             weight="medium"
-            style={{ color: colors.text.primary }}>
+            style={{color: colors.text.primary}}>
             {item.description ||
               (isCredit
                 ? WALLET_LABELS.WALLET_RECHARGE
@@ -95,27 +106,50 @@ const TransactionItem = ({ item, colors }: any) => {
             Transaction ID: {transactionId}
           </Text>
         </View>
-
       </View>
 
-      <Text
-        variant="body"
-        weight="semibold"
-        style={{
-          color: isCredit ? colors.success.main : colors.error.main,
-        }}>
-        {isCredit ? '+' : '-'}
-        {DEFAULTS.CURRENCY}
-        {item.coins ?? item.amount}
-      </Text>
+      <View style={styles.transactionRight}>
+        <Text
+          variant="body"
+          weight="semibold"
+          style={{
+            color: amountColor,
+          }}>
+          {isCredit ? '+' : '-'}
+          {DEFAULTS.CURRENCY}
+          {item.coins ?? item.amount}
+        </Text>
+
+        {showDownload ? (
+          isDownloading ? (
+            <ActivityIndicator
+              size="small"
+              color={colors.primary.main}
+              style={styles.downloadAction}
+            />
+          ) : (
+            <Icon
+              name="download"
+              size={18}
+              color={colors.text.tertiary}
+              library="Feather"
+              style={styles.downloadAction}
+              onPress={() => onDownloadInvoice?.(item)}
+            />
+          )
+        ) : null}
+      </View>
     </View>
   );
 };
 
-const TransactionList = ({ onRechargePress }: any) => {
-  const { colors } = useTheme();
+const TransactionList = ({onRechargePress}: any) => {
+  const {colors} = useTheme();
+  const toast = useToast();
 
-  const { data, loading, applyFilter, loadMore } = useWalletTransactions();
+  const {data, loading, applyFilter, loadMore} = useWalletTransactions();
+  const {fetchInvoice} = usePaymentInvoice();
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   // console.log("data>>>", data)
   const [activeTab, setActiveTab] = React.useState<'all' | 'credit' | 'debit'>(
     'all',
@@ -134,8 +168,39 @@ const TransactionList = ({ onRechargePress }: any) => {
     }
   };
 
-  const renderItem = ({ item }: { item: WalletTransaction }) => (
-    <TransactionItem item={item} colors={colors} />
+  const handleDownloadInvoice = useCallback(
+    async (item: WalletTransaction) => {
+      if (downloadingId != null) {
+        return;
+      }
+
+      const transactionId = item.id;
+      if (!transactionId) {
+        toast.showError('Transaction ID not available');
+        return;
+      }
+
+      setDownloadingId(transactionId);
+      try {
+        const invoice = await fetchInvoice(transactionId);
+        await generateAndShareInvoice(invoice);
+        toast.showSuccess('Invoice generated and shared');
+      } catch (e: any) {
+        toast.showError(e?.message ?? 'Failed to download invoice');
+      } finally {
+        setDownloadingId(null);
+      }
+    },
+    [downloadingId, fetchInvoice, toast],
+  );
+
+  const renderItem = ({item}: {item: WalletTransaction}) => (
+    <TransactionItem
+      item={item}
+      colors={colors}
+      onDownloadInvoice={handleDownloadInvoice}
+      downloadingId={downloadingId}
+    />
   );
 
   const keyExtractor = (item: WalletTransaction) => item.id;
@@ -144,10 +209,10 @@ const TransactionList = ({ onRechargePress }: any) => {
     if (!loading) {
       return null;
     }
-    return <ActivityIndicator style={{ marginVertical: 16 }} />;
+    return <ActivityIndicator style={{marginVertical: 16}} />;
   };
 
-  const TabButton = ({ label, value }: any) => {
+  const TabButton = ({label, value}: any) => {
     const isActive = activeTab === value;
 
     return (
@@ -188,7 +253,7 @@ const TransactionList = ({ onRechargePress }: any) => {
         <Text
           variant="h6"
           weight="semibold"
-          style={{ color: colors.text.primary }}>
+          style={{color: colors.text.primary}}>
           {WALLET_LABELS.TRANSACTION_HISTORY}
         </Text>
       </View>
@@ -210,7 +275,7 @@ const TransactionList = ({ onRechargePress }: any) => {
         ListFooterComponent={renderFooter}
         ListEmptyComponent={() => (
           <View style={styles.emptyState}>
-            <Text style={{ color: colors.text.secondary }}>
+            <Text style={{color: colors.text.secondary}}>
               {loading ? 'Loading...' : WALLET_LABELS.NO_TRANSACTIONS}
             </Text>
           </View>
@@ -218,7 +283,7 @@ const TransactionList = ({ onRechargePress }: any) => {
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => (
           <View
-            style={[styles.separator, { borderBottomColor: colors.border.light }]}
+            style={[styles.separator, {borderBottomColor: colors.border.light}]}
           />
         )}
       />
@@ -245,7 +310,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
 
     backgroundColor: colors.primary.light,
-
   },
 
   tab: {
@@ -276,6 +340,15 @@ const styles = StyleSheet.create({
 
   transactionInfo: {
     marginLeft: 12,
+  },
+
+  transactionRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  downloadAction: {
+    marginLeft: 8,
   },
 
   separator: {
