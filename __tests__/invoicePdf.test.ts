@@ -2,8 +2,9 @@ jest.mock('react-native-blob-util', () => ({
   __esModule: true,
   default: {
     fs: {
-      dirs: {DocumentDir: '/tmp'},
+      dirs: {DocumentDir: '/tmp', CacheDir: '/tmp/cache'},
       writeFile: jest.fn().mockResolvedValue(undefined),
+      readFile: jest.fn().mockResolvedValue('dGVzdA=='),
       exists: jest.fn().mockResolvedValue(true),
     },
   },
@@ -153,18 +154,30 @@ describe('payment invoice pdf', () => {
     const pdfText = extractPdfText(b64);
     expect(pdfText).toContain('Payment Invoice');
     expect(pdfText).toContain('Original for recipient');
-    expect(pdfText).toContain('Billed To');
+    expect(pdfText).toContain('DHWANI ASTRO');
+    expect(pdfText).toContain('Customer Address');
+    expect(pdfText).toContain('Place of Supply');
     expect(pdfText).toContain('Amit Kumar');
     expect(pdfText).toContain('Transaction Id');
     expect(pdfText).toContain('Payment Id');
+    expect(pdfText).toContain('Invoice Voucher No');
     expect(pdfText).toContain('INV-001');
+    expect(pdfText).toContain('Description');
+    expect(pdfText).toContain('Taxable Value');
     expect(pdfText).toContain('SGST');
     expect(pdfText).toContain('CGST');
     expect(pdfText).toContain('IGST');
-    expect(pdfText).toContain('Total Amount');
-    expect(pdfText).toContain('Total Amount in Words');
-    expect(pdfText).toContain('Total Amount Received');
-    expect(pdfText).toContain('Computer Generated Invoice');
+    // Description may wrap across PDF text operators; match a distinctive token.
+    expect(pdfText).toMatch(/AT-Money|Razorpay/);
+    expect(pdfText).toContain('Total Tax');
+    expect(pdfText).toContain('Total amount');
+    expect(pdfText).toContain('Total amount (in words)');
+    expect(pdfText).toContain('Total amount received');
+    expect(pdfText).toContain('transaction history');
+    expect(pdfText).toContain('Other details');
+    expect(pdfText).toContain('HSN/SAC');
+    expect(pdfText).toContain('computer generated invoice voucher');
+
     expect(pdfText).toContain('27AABCU9676FZP1');
     expect(pdfText).toContain('ABCDE1234F');
     expect(pdfText).toContain('9983');

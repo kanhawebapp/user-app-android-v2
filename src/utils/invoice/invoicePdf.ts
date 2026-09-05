@@ -1,58 +1,80 @@
 import {format} from 'date-fns';
 import {PDFDocument, StandardFonts, rgb} from 'pdf-lib';
-import type {PDFFont} from 'pdf-lib';
+import type {PDFFont, PDFPage} from 'pdf-lib';
+import {Platform} from 'react-native';
 import ReactNativeBlobUtil from 'react-native-blob-util';
-import Share from 'react-native-share';
+import Share, {type ShareOptions} from 'react-native-share';
 import type {PaymentInvoice} from '../../services/api/walletTransactions/paymentInvoice.types';
 import {loadInvoiceLogoBase64} from './loadLogo';
 
-const PAGE_W = 595;
-const PAGE_H = 842;
-const M = 44;
-const LINE = 12;
-const BAND_H = 90;
+/** A4 portrait 210mm × 297mm (points) */
+const PAGE_W = 595.28;
+const PAGE_H = 841.89;
+/** 10mm horizontal, 9mm vertical */
+const PAD_X = 28.35;
+const PAD_Y = 25.51;
 
 const BLACK = rgb(0, 0, 0);
-const MUTED = rgb(0.42, 0.42, 0.42);
-const HDR_TEXT = rgb(0.9, 0.9, 0.92);
-const HDR_ACCENT = rgb(1, 1, 1);
-const BORDER = rgb(0.82, 0.82, 0.82);
-const ROW_ALT = rgb(0.96, 0.96, 0.97);
-const PRIMARY = rgb(0.357, 0.173, 0.647);
+const WHITE = rgb(1, 1, 1);
 
-const str = (v: string | null | undefined): string => v ?? '';
-const num = (v: number | null | undefined): number =>
-  v == null ? 0 : Number(v);
-
-const fmtAmt = (v: number | null | undefined): string => {
-  const n = num(v);
-  return `Rs. ${n.toLocaleString('en-IN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
+const str = (v: string | null | undefined, fallback = '-'): string => {
+  if (v == null || String(v).trim() === '') {
+    return fallback;
+  }
+  return String(v);
 };
 
-const fmtRate = (v: number | null | undefined): string =>
-  v == null ? '-' : `${num(v)}%`;
+const num = (v: number | null | undefined): number => {
+  if (v == null) {
+    return 0;
+  }
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+};
 
-const fmtDate = (v: string | null | undefined): string => {
+/** Indian date format DD/MM/YYYY; `-` if missing/invalid */
+export const formatDate = (v: string | null | undefined): string => {
   if (!v) {
     return '-';
   }
-  const parsed = new Date(v);
+  let parsed = new Date(v);
   if (Number.isNaN(parsed.getTime())) {
     const ts = parseInt(v, 10);
-    if (!Number.isNaN(ts)) {
-      return format(new Date(ts), 'dd MMM yyyy, h:mm a');
+    if (Number.isNaN(ts)) {
+      return '-';
     }
+    parsed = new Date(ts);
   }
-  return format(parsed, 'dd MMM yyyy, h:mm a');
+  if (Number.isNaN(parsed.getTime())) {
+    return '-';
+  }
+  return format(parsed, 'dd/MM/yyyy');
 };
 
+/** Always two decimal places; safe for null/undefined/invalid. */
+export const money = (v: number | null | undefined): string => {
+  const n = num(v);
+  return n.toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
+
+/**
+ * PaymentInvoice UI uses ₹ for table cells. Helvetica/WinAnsi cannot encode ₹,
+ * so we use "Rs." (same amounts, Arial/Helvetica-compatible glyphs).
+ */
+const rupee = (v: number | null | undefined): string => `Rs. ${money(v)}`;
+/** Matches PaymentInvoice UI: INR for total rows */
+const inr = (v: number | null | undefined): string => `INR ${money(v)}`;
+
 export const createInvoiceFileName = (invoice: PaymentInvoice): string => {
-  const base =
-    str(invoice.invoiceNo) || str(invoice.transactionId) || 'invoice';
-  return `Invoice_${base}.pdf`;
+  const raw =
+    (invoice.invoiceNo && String(invoice.invoiceNo).trim()) ||
+    (invoice.transactionId && String(invoice.transactionId).trim()) ||
+    'invoice';
+  const safe = raw.replace(/[^a-zA-Z0-9._-]+/g, '_').replace(/^_+|_+$/g, '');
+  return `Invoice_${safe || 'invoice'}.pdf`;
 };
 
 const wrapParagraph = (
@@ -78,7 +100,23 @@ const wrapParagraph = (
         if (cur) {
           out.push(cur);
         }
-        cur = w;
+        if (font.widthOfTextAtSize(w, size) > maxWidth) {
+          let chunk = '';
+          for (const ch of w) {
+            const next = chunk + ch;
+            if (font.widthOfTextAtSize(next, size) <= maxWidth) {
+              chunk = next;
+            } else {
+              if (chunk) {
+                out.push(chunk);
+              }
+              chunk = ch;
+            }
+          }
+          cur = chunk;
+        } else {
+          cur = w;
+        }
       }
     }
     if (cur) {
@@ -88,14 +126,74 @@ const wrapParagraph = (
   return out.length ? out : [''];
 };
 
-const drawHRule = (
-  page: {drawLine: (o: any) => void},
-  x1: number,
-  x2: number,
+type Align = 'left' | 'center' | 'right';
+
+const drawText = (
+  page: PDFPage,
+  text: string,
+  x: number,
   y: number,
-  color: any = BORDER,
+  size: number,
+  font: PDFFont,
 ) => {
-  page.drawLine({start: {x: x1, y}, end: {x: x2, y}, color, thickness: 0.6});
+  page.drawText(text, {x, y, size, font, color: BLACK});
+};
+
+const drawRight = (
+  page: PDFPage,
+  text: string,
+  xRight: number,
+  y: number,
+  size: number,
+  font: PDFFont,
+) => {
+  drawText(
+    page,
+    text,
+    xRight - font.widthOfTextAtSize(text, size),
+    y,
+    size,
+    font,
+  );
+};
+
+const drawAligned = (
+  page: PDFPage,
+  text: string,
+  x: number,
+  y: number,
+  cellW: number,
+  size: number,
+  font: PDFFont,
+  align: Align,
+  pad = 2,
+) => {
+  const tw = font.widthOfTextAtSize(text, size);
+  let tx = x + pad;
+  if (align === 'right') {
+    tx = x + cellW - tw - pad;
+  } else if (align === 'center') {
+    tx = x + Math.max(pad, (cellW - tw) / 2);
+  }
+  drawText(page, text, Math.max(x + 1, tx), y, size, font);
+};
+
+const strokeBox = (
+  page: PDFPage,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  thickness = 0.7,
+) => {
+  page.drawRectangle({
+    x,
+    y,
+    width: w,
+    height: h,
+    borderColor: BLACK,
+    borderWidth: thickness,
+  });
 };
 
 export const buildInvoiceBase64 = async (
@@ -103,281 +201,377 @@ export const buildInvoiceBase64 = async (
 ): Promise<string> => {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([PAGE_W, PAGE_H]);
-  const helv = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  const logoBase64 = await loadInvoiceLogoBase64();
-  const logo = await pdfDoc.embedPng(logoBase64);
-
-  let y = PAGE_H - M;
-
-  const move = (n = 1, h = LINE) => {
-    y -= h * n;
-  };
-
-  const text = (
-    t: string,
-    x: number,
-    size: number,
-    font: PDFFont = helv,
-    color: any = BLACK,
-  ) => {
-    page.drawText(t, {x, y, size, font, color});
-  };
-
-  const rightMax = PAGE_W - M;
-  const rtext = (
-    t: string,
-    xRight: number,
-    size: number,
-    font: PDFFont = helv,
-    color: any = BLACK,
-  ) => {
-    text(t, xRight - font.widthOfTextAtSize(t, size), size, font, color);
-  };
-
-  // Header band
   page.drawRectangle({
     x: 0,
     y: 0,
     width: PAGE_W,
-    height: BAND_H,
-    color: PRIMARY,
+    height: PAGE_H,
+    color: WHITE,
   });
 
-  const logoW = 46;
-  const logoH = (logoW * logo.height) / logo.width;
-  const logoY = (BAND_H + logoH) / 2;
-  page.drawImage(logo, {x: M, y: logoY, width: logoW, height: logoH});
+  // Helvetica ≈ Arial for PDF (standard WinAnsi fonts)
+  const helv = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const logoB64 = await loadInvoiceLogoBase64();
+  const logo = await pdfDoc.embedPng(logoB64);
 
-  const title = 'Payment Invoice';
-  text(
-    title,
-    (PAGE_W - helv.widthOfTextAtSize(title, 22)) / 2,
-    22,
-    bold,
-    HDR_ACCENT,
-  );
-  y = BAND_H - 52;
-  const sub = '(Original for recipient)';
-  text(sub, (PAGE_W - helv.widthOfTextAtSize(sub, 10)) / 2, 10, helv, HDR_TEXT);
-  y = BAND_H - 24;
+  const contentRight = PAGE_W - PAD_X;
+  const contentWidth = contentRight - PAD_X;
+  let y = PAGE_H - PAD_Y;
 
-  // Supplier details (top-right inside header)
-  const supW = 160;
-  y = BAND_H - 26;
-  const supColor = HDR_TEXT;
-  const supRow = (label: string, value: string) => {
-    const line = `${label}: ${value}`;
-    wrapParagraph(helv, 7.5, line, supW).forEach(l => {
-      rtext(l, rightMax, 7.5, helv, supColor);
-      move(0.7);
-    });
-  };
-  supRow('GSTIN', str(invoice.supplierGSTIN));
-  supRow('Website', str(invoice.website));
-  supRow('E-mail', str(invoice.email));
-  wrapParagraph(
+  // ---- HEADER: logo left, invoice meta right ----
+  const logoMaxW = 130;
+  const logoMaxH = 48;
+  const logoScale = Math.min(logoMaxW / logo.width, logoMaxH / logo.height);
+  const logoW = logo.width * logoScale;
+  const logoH = logo.height * logoScale;
+  const logoBottom = y - logoH;
+  page.drawImage(logo, {x: PAD_X, y: logoBottom, width: logoW, height: logoH});
+
+  const rightColW = contentWidth * 0.58;
+  let ry = y - 16;
+  drawRight(page, 'Payment Invoice', contentRight, ry, 20, bold);
+  ry -= 16;
+  drawRight(page, '(Original for recipient)', contentRight, ry, 12, helv);
+  ry -= 18;
+  drawRight(page, 'DHWANI ASTRO', contentRight, ry, 12, bold);
+  ry -= 14;
+  const headerMeta = [
+    `Supplier GSTIN: ${str(invoice.supplierGSTIN)}`,
+    `Website: ${str(invoice.website)}`,
+    `E-mail: ${str(invoice.email)}`,
+  ];
+  for (const line of headerMeta) {
+    drawRight(page, line, contentRight, ry, 10, helv);
+    ry -= 13;
+  }
+  for (const l of wrapParagraph(
     helv,
-    7.5,
-    `Address: ${str(invoice.supplierAddress)}`,
-    supW,
-  ).forEach(l => {
-    rtext(l, rightMax, 7.5, helv, supColor);
-    move(0.7);
-  });
+    10,
+    `Address - ${str(invoice.supplierAddress)}`,
+    rightColW,
+  )) {
+    drawRight(page, l, contentRight, ry, 10, helv);
+    ry -= 13;
+  }
 
-  // Content starts below the band
-  y = BAND_H + 18;
+  y = Math.min(logoBottom, ry) - 18;
 
-  // Billed To (Customer)
-  text('Billed To:', M, 9, bold, MUTED);
-  move();
-  text(str(invoice.userName), M, 10, bold, BLACK);
-  move(0.8);
-  const billAddr = [
-    `${str(invoice.city)}, ${str(invoice.state)} - ${str(invoice.pincode)}`,
-    str(invoice.country),
-    `Place of Supply: ${str(invoice.placeOfSupply)}`,
-  ].join('\n');
-  wrapParagraph(helv, 8, billAddr, PAGE_W - M * 2).forEach(l => {
-    text(l, M, 8, helv, BLACK);
-    move();
-  });
-  move();
+  // ---- CUSTOMER / TRANSACTION ----
+  const leftMaxW = contentWidth * 0.48;
+  const rightMaxW = contentWidth * 0.48;
+  let leftY = y;
+  let rightY = y;
 
-  // Transaction details
-  const txRows: [string, string][] = [
+  drawText(page, 'Customer Address:', PAD_X, leftY, 11, bold);
+  leftY -= 14;
+  drawText(page, str(invoice.userName), PAD_X, leftY, 11, helv);
+  leftY -= 13;
+  const cityLine = `${str(invoice.city, '-')}${
+    invoice.state ? `, ${invoice.state}` : ''
+  }${invoice.pincode ? ` - ${invoice.pincode}` : ''}`;
+  for (const l of wrapParagraph(helv, 11, cityLine, leftMaxW)) {
+    drawText(page, l, PAD_X, leftY, 11, helv);
+    leftY -= 13;
+  }
+  drawText(page, str(invoice.country, 'India'), PAD_X, leftY, 11, helv);
+  leftY -= 18;
+  drawText(page, 'Place of Supply:', PAD_X, leftY, 11, bold);
+  leftY -= 14;
+  drawText(
+    page,
+    str(invoice.placeOfSupply || invoice.state),
+    PAD_X,
+    leftY,
+    11,
+    helv,
+  );
+  leftY -= 13;
+
+  const txPairs: [string, string][] = [
     [
       'Transaction Id',
-      str(invoice.transactionId) || str(invoice.razorpayOrderId),
+      str(invoice.transactionId || invoice.razorpayOrderId),
     ],
     ['Payment Id', str(invoice.razorpayPaymentId)],
     ['Recipient GSTIN', str(invoice.recipientGSTIN)],
     ['Invoice Voucher No', str(invoice.invoiceNo)],
-    ['Invoice Voucher Date', fmtDate(invoice.createdAt)],
+    ['Invoice Voucher Date', formatDate(invoice.createdAt)],
   ];
-  txRows.forEach(([label, value]) => {
-    const line = `${label}: ${value}`;
-    wrapParagraph(helv, 8, line, PAGE_W - M * 2).forEach(l => {
-      text(l, M, 8, helv, MUTED);
-      move();
-    });
-  });
-  move();
-
-  drawHRule(page, M, rightMax, y);
-  move();
-
-  // GST Payment table
-  const tableX = M;
-  const tableW = rightMax - tableX;
-  const colWidths = [210, 80, tableW - 210 - 80 - 8];
-  const rows: string[][] = [
-    ['Particulars', 'Rate (%)', 'Amount (Rs.)'],
-    ['Recharge Amount', '', fmtAmt(invoice.amount)],
-    ['Discount', '', fmtAmt(invoice.discount)],
-    ['Taxable Value', '', fmtAmt(invoice.taxableAmount)],
-    ['SGST', fmtRate(invoice.sgstRate), fmtAmt(invoice.sgst)],
-    ['CGST', fmtRate(invoice.cgstRate), fmtAmt(invoice.cgst)],
-    [
-      'IGST',
-      fmtRate(invoice.igstRate ?? invoice.gstRate),
-      fmtAmt(invoice.igst),
-    ],
-    ['Total Tax', '', fmtAmt(invoice.totalTax)],
-    ['Total Amount', '', fmtAmt(invoice.totalAmount)],
-  ];
-
-  const rowH = 15;
-  rows.forEach((row, ri) => {
-    const ry = y;
-    const isHead = ri === 0;
-    if (isHead) {
-      page.drawRectangle({
-        x: tableX,
-        y: ry - rowH,
-        width: tableW,
-        height: rowH,
-        color: MUTED,
-        borderWidth: 0,
-      });
-      row.forEach((cell, ci) => {
-        const cx =
-          tableX + colWidths.slice(0, ci).reduce((a, b) => a + b, 0) + 4;
-        page.drawText(String(cell), {
-          x: cx,
-          y: ry - rowH + 4,
-          size: 8.5,
-          font: bold,
-          color: HDR_ACCENT,
-        });
-      });
-    } else {
-      page.drawRectangle({
-        x: tableX,
-        y: ry - rowH,
-        width: tableW,
-        height: rowH,
-        borderColor: BORDER,
-        borderWidth: 0.5,
-        color: ri % 2 ? ROW_ALT : undefined,
-      });
-      row.forEach((cell, ci) => {
-        const alignRight = ci === 2;
-        const cellW = colWidths[ci];
-        const cx = tableX + colWidths.slice(0, ci).reduce((a, b) => a + b, 0);
-        const label = String(cell ?? '-');
-        const tw = helv.widthOfTextAtSize(label, 8.5);
-        const x = alignRight ? cx + cellW - tw - 4 : cx + 4;
-        page.drawText(label, {
-          x,
-          y: ry - rowH + 4,
-          size: 8.5,
-          font: helv,
-          color: BLACK,
-        });
-      });
+  for (const [label, value] of txPairs) {
+    for (const l of wrapParagraph(helv, 10, `${label}: ${value}`, rightMaxW)) {
+      drawRight(page, l, contentRight, rightY, 10, helv);
+      rightY -= 13;
     }
-  });
-  y = y - rows.length * rowH;
-  move(0.6);
-
-  // Amount in words
-  const wordsLabel = 'Total Amount in Words:';
-  text(wordsLabel, M, 8.5, helv, MUTED);
-  move();
-  wrapParagraph(bold, 8.5, str(invoice.amountInWords), tableW - 80).forEach(
-    l => {
-      text(l, M, 8.5, bold, BLACK);
-      move();
-    },
-  );
-  move(0.3);
-  text(
-    `Total Amount Received: ${fmtAmt(invoice.amountReceived)}`,
-    tableX + colWidths[0] + colWidths[1] + 4,
-    8.5,
-    bold,
-    BLACK,
-  );
-  move(2);
-
-  // Other details
-  text('Other Details', M, 10, bold, BLACK);
-  move();
-  const detail: [string, string][] = [
-    ['Transaction history', str(invoice.transactionHistoryUrl)],
-    ['HSN / SAC', str(invoice.hsnSac)],
-    ['Reverse charge', invoice.reverseCharge ? 'Yes' : 'No'],
-    ['PAN Number', str(invoice.panNumber)],
-  ];
-  detail.forEach(([label, value]) => {
-    const line = `${label}: ${value}`;
-    wrapParagraph(helv, 8, line, rightMax - M).forEach(l => {
-      text(l, M, 8, helv, MUTED);
-      move();
-    });
-  });
-  move();
-
-  drawHRule(page, M, rightMax, y);
-  move(4);
-
-  // Footer
-  const footY = 26;
-  text('Computer Generated Invoice (Not Negotiable)', M, 7.5, helv, MUTED);
-  text(`Supplier: ${str(invoice.supplierAddress)}`, M, 7.5, helv, MUTED);
-  text(
-    `GSTIN: ${str(invoice.supplierGSTIN)} | PAN: ${str(invoice.panNumber)}`,
-    M,
-    7.5,
-    helv,
-    MUTED,
-  );
-  rtext(
-    `Invoice date: ${format(new Date(), 'dd MMM yyyy')}`,
-    rightMax,
-    7.5,
-    helv,
-    MUTED,
-  );
-  page.drawLine({
-    start: {x: M, y: footY + 6},
-    end: {x: rightMax, y: footY + 6},
-    color: BORDER,
-    thickness: 0.5,
-  });
-  // supplier contact centered below
-  const footLine = `${str(invoice.website)} | ${str(invoice.email)}`;
-  if (footLine.trim()) {
-    text(
-      footLine,
-      (PAGE_W - helv.widthOfTextAtSize(footLine, 7.5)) / 2,
-      7.5,
-      helv,
-      MUTED,
-    );
   }
+
+  y = Math.min(leftY, rightY) - 16;
+
+  // ---- MAIN GST TABLE ----
+  // Description | Total | Discount | Taxable | SGST R/A | CGST R/A | IGST R/A
+  const colDefs = [112, 50, 48, 56, 28, 46, 28, 46, 28, 46];
+  const tableW0 = colDefs.reduce((a, b) => a + b, 0);
+  const scale = Math.min(1, contentWidth / tableW0);
+  const colW = colDefs.map(w => w * scale);
+  const tw = colW.reduce((a, b) => a + b, 0);
+  const tableX = PAD_X;
+  const headerH1 = 14;
+  const headerH2 = 12;
+  const headerH = headerH1 + headerH2;
+  const dataRowH = 30;
+  const cellSize = 7.5;
+
+  const colX = (i: number) =>
+    tableX + colW.slice(0, i).reduce((a, b) => a + b, 0);
+
+  const headerTop = y;
+  const headerBottom = y - headerH;
+  strokeBox(page, tableX, headerBottom, tw, headerH, 0.9);
+
+  const groups: {i0: number; i1: number; label: string}[] = [
+    {i0: 0, i1: 0, label: 'Description'},
+    {i0: 1, i1: 1, label: 'Total'},
+    {i0: 2, i1: 2, label: 'Discount'},
+    {i0: 3, i1: 3, label: 'Taxable Value'},
+    {i0: 4, i1: 5, label: 'SGST'},
+    {i0: 6, i1: 7, label: 'CGST'},
+    {i0: 8, i1: 9, label: 'IGST'},
+  ];
+
+  for (const g of groups) {
+    const x0 = colX(g.i0);
+    const w = colW.slice(g.i0, g.i1 + 1).reduce((a, b) => a + b, 0);
+    if (g.i1 > g.i0) {
+      strokeBox(page, x0, headerTop - headerH1, w, headerH1);
+      drawAligned(
+        page,
+        g.label,
+        x0,
+        headerTop - headerH1 + 4,
+        w,
+        cellSize,
+        bold,
+        'center',
+      );
+      strokeBox(page, x0, headerBottom, colW[g.i0], headerH2);
+      strokeBox(page, x0 + colW[g.i0], headerBottom, colW[g.i1], headerH2);
+      drawAligned(
+        page,
+        'Rate',
+        x0,
+        headerBottom + 3,
+        colW[g.i0],
+        6.5,
+        bold,
+        'center',
+      );
+      drawAligned(
+        page,
+        'Amount',
+        x0 + colW[g.i0],
+        headerBottom + 3,
+        colW[g.i1],
+        6.5,
+        bold,
+        'center',
+      );
+    } else {
+      strokeBox(page, x0, headerBottom, w, headerH);
+      drawAligned(
+        page,
+        g.label,
+        x0,
+        headerBottom + headerH / 2 - 2,
+        w,
+        cellSize,
+        bold,
+        'center',
+      );
+    }
+  }
+
+  const dataTop = headerBottom;
+  const dataBottom = dataTop - dataRowH;
+  strokeBox(page, tableX, dataBottom, tw, dataRowH, 0.9);
+
+  const igstRate = invoice.igstRate ?? invoice.gstRate ?? 0;
+  const igstAmt = invoice.igst ?? invoice.totalTax;
+  const dataVals = [
+    'Purchase of AT-Money via Razorpay',
+    rupee(invoice.amount),
+    rupee(invoice.discount),
+    rupee(invoice.taxableAmount),
+    `${num(invoice.sgstRate)}%`,
+    rupee(invoice.sgst),
+    `${num(invoice.cgstRate)}%`,
+    rupee(invoice.cgst),
+    `${num(igstRate)}%`,
+    rupee(igstAmt),
+  ];
+  const aligns: Align[] = [
+    'left',
+    'right',
+    'right',
+    'right',
+    'center',
+    'right',
+    'center',
+    'right',
+    'center',
+    'right',
+  ];
+
+  let vx = tableX;
+  for (let i = 0; i < colW.length; i++) {
+    strokeBox(page, vx, dataBottom, colW[i], dataRowH);
+    const lines = wrapParagraph(helv, cellSize, dataVals[i], colW[i] - 4);
+    let ty = dataTop - 11;
+    for (const l of lines.slice(0, 3)) {
+      drawAligned(page, l, vx, ty, colW[i], cellSize, helv, aligns[i]);
+      ty -= 9;
+    }
+    vx += colW[i];
+  }
+
+  y = dataBottom;
+
+  // ---- TOTAL ROWS ----
+  const totalRows: Array<{
+    label: string;
+    value?: string;
+    taxAmounts?: [string, string, string];
+  }> = [
+    {
+      label: 'Total',
+      taxAmounts: [rupee(invoice.sgst), rupee(invoice.cgst), rupee(igstAmt)],
+    },
+    {label: 'Total Tax', value: inr(invoice.totalTax)},
+    {
+      label: 'Total amount',
+      value: inr(invoice.totalAmount ?? invoice.amount),
+    },
+    {
+      label: 'Total amount (in words)',
+      value: str(invoice.amountInWords),
+    },
+    {
+      label: 'Total amount received',
+      value: inr(
+        invoice.amountReceived ?? invoice.totalAmount ?? invoice.amount,
+      ),
+    },
+  ];
+
+  for (const row of totalRows) {
+    const valueLines = row.value
+      ? wrapParagraph(helv, 10, row.value, tw * 0.55)
+      : [''];
+    const rowH =
+      row.label === 'Total amount (in words)'
+        ? Math.max(18, 8 + valueLines.length * 12)
+        : 18;
+    const by = y - rowH;
+    strokeBox(page, tableX, by, tw, rowH, 0.9);
+
+    if (row.taxAmounts) {
+      drawRight(page, 'Total', colX(4) - 4, by + 5, 10, bold);
+      drawAligned(
+        page,
+        row.taxAmounts[0],
+        colX(5),
+        by + 5,
+        colW[5],
+        9,
+        helv,
+        'right',
+      );
+      drawAligned(
+        page,
+        row.taxAmounts[1],
+        colX(7),
+        by + 5,
+        colW[7],
+        9,
+        helv,
+        'right',
+      );
+      drawAligned(
+        page,
+        row.taxAmounts[2],
+        colX(9),
+        by + 5,
+        colW[9],
+        9,
+        helv,
+        'right',
+      );
+    } else {
+      const labelW = tw * 0.4;
+      drawRight(page, row.label, tableX + labelW - 4, by + rowH - 12, 10, bold);
+      let vy = by + rowH - 12;
+      for (const l of valueLines) {
+        drawText(page, l, tableX + labelW + 4, vy, 10, helv);
+        vy -= 12;
+      }
+    }
+    y = by;
+  }
+
+  y -= 18;
+
+  // ---- TRANSACTION HISTORY ----
+  drawText(
+    page,
+    'To view your transaction history, please visit:',
+    PAD_X,
+    y,
+    11,
+    helv,
+  );
+  y -= 15;
+  const historyUrl = str(invoice.transactionHistoryUrl);
+  for (const l of wrapParagraph(helv, 11, historyUrl, contentWidth)) {
+    drawText(page, l, PAD_X, y, 11, helv);
+    page.drawLine({
+      start: {x: PAD_X, y: y - 1},
+      end: {x: PAD_X + helv.widthOfTextAtSize(l, 11), y: y - 1},
+      color: BLACK,
+      thickness: 0.6,
+    });
+    y -= 14;
+  }
+
+  y -= 12;
+
+  // ---- OTHER DETAILS ----
+  drawText(page, 'Other details:', PAD_X, y, 11, bold);
+  y -= 16;
+  const otherCols = [
+    `HSN/SAC : ${str(invoice.hsnSac, '999799')}`,
+    `Whether tax is payable on reverse charge basis : ${
+      invoice.reverseCharge === true ? 'Yes' : 'No'
+    }`,
+    `PAN Number : ${str(invoice.panNumber)}`,
+  ];
+  const otherColW = contentWidth / 3;
+  let maxOtherDrop = 0;
+  otherCols.forEach((text, i) => {
+    const lines = wrapParagraph(helv, 9, text, otherColW - 6);
+    let oy = y;
+    for (const l of lines) {
+      drawText(page, l, PAD_X + i * otherColW, oy, 9, helv);
+      oy -= 12;
+    }
+    maxOtherDrop = Math.max(maxOtherDrop, y - oy);
+  });
+  y -= maxOtherDrop + 24;
+
+  // ---- FOOTER ----
+  const footer =
+    'This is a computer generated invoice voucher, no signatures required';
+  const fw = helv.widthOfTextAtSize(footer, 8);
+  const footerY = Math.max(PAD_Y, Math.min(y, PAD_Y + 10));
+  drawText(page, footer, (PAGE_W - fw) / 2, footerY, 8, helv);
 
   return pdfDoc.saveAsBase64();
 };
@@ -400,29 +594,102 @@ export const saveInvoiceFile = async (
   return filePath;
 };
 
+const toFileUri = (pathOrUri: string): string => {
+  if (pathOrUri.startsWith('file://') || pathOrUri.startsWith('content://')) {
+    return pathOrUri;
+  }
+  // Absolute filesystem paths must be URI-prefixed for react-native-share.
+  return `file://${pathOrUri}`;
+};
+
+const shareFileNameWithoutExt = (fileName: string): string =>
+  fileName.replace(/\.pdf$/i, '');
+
+/**
+ * Android FileProvider (react-native-share ≥12.1.1) only exposes cache/files roots.
+ * Prefer CacheDir so getUriForFile always succeeds even if DocumentDir paths are
+ * not merged into the app's FileProvider config yet.
+ */
+const resolveAndroidSharePath = async (
+  filePath: string,
+  fileName: string,
+): Promise<string> => {
+  const cacheDir = ReactNativeBlobUtil.fs.dirs.CacheDir;
+  if (!cacheDir) {
+    return filePath;
+  }
+
+  const cachePath = `${cacheDir}/${fileName}`;
+  if (cachePath === filePath) {
+    return filePath;
+  }
+
+  const exists = await ReactNativeBlobUtil.fs.exists(filePath);
+  if (!exists) {
+    throw new Error(`PDF missing before share copy: ${filePath}`);
+  }
+
+  const data = await ReactNativeBlobUtil.fs.readFile(filePath, 'base64');
+  await ReactNativeBlobUtil.fs.writeFile(cachePath, data, 'base64');
+  const copied = await ReactNativeBlobUtil.fs.exists(cachePath);
+  if (!copied) {
+    throw new Error(`Failed to stage PDF for Android share: ${cachePath}`);
+  }
+  return cachePath;
+};
+
+const logShareOptions = (label: string, options: ShareOptions): void => {
+  const {url, urls, type, message, filename, title, failOnCancel, useInternalStorage} =
+    options;
+  console.log(
+    label,
+    JSON.stringify({
+      url,
+      urls,
+      type,
+      message,
+      filename,
+      title,
+      failOnCancel,
+      useInternalStorage,
+      platform: Platform.OS,
+    }),
+  );
+};
+
 export const shareInvoiceFile = async (
   filePath: string,
   fileName: string,
   base64?: string,
 ): Promise<void> => {
-  const pdfUri = `file://${filePath}`;
-  console.log('INVOICE PDF SHARE URI:', pdfUri);
-
-  if (!filePath || !pdfUri) {
+  if (!filePath) {
     throw new Error('Invalid PDF file path for sharing');
   }
 
-  const commonOptions = {
+  const pathForShare =
+    Platform.OS === 'android'
+      ? await resolveAndroidSharePath(filePath, fileName)
+      : filePath;
+  const pdfUri = toFileUri(pathForShare);
+
+  console.log('INVOICE PDF SHARE URI:', pdfUri);
+
+  if (!pdfUri || pdfUri === 'file://' || pdfUri === 'content://') {
+    throw new Error('Invalid PDF share URI');
+  }
+
+  const shareOptions: ShareOptions = {
+    url: pdfUri,
     type: 'application/pdf',
     message: 'DhwaniAstro Payment Invoice',
     filename: fileName,
+    failOnCancel: false,
+    ...(Platform.OS === 'android' ? {useInternalStorage: true} : null),
   };
 
   try {
-    await Share.open({
-      url: pdfUri,
-      ...commonOptions,
-    });
+    logShareOptions('INVOICE SHARE.open OPTIONS:', shareOptions);
+    await Share.open(shareOptions);
   } catch (e: any) {
     const msg = String(e?.message ?? '');
     const isCancel =
@@ -435,14 +702,26 @@ export const shareInvoiceFile = async (
       return;
     }
 
-    if (base64) {
-      await Share.open({
-        url: `data:application/pdf;base64,${base64}`,
-        ...commonOptions,
-      });
-    } else {
+    if (!base64) {
       throw e;
     }
+
+    // Base64 path: library writes a temp file under cache (useInternalStorage)
+    // then exposes it via FileProvider. Do not pass a null/empty urls array.
+    const base64Options: ShareOptions = {
+      url: `data:application/pdf;base64,${base64}`,
+      type: 'application/pdf',
+      message: 'DhwaniAstro Payment Invoice',
+      // Library appends mime extension; strip .pdf to avoid name.pdf.pdf
+      filename: shareFileNameWithoutExt(fileName),
+      failOnCancel: false,
+      ...(Platform.OS === 'android' ? {useInternalStorage: true} : null),
+    };
+    logShareOptions('INVOICE SHARE.open BASE64 FALLBACK OPTIONS:', {
+      ...base64Options,
+      url: `data:application/pdf;base64,[${base64.length} chars]`,
+    });
+    await Share.open(base64Options);
   }
 };
 
