@@ -295,7 +295,7 @@ export default TransactionList;
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 104,
+    marginBottom: 170,
   },
 
   filterTextCont: {
