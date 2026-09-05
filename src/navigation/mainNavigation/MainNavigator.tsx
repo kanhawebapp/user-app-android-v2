@@ -7,23 +7,23 @@
  * - renderHelpers.tsx: Screen rendering functions
  */
 
-import React, {useCallback, useState, useEffect} from 'react';
-import {View, StyleSheet} from 'react-native';
-import {useTheme} from '../../theme';
-import {Header} from '../../components/Header';
-import {Sidebar} from '../../components/Sidebar';
+import React, { useCallback, useState, useEffect } from 'react';
+import { View, StyleSheet, BackHandler } from 'react-native';
+import { useTheme } from '../../theme';
+import { Header } from '../../components/Header';
+import { Sidebar } from '../../components/Sidebar';
 import {
   ProfileCompletionModal,
   GiftModal,
   LoginRequiredModal,
 } from '../../components/Modal';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Types
-import type {MainNavigatorProps} from './mainNavigator.types';
+import type { MainNavigatorProps } from './mainNavigator.types';
 
 // Types for SendGiftScreen
-import {Gift} from '../../services/api/gift/gift.types';
+import { Gift } from '../../services/api/gift/gift.types';
 
 // Hooks
 import {
@@ -35,7 +35,7 @@ import {
 } from './mainNavigator.hooks';
 
 // Render Helpers
-import {renderScreen, renderSidebarScreen} from './renderHelpers';
+import { renderScreen, renderSidebarScreen } from './renderHelpers';
 
 // Constants
 import {
@@ -45,29 +45,30 @@ import {
   CLAIM_BONUS_BUTTON_TEXT,
   OFFER_TYPE_BONUS,
 } from './mainNavigator.constants';
-import {BottomNavigation} from '../BottomNavigation';
+import { BottomNavigation } from '../BottomNavigation';
 
 // Chat store for navigation on chat acceptance
-import {useChatStore} from '../../services/chat/chat.store';
+import { useChatStore } from '../../services/chat/chat.store';
 
 // Notification store
-import {useNotificationStore} from '../../stores/notification.store';
+import { useNotificationStore } from '../../stores/notification.store';
 
 // Notification Screen
 import NotificationsScreen from '../../screens/main/NotificationsScreen';
 // Problem Base Astro Screen
-import {ProblemBaseAstroScreen} from '../../screens/main/ProblemBaseAstroScreen';
-import type {ProblemCategory} from '../../screens/main/home/types/index';
+import { ProblemBaseAstroScreen } from '../../screens/main/ProblemBaseAstroScreen';
+import type { ProblemCategory } from '../../screens/main/home/types/index';
 import AstrologerProfileScreen from '../../screens/main/astrologerProfile';
 
 // Healing Screens
 import ServiceDetailsScreen from '../../screens/main/healings/ServiceDetailsScreen';
-import BookingFormScreen, {BookingFormData} from '../../screens/main/healings/BookingFormScreen';
+import BookingFormScreen, { BookingFormData } from '../../screens/main/healings/BookingFormScreen';
 import SelectAstrologerScreen from '../../screens/main/healings/SelectAstrologerScreen';
 import BlogListingScreen from '../../screens/main/BlogListingScreen';
 
 // Send Gift Screen
 import SendGiftScreen from '../../screens/main/SendGiftScreen';
+import { useIsFocused } from '@react-navigation/native';
 
 type HealingScreenKey = 'serviceDetails' | 'bookingForm' | 'selectAstrologer';
 
@@ -84,11 +85,11 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
   const chatStatus = useChatStore(state => state.chatStatus);
 
   // Custom hooks for state management
-  const {isGiftModalVisible, showGiftModalOnce, closeGiftModal} =
+  const { isGiftModalVisible, showGiftModalOnce, closeGiftModal } =
     useGiftModal();
-  const {isRequestModalVisible, dismissProfileRequest, completeProfileRequest} =
+  const { isRequestModalVisible, dismissProfileRequest, completeProfileRequest } =
     useProfileInitialization();
-  const {user, isAuthenticated, isLoggedIn, handleLogout} = useAuthUser({
+  const { user, isAuthenticated, isLoggedIn, handleLogout } = useAuthUser({
     onLogout,
   });
 
@@ -134,7 +135,7 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
   const [isBlogListingVisible, setIsBlogListingVisible] = useState(false);
 
   // Tab navigation
-  const {activeTab, handleTabPress, handleNavigateToTab} = useTabNavigation();
+  const { activeTab, handleTabPress, handleNavigateToTab } = useTabNavigation();
 
   //new
   const isChatActive = activeTab === 'chatCall' && chatStatus === 'active';
@@ -163,6 +164,9 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
   // Login required modal state
   const [showLoginRequiredModal, setShowLoginRequiredModal] = useState(false);
 
+
+
+
   const handleCloseLoginModal = useCallback(() => {
     setShowLoginRequiredModal(false);
   }, []);
@@ -190,6 +194,8 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
   } = useSidebarNavigation({
     onSetActiveTab: handleNavigateToTab,
   });
+
+
 
   // Wrap menu item press to show login modal for guest users
   const authRequiredMenuItems = [
@@ -294,13 +300,106 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
     setIsBlogListingVisible(true);
   }, []);
 
+  const isFocused = useIsFocused();
+  useEffect(() => {
+    if (!isFocused) {
+      return;
+    }
+
+    const onBackPress = () => {
+      if (isSidebarVisible) {
+        handleSidebarClose();
+        return true;
+      }
+
+      if (sidebarScreen) {
+        handleSidebarBack();
+        return true;
+      }
+
+      if (isSendGiftScreenVisible) {
+        setIsSendGiftScreenVisible(false);
+        setSendGiftScreenParams(null);
+        return true;
+      }
+
+      if (isAstrologerProfileVisible) {
+        setIsAstrologerProfileVisible(false);
+        setSelectedAstrologer(null);
+        return true;
+      }
+
+      if (isNotificationVisible) {
+        setIsNotificationVisible(false);
+        return true;
+      }
+
+      if (isProblemBaseAstroScreenVisible) {
+        setIsProblemBaseAstroScreenVisible(false);
+        setSelectedCategory(null);
+        return true;
+      }
+
+      if (healingScreen === 'selectAstrologer') {
+        setHealingScreen('bookingForm');
+        return true;
+      }
+
+      if (healingScreen === 'bookingForm') {
+        setHealingScreen('serviceDetails');
+        return true;
+      }
+
+      if (healingScreen === 'serviceDetails') {
+        handleHealingBack();
+        return true;
+      }
+
+      if (isBlogListingVisible) {
+        setIsBlogListingVisible(false);
+        return true;
+      }
+
+      if (activeTab !== 'home') {
+        handleNavigateToTab('home');
+        return true;
+      }
+
+      return false;
+    };
+
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      onBackPress,
+    );
+
+    return () => {
+      subscription.remove();
+    };
+  }, [
+    isFocused,
+    isSidebarVisible,
+    sidebarScreen,
+    isSendGiftScreenVisible,
+    isAstrologerProfileVisible,
+    isNotificationVisible,
+    isProblemBaseAstroScreenVisible,
+    healingScreen,
+    isBlogListingVisible,
+    activeTab,
+    handleSidebarClose,
+    handleSidebarBack,
+    handleHealingBack,
+    handleNavigateToTab,
+  ]);
+
   // If a sidebar screen is active, render it instead of tab screens
   if (sidebarScreen) {
     return (
       <View
         style={[
           styles.container,
-          {backgroundColor: colors.background.primary},
+          { backgroundColor: colors.background.primary },
         ]}>
         {renderSidebarScreen({
           sidebarScreen,
@@ -309,7 +408,7 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
           onNavigateToLogin,
           onNavigateToSignup,
           onNavigateToAstrologerProfile:
-          handleNavigateToAstrologerProfile,
+            handleNavigateToAstrologerProfile,
         })}
 
       </View>
@@ -322,7 +421,7 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
       <View
         style={[
           styles.container,
-          {backgroundColor: colors.background.primary},
+          { backgroundColor: colors.background.primary },
         ]}>
         <NotificationsScreen onNavigateBack={handleCloseNotification} />
       </View>
@@ -335,7 +434,7 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
       <View
         style={[
           styles.container,
-          {backgroundColor: colors.background.primary},
+          { backgroundColor: colors.background.primary },
         ]}>
         <ProblemBaseAstroScreen
           category={selectedCategory}
@@ -358,7 +457,7 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
       <View
         style={[
           styles.container,
-          {backgroundColor: colors.background.primary},
+          { backgroundColor: colors.background.primary },
         ]}>
         <AstrologerProfileScreen
           astrologer={selectedAstrologer}
@@ -378,7 +477,7 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
       <View
         style={[
           styles.container,
-          {backgroundColor: colors.background.primary},
+          { backgroundColor: colors.background.primary },
         ]}>
         <SendGiftScreen
           gifts={sendGiftScreenParams.gifts}
@@ -401,7 +500,7 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
       <View
         style={[
           styles.container,
-          {backgroundColor: colors.background.primary},
+          { backgroundColor: colors.background.primary },
         ]}>
         <ServiceDetailsScreen
           service={healingSelectedService}
@@ -417,7 +516,7 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
       <View
         style={[
           styles.container,
-          {backgroundColor: colors.background.primary},
+          { backgroundColor: colors.background.primary },
         ]}>
         <BookingFormScreen
           service={healingSelectedService}
@@ -433,7 +532,7 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
       <View
         style={[
           styles.container,
-          {backgroundColor: colors.background.primary},
+          { backgroundColor: colors.background.primary },
         ]}>
         <SelectAstrologerScreen
           bookingResponse={healingBookingResponse}
@@ -449,7 +548,7 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
       <View
         style={[
           styles.container,
-          {backgroundColor: colors.background.primary},
+          { backgroundColor: colors.background.primary },
         ]}>
         <BlogListingScreen onBack={() => setIsBlogListingVisible(false)} />
       </View>
@@ -462,7 +561,7 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
     //   style={[styles.container, {backgroundColor: colors.background.primary}]}>
     <SafeAreaView
       edges={isChatActive ? [] : ['left', 'right']}
-      style={[styles.container, {backgroundColor: colors.background.primary}]}>
+      style={[styles.container, { backgroundColor: colors.background.primary }]}>
       {/* <Header
         user={user}
         isAuthenticated={isAuthenticated && isLoggedIn}
