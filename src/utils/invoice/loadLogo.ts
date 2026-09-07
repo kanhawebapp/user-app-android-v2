@@ -27,11 +27,11 @@ export const loadInvoiceLogoBase64 = async (): Promise<string> => {
     const source = Image.resolveAssetSource(logoRequire);
     const uri = source?.uri;
 
-    console.log('INVOICE LOGO RESOLVE:', {
-      platform: Platform.OS,
-      uri: uri ?? null,
-      fetchable: uri ? isFetchableUri(uri) : false,
-    });
+    // console.log('INVOICE LOGO RESOLVE:', {
+    //   platform: Platform.OS,
+    //   uri: uri ?? null,
+    //   fetchable: uri ? isFetchableUri(uri) : false,
+    // });
 
     if (uri && isFetchableUri(uri)) {
       const resp = await ReactNativeBlobUtil.fetch('GET', uri, {
@@ -40,10 +40,10 @@ export const loadInvoiceLogoBase64 = async (): Promise<string> => {
       const fromFetch = resp.base64();
       if (fromFetch && fromFetch.length > 0) {
         cachedBase64 = fromFetch;
-        console.log('INVOICE LOGO LOADED via fetch, chars:', fromFetch.length);
+        // console.log('INVOICE LOGO LOADED via fetch, chars:', fromFetch.length);
         return cachedBase64;
       }
-      console.log('INVOICE LOGO FETCH EMPTY, using embedded fallback');
+      // console.log('INVOICE LOGO FETCH EMPTY, using embedded fallback');
     } else {
       console.log(
         'INVOICE LOGO non-fetchable URI (bundled drawable) — using embedded fallback',
@@ -58,10 +58,10 @@ export const loadInvoiceLogoBase64 = async (): Promise<string> => {
   }
 
   cachedBase64 = INVOICE_LOGO_PNG_BASE64;
-  console.log(
-    'INVOICE LOGO LOADED via embedded base64, chars:',
-    cachedBase64.length,
-  );
+  // console.log(
+  //   'INVOICE LOGO LOADED via embedded base64, chars:',
+  //   cachedBase64.length,
+  // );
   return cachedBase64;
 };
 
