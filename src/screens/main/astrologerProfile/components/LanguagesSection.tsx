@@ -19,7 +19,7 @@ export const LanguagesSection: React.FC<LanguagesSectionProps> = ({
       <Icon name="language" size={20} color={colors.primary.main} />
 
       <View style={styles.languagesContainer}>
-        {languages.slice(0, 3).map((language, index) => (
+        {languages.slice(0, 2).map((language, index) => (
           <View
             key={index}
             style={[
@@ -42,7 +42,7 @@ export const LanguagesSection: React.FC<LanguagesSectionProps> = ({
           </View>
         ))}
 
-        {languages.length > 3 && (
+        {languages.length > 2 && (
           <View
             style={[
               styles.languageBadge,
@@ -59,7 +59,7 @@ export const LanguagesSection: React.FC<LanguagesSectionProps> = ({
                   color: colors.primary.main,
                 },
               ]}>
-              +{languages.length - 3} more
+              +{languages.length - 2} more
             </Text>
           </View>
         )}

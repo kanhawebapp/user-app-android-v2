@@ -18,7 +18,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({ skills }) => {
       <Icon name="star" size={20} color={colors.primary.main} />
 
       <View style={styles.skillsContainer}>
-        {skills.slice(0, 3).map((skill, index) => (
+        {skills.slice(0, 2).map((skill, index) => (
           <View key={index} style={styles.skillBadge}>
             <Text
               style={[
@@ -32,10 +32,10 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({ skills }) => {
           </View>
         ))}
 
-        {skills.length > 3 && (
+        {skills.length > 2 && (
           <View style={styles.skillBadge}>
             <Text style={styles.skillText}>
-              +{skills.length - 3} more
+              +{skills.length - 2} more
             </Text>
           </View>
         )}
