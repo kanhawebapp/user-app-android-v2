@@ -33,7 +33,7 @@ export const PhoneInputSection: React.FC<Props> = ({
 
   return (
     <View style={{width: '100%'}}>
-      <Text style={styles.phonelabel}>{AUTH_LABELS.PHONE_LABEL}</Text>
+      {/* <Text style={styles.phonelabel}>{AUTH_LABELS.PHONE_LABEL}</Text> */}
       <View
         style={[
           styles.container,

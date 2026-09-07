@@ -14,7 +14,7 @@ import {Button} from '../../../../../components';
 import {useToast} from '../../../../../context/ToastContext';
 import {useWalletTransactions} from '../../../../../services/api/walletTransactions/walletTransactions.hooks';
 import {usePaymentInvoice} from '../../../../../services/api/walletTransactions/paymentInvoice.hooks';
-import {generateAndShareInvoice} from '../../../../../utils/invoice/invoicePdf';
+import {generateAndDownloadInvoice} from '../../../../../utils/invoice/invoicePdf';
 import type {WalletTransaction} from '../../../../../services/api/walletTransactions/walletTransactions.types';
 
 const TransactionItem = ({
@@ -183,8 +183,8 @@ const TransactionList = ({onRechargePress}: any) => {
       setDownloadingId(transactionId);
       try {
         const invoice = await fetchInvoice(transactionId);
-        await generateAndShareInvoice(invoice);
-        toast.showSuccess('Invoice generated and shared');
+        await generateAndDownloadInvoice(invoice);
+        toast.showSuccess('Invoice downloaded');
       } catch (e: any) {
         toast.showError(e?.message ?? 'Failed to download invoice');
       } finally {

@@ -11,11 +11,6 @@ jest.mock('react-native-blob-util', () => ({
   },
 }));
 
-jest.mock('react-native-share', () => ({
-  __esModule: true,
-  default: {open: jest.fn().mockResolvedValue(undefined)},
-}));
-
 jest.mock('../src/utils/invoice/loadLogo', () => ({
   loadInvoiceLogoBase64: jest
     .fn()
@@ -33,12 +28,10 @@ jest.mock('../src/utils/invoice/loadLogo', () => ({
 
 // @ts-ignore - pako is a transitive dependency, no type declarations
 import pako from 'pako';
-import {Platform} from 'react-native';
-import Share from 'react-native-share';
 import {
   buildInvoiceBase64,
   createInvoiceFileName,
-  generateAndShareInvoice,
+  generateAndDownloadInvoice,
 } from '../src/utils/invoice/invoicePdf';
 import type {PaymentInvoice} from '../src/services/api/walletTransactions/paymentInvoice.types';
 
@@ -192,29 +185,8 @@ describe('payment invoice pdf', () => {
     expect(createInvoiceFileName(fallback)).toBe('Invoice_invoice.pdf');
   });
 
-  it('generates, saves and shares the invoice', async () => {
-    const path = await generateAndShareInvoice(sample);
+  it('generates and downloads the invoice', async () => {
+    const path = await generateAndDownloadInvoice(sample);
     expect(path).toContain('Invoice_INV-001.pdf');
-  });
-
-  it('shares Android invoices via base64 + useInternalStorage', async () => {
-    const originalOS = Platform.OS;
-    Object.defineProperty(Platform, 'OS', {configurable: true, get: () => 'android'});
-
-    try {
-      (Share.open as jest.Mock).mockClear();
-      await generateAndShareInvoice(sample);
-      expect(Share.open).toHaveBeenCalled();
-      const options = (Share.open as jest.Mock).mock.calls[0][0];
-      expect(options.useInternalStorage).toBe(true);
-      expect(options.type).toBe('application/pdf');
-      expect(options.url).toMatch(/^data:application\/pdf;base64,/);
-      expect(options.filename).toBe('Invoice_INV-001');
-    } finally {
-      Object.defineProperty(Platform, 'OS', {
-        configurable: true,
-        get: () => originalOS,
-      });
-    }
   });
 });
