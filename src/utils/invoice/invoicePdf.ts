@@ -625,6 +625,36 @@ export const buildInvoiceBase64 = async (
   ];
 
   /**
+   * Helvetica/WinAnsi cannot encode every Unicode glyph.
+   * Replace only unsupported chars in transaction values so
+   * drawText does not drop/clip them.
+   */
+  const toHelveticaSafe = (text: string): string => {
+    let out = '';
+
+    for (const char of text) {
+      try {
+        helv.encodeText(char);
+        out += char;
+      } catch {
+        if (char === '×' || char === '✕' || char === '✖') {
+          out += 'x';
+        } else if (char === '–' || char === '—') {
+          out += '-';
+        } else if (char === '\u2018' || char === '\u2019') {
+          out += "'";
+        } else if (char === '\u201C' || char === '\u201D') {
+          out += '"';
+        } else {
+          out += '?';
+        }
+      }
+    }
+
+    return out;
+  };
+
+  /**
    * Web uses text-right and mt-3.
    * Use one consistent right edge.
    */
@@ -634,35 +664,42 @@ export const buildInvoiceBase64 = async (
     const [label, value] =
       transactionRows[i];
 
-    const fullText =
-      `${label}: ${value}`;
-
-    drawRight(
-      page,
-      fullText,
-      contentRight,
-      rightY,
-      10,
-      helv,
-    );
-
-    /**
-     * Redraw label in bold over same position
-     * to replicate:
-     * <span className="font-bold">
-     */
-    const valueText =
-      `: ${value}`;
-
-    const valueWidth =
-      helv.widthOfTextAtSize(
-        valueText,
-        10,
-      );
+    const safeValue = toHelveticaSafe(value);
 
     const labelWidth =
       bold.widthOfTextAtSize(
         label,
+        10,
+      );
+
+    const colonPart = ': ';
+    const colonWidth =
+      helv.widthOfTextAtSize(
+        colonPart,
+        10,
+      );
+
+    const maxValueWidth = Math.max(
+      40,
+      rightWidth - labelWidth - colonWidth,
+    );
+
+    const valueLines = wrapParagraph(
+      helv,
+      10,
+      safeValue,
+      maxValueWidth,
+    );
+
+    const firstValue =
+      valueLines[0] ?? '';
+
+    const valueText =
+      `${colonPart}${firstValue}`;
+
+    const valueWidth =
+      helv.widthOfTextAtSize(
+        valueText,
         10,
       );
 
@@ -679,6 +716,28 @@ export const buildInvoiceBase64 = async (
       10,
       bold,
     );
+
+    drawText(
+      page,
+      valueText,
+      startX + labelWidth,
+      rightY,
+      10,
+      helv,
+    );
+
+    for (let li = 1; li < valueLines.length; li++) {
+      rightY -= 12;
+
+      drawRight(
+        page,
+        valueLines[li],
+        contentRight,
+        rightY,
+        10,
+        helv,
+      );
+    }
 
     if (i < transactionRows.length - 1) {
       rightY -= 21;
