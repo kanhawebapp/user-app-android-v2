@@ -2,13 +2,14 @@
 <!--
   Overrides react-native-share's FileProvider paths.
   v12.1.1+ removed root-path and only ships cache-path + external Download/.
-  Invoice PDFs are saved to DocumentDir (Context.getFilesDir()), so files-path
-  is required for FileProvider.getUriForFile to return a non-null content:// URI.
-  Without it, ClipData.newUri receives null and crashes on Uri.getScheme().
+  Invoice sharing uses base64 + useInternalStorage (writes under cache/Download).
+  files-path remains for any DocumentDir file:// fallback.
+  Without a matching path, FileProvider.getUriForFile returns null and
+  ClipData.newUri NPEs on Uri.getScheme().
 -->
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <external-path name="rnshare1" path="Download/" />
-    <cache-path name="rnshare2" path="/" />
-    <external-cache-path name="rnshare_ext_cache" path="/" />
-    <files-path name="rnshare_files" path="/" />
+    <cache-path name="rnshare2" path="." />
+    <external-cache-path name="rnshare_ext_cache" path="." />
+    <files-path name="rnshare_files" path="." />
 </paths>

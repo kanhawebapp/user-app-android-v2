@@ -1571,45 +1571,68 @@ export const buildInvoiceBase64 = async (
 // SAVE FILE
 // ============================================================
 
+const errorMessage = (e: unknown): string => {
+  if (e instanceof Error && e.message) {
+    return e.message;
+  }
+  if (typeof e === 'string' && e) {
+    return e;
+  }
+  try {
+    return JSON.stringify(e);
+  } catch {
+    return String(e);
+  }
+};
+
+/**
+ * On Android, prefer CacheDir so the path is covered by react-native-share's
+ * FileProvider cache-path. DocumentDir (files/) is still fine with our
+ * share_download_paths override, but cache is the library's default root.
+ */
 export const saveInvoiceFile = async (
   base64: string,
   fileName: string,
 ): Promise<string> => {
+  const dirs = ReactNativeBlobUtil.fs.dirs;
   const dir =
-    ReactNativeBlobUtil.fs.dirs
-      .DocumentDir;
+    Platform.OS === 'android'
+      ? dirs.CacheDir || dirs.DocumentDir
+      : dirs.DocumentDir || dirs.CacheDir;
 
   if (!dir) {
-    throw new Error(
-      'DocumentDir is not available',
-    );
+    throw new Error('No writable directory available for invoice PDF');
   }
 
-  const filePath =
-    `${dir}/${fileName}`;
+  const filePath = `${dir}/${fileName}`;
 
-  await ReactNativeBlobUtil.fs.writeFile(
-    filePath,
-    base64,
-    'base64',
-  );
+  console.log('INVOICE PDF WRITE START:', filePath);
 
-  const exists =
-    await ReactNativeBlobUtil.fs.exists(
-      filePath,
-    );
+  try {
+    await ReactNativeBlobUtil.fs.writeFile(filePath, base64, 'base64');
+  } catch (e) {
+    throw new Error(`Invoice PDF write failed: ${errorMessage(e)}`);
+  }
 
+  const exists = await ReactNativeBlobUtil.fs.exists(filePath);
   if (!exists) {
-    throw new Error(
-      `File was not written: ${filePath}`,
-    );
+    throw new Error(`Invoice PDF missing after write: ${filePath}`);
   }
 
-  console.log(
-    'INVOICE PDF SAVED:',
-    filePath,
-  );
+  try {
+    const stat = await ReactNativeBlobUtil.fs.stat(filePath);
+    console.log('INVOICE PDF SIZE:', stat?.size ?? 'unknown');
+    if (stat?.size != null && Number(stat.size) <= 0) {
+      throw new Error(`Invoice PDF is empty: ${filePath}`);
+    }
+  } catch (e) {
+    if (String(errorMessage(e)).includes('empty')) {
+      throw e;
+    }
+    console.log('INVOICE PDF STAT WARN:', errorMessage(e));
+  }
 
+  console.log('INVOICE PDF SAVED:', filePath);
   return filePath;
 };
 
@@ -1617,87 +1640,29 @@ export const saveInvoiceFile = async (
 // SHARE
 // ============================================================
 
-const toFileUri = (
-  pathOrUri: string,
-): string => {
+const toFileUri = (pathOrUri: string): string => {
   if (
-    pathOrUri.startsWith(
-      'file://',
-    ) ||
-    pathOrUri.startsWith(
-      'content://',
-    )
+    pathOrUri.startsWith('file://') ||
+    pathOrUri.startsWith('content://')
   ) {
     return pathOrUri;
   }
-
   return `file://${pathOrUri}`;
 };
 
-const shareFileNameWithoutExt = (
-  fileName: string,
-): string =>
-  fileName.replace(
-    /\.pdf$/i,
-    '',
+const shareFileNameWithoutExt = (fileName: string): string =>
+  fileName.replace(/\.pdf$/i, '');
+
+const isShareCancel = (e: any): boolean => {
+  const msg = String(e?.message ?? '');
+  return (
+    /cancel|dismissed|did not share|did not select|not an item|activity_not_found|e_activity_not_found/i.test(
+      msg,
+    ) ||
+    e?.code === 'activity_canceled' ||
+    e?.code === 'E_ACTIVITY_NOT_FOUND'
   );
-
-const resolveAndroidSharePath =
-  async (
-    filePath: string,
-    fileName: string,
-  ): Promise<string> => {
-    const cacheDir =
-      ReactNativeBlobUtil.fs.dirs
-        .CacheDir;
-
-    if (!cacheDir) {
-      return filePath;
-    }
-
-    const cachePath =
-      `${cacheDir}/${fileName}`;
-
-    if (cachePath === filePath) {
-      return filePath;
-    }
-
-    const exists =
-      await ReactNativeBlobUtil.fs.exists(
-        filePath,
-      );
-
-    if (!exists) {
-      throw new Error(
-        `PDF missing before share copy: ${filePath}`,
-      );
-    }
-
-    const data =
-      await ReactNativeBlobUtil.fs.readFile(
-        filePath,
-        'base64',
-      );
-
-    await ReactNativeBlobUtil.fs.writeFile(
-      cachePath,
-      data,
-      'base64',
-    );
-
-    const copied =
-      await ReactNativeBlobUtil.fs.exists(
-        cachePath,
-      );
-
-    if (!copied) {
-      throw new Error(
-        `Failed to stage PDF for Android share: ${cachePath}`,
-      );
-    }
-
-    return cachePath;
-  };
+};
 
 const logShareOptions = (
   label: string,
@@ -1714,10 +1679,15 @@ const logShareOptions = (
     useInternalStorage,
   } = options;
 
+  const redactedUrl =
+    typeof url === 'string' && url.startsWith('data:')
+      ? `data:application/pdf;base64,[${url.length} chars]`
+      : url;
+
   console.log(
     label,
     JSON.stringify({
-      url,
+      url: redactedUrl,
       urls,
       type,
       message,
@@ -1730,190 +1700,187 @@ const logShareOptions = (
   );
 };
 
-export const shareInvoiceFile =
-  async (
-    filePath: string,
-    fileName: string,
-    base64?: string,
-  ): Promise<void> => {
-    if (!filePath) {
-      throw new Error(
-        'Invalid PDF file path for sharing',
-      );
+/**
+ * Android (API 30+): share via base64 + useInternalStorage so react-native-share
+ * writes under cache/Download and builds a FileProvider content:// URI itself.
+ * Passing raw file:// from DocumentDir/CacheDir still hits ClipData.newUri(null)
+ * when FileProvider mapping fails (known NPE on Uri.getScheme()).
+ *
+ * iOS: share the saved file via file://.
+ */
+export const shareInvoiceFile = async (
+  filePath: string,
+  fileName: string,
+  base64?: string,
+): Promise<void> => {
+  if (!filePath) {
+    throw new Error('Invalid PDF file path for sharing');
+  }
+
+  const exists = await ReactNativeBlobUtil.fs.exists(filePath);
+  if (!exists) {
+    throw new Error(`PDF missing before share: ${filePath}`);
+  }
+
+  console.log('INVOICE SHARE START:', filePath);
+
+  if (Platform.OS === 'android') {
+    if (!base64) {
+      throw new Error('Missing PDF base64 for Android share');
     }
 
-    const pathForShare =
-      Platform.OS === 'android'
-        ? await resolveAndroidSharePath(
-            filePath,
-            fileName,
-          )
-        : filePath;
-
-    const pdfUri =
-      toFileUri(pathForShare);
+    const androidOptions: ShareOptions = {
+      url: `data:application/pdf;base64,${base64}`,
+      type: 'application/pdf',
+      title: 'DhwaniAstro Payment Invoice',
+      filename: shareFileNameWithoutExt(fileName),
+      failOnCancel: false,
+      useInternalStorage: true,
+    };
 
     console.log(
-      'INVOICE PDF SHARE URI:',
-      pdfUri,
+      'INVOICE PDF SHARE URI: data:application/pdf;base64,[%s chars]',
+      base64.length,
     );
-
-    if (
-      !pdfUri ||
-      pdfUri === 'file://' ||
-      pdfUri === 'content://'
-    ) {
-      throw new Error(
-        'Invalid PDF share URI',
-      );
-    }
-
-    const shareOptions: ShareOptions =
-      {
-        url: pdfUri,
-        type: 'application/pdf',
-        message:
-          'DhwaniAstro Payment Invoice',
-        filename: fileName,
-        failOnCancel: false,
-
-        ...(Platform.OS === 'android'
-          ? {
-              useInternalStorage: true,
-            }
-          : {}),
-      };
+    logShareOptions('INVOICE SHARE.open OPTIONS:', androidOptions);
 
     try {
-      logShareOptions(
-        'INVOICE SHARE.open OPTIONS:',
-        shareOptions,
-      );
-
-      await Share.open(
-        shareOptions,
-      );
+      await Share.open(androidOptions);
+      console.log('INVOICE SHARE SUCCESS (android base64)');
+      return;
     } catch (e: any) {
-      const msg = String(
-        e?.message ?? '',
-      );
-
-      const isCancel =
-        /cancel|dismissed|did not select|not an item|activity_not_found|e_activity_not_found/i.test(
-          msg,
-        ) ||
-        e?.code ===
-          'activity_canceled' ||
-        e?.code ===
-          'E_ACTIVITY_NOT_FOUND';
-
-      if (isCancel) {
+      if (isShareCancel(e)) {
+        console.log('INVOICE SHARE CANCELLED');
         return;
       }
 
-      if (!base64) {
-        throw e;
+      console.log(
+        'INVOICE SHARE ANDROID BASE64 ERROR, trying file:// fallback:',
+        errorMessage(e),
+      );
+
+      const cacheDir = ReactNativeBlobUtil.fs.dirs.CacheDir;
+      if (!cacheDir) {
+        throw new Error(
+          `Android share failed (no CacheDir): ${errorMessage(e)}`,
+        );
       }
 
-      const base64Options: ShareOptions =
-        {
-          url: `data:application/pdf;base64,${base64}`,
-          type: 'application/pdf',
-          message:
-            'DhwaniAstro Payment Invoice',
-          filename:
-            shareFileNameWithoutExt(
-              fileName,
-            ),
-          failOnCancel: false,
+      const cachePath = `${cacheDir}/${fileName}`;
+      if (cachePath !== filePath) {
+        try {
+          await ReactNativeBlobUtil.fs.writeFile(cachePath, base64, 'base64');
+        } catch (copyErr) {
+          throw new Error(
+            `Android share cache copy failed: ${errorMessage(copyErr)}`,
+          );
+        }
+      }
 
-          ...(Platform.OS === 'android'
-            ? {
-                useInternalStorage: true,
-              }
-            : {}),
-        };
+      const cacheExists = await ReactNativeBlobUtil.fs.exists(cachePath);
+      if (!cacheExists) {
+        throw new Error(
+          `Android share cache file missing after copy: ${cachePath}`,
+        );
+      }
 
-      logShareOptions(
-        'INVOICE SHARE.open BASE64 FALLBACK OPTIONS:',
-        {
-          ...base64Options,
-          url: `data:application/pdf;base64,[${base64.length} chars]`,
-        },
-      );
+      const fileUri = toFileUri(cachePath);
+      console.log('INVOICE PDF SHARE URI (file fallback):', fileUri);
 
-      await Share.open(
-        base64Options,
-      );
+      const fileOptions: ShareOptions = {
+        url: fileUri,
+        type: 'application/pdf',
+        title: 'DhwaniAstro Payment Invoice',
+        filename: fileName,
+        failOnCancel: false,
+        useInternalStorage: true,
+      };
+
+      logShareOptions('INVOICE SHARE.open FILE FALLBACK OPTIONS:', fileOptions);
+
+      try {
+        await Share.open(fileOptions);
+        console.log('INVOICE SHARE SUCCESS (android file fallback)');
+        return;
+      } catch (fileErr: any) {
+        if (isShareCancel(fileErr)) {
+          console.log('INVOICE SHARE CANCELLED');
+          return;
+        }
+        throw new Error(
+          `Android share failed: ${errorMessage(fileErr)} (base64 error: ${errorMessage(e)})`,
+        );
+      }
     }
+  }
+
+  const pdfUri = toFileUri(filePath);
+  console.log('INVOICE PDF SHARE URI:', pdfUri);
+
+  if (!pdfUri || pdfUri === 'file://' || pdfUri === 'content://') {
+    throw new Error('Invalid PDF share URI');
+  }
+
+  const iosOptions: ShareOptions = {
+    url: pdfUri,
+    type: 'application/pdf',
+    filename: fileName,
+    failOnCancel: false,
   };
+
+  logShareOptions('INVOICE SHARE.open OPTIONS:', iosOptions);
+
+  try {
+    await Share.open(iosOptions);
+    console.log('INVOICE SHARE SUCCESS (ios)');
+  } catch (e: any) {
+    if (isShareCancel(e)) {
+      console.log('INVOICE SHARE CANCELLED');
+      return;
+    }
+    throw new Error(`iOS share failed: ${errorMessage(e)}`);
+  }
+};
 
 // ============================================================
 // GENERATE + SHARE
 // ============================================================
 
-export const generateAndShareInvoice =
-  async (
-    invoice: PaymentInvoice,
-  ): Promise<string> => {
-    let base64: string;
+export const generateAndShareInvoice = async (
+  invoice: PaymentInvoice,
+): Promise<string> => {
+  console.log('INVOICE PDF GENERATION START');
 
-    try {
-      base64 =
-        await buildInvoiceBase64(
-          invoice,
-        );
-    } catch (e) {
-      console.log(
-        'INVOICE BUILD ERROR:',
-        e,
-      );
+  let base64: string;
 
-      throw new Error(
-        'Failed to generate invoice PDF',
-      );
-    }
+  try {
+    base64 = await buildInvoiceBase64(invoice);
+    console.log('INVOICE PDF GENERATION OK, base64 chars:', base64.length);
+  } catch (e) {
+    console.log('INVOICE BUILD ERROR:', e);
+    throw new Error(`Failed to generate invoice PDF: ${errorMessage(e)}`);
+  }
 
-    const fileName =
-      createInvoiceFileName(
-        invoice,
-      );
+  if (!base64 || base64.length < 100) {
+    throw new Error('Failed to generate invoice PDF: empty or invalid base64');
+  }
 
-    let filePath: string;
+  const fileName = createInvoiceFileName(invoice);
+  let filePath: string;
 
-    try {
-      filePath =
-        await saveInvoiceFile(
-          base64,
-          fileName,
-        );
-    } catch (e) {
-      console.log(
-        'INVOICE SAVE ERROR:',
-        e,
-      );
+  try {
+    filePath = await saveInvoiceFile(base64, fileName);
+  } catch (e) {
+    console.log('INVOICE SAVE ERROR:', e);
+    throw new Error(`Failed to save invoice PDF: ${errorMessage(e)}`);
+  }
 
-      throw new Error(
-        'Failed to save invoice PDF',
-      );
-    }
+  try {
+    await shareInvoiceFile(filePath, fileName, base64);
+  } catch (e) {
+    console.log('INVOICE SHARE ERROR:', e);
+    throw new Error(`Failed to share invoice PDF: ${errorMessage(e)}`);
+  }
 
-    try {
-      await shareInvoiceFile(
-        filePath,
-        fileName,
-        base64,
-      );
-    } catch (e) {
-      console.log(
-        'INVOICE SHARE ERROR:',
-        e,
-      );
-
-      throw new Error(
-        'Failed to share invoice PDF',
-      );
-    }
-
-    return filePath;
-  };
+  return filePath;
+};

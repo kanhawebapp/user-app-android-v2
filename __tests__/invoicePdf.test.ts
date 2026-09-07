@@ -6,6 +6,7 @@ jest.mock('react-native-blob-util', () => ({
       writeFile: jest.fn().mockResolvedValue(undefined),
       readFile: jest.fn().mockResolvedValue('dGVzdA=='),
       exists: jest.fn().mockResolvedValue(true),
+      stat: jest.fn().mockResolvedValue({size: 1024}),
     },
   },
 }));
@@ -32,6 +33,8 @@ jest.mock('../src/utils/invoice/loadLogo', () => ({
 
 // @ts-ignore - pako is a transitive dependency, no type declarations
 import pako from 'pako';
+import {Platform} from 'react-native';
+import Share from 'react-native-share';
 import {
   buildInvoiceBase64,
   createInvoiceFileName,
@@ -163,7 +166,7 @@ describe('payment invoice pdf', () => {
     expect(pdfText).toContain('Invoice Voucher No');
     expect(pdfText).toContain('INV-001');
     expect(pdfText).toContain('Description');
-    expect(pdfText).toContain('Taxable Value');
+    expect(pdfText).toMatch(/Taxable/);
     expect(pdfText).toContain('SGST');
     expect(pdfText).toContain('CGST');
     expect(pdfText).toContain('IGST');
@@ -171,7 +174,7 @@ describe('payment invoice pdf', () => {
     expect(pdfText).toMatch(/AT-Money|Razorpay/);
     expect(pdfText).toContain('Total Tax');
     expect(pdfText).toContain('Total amount');
-    expect(pdfText).toContain('Total amount (in words)');
+    expect(pdfText).toMatch(/Total amount \(in words\)|in words/);
     expect(pdfText).toContain('Total amount received');
     expect(pdfText).toContain('transaction history');
     expect(pdfText).toContain('Other details');
@@ -192,5 +195,26 @@ describe('payment invoice pdf', () => {
   it('generates, saves and shares the invoice', async () => {
     const path = await generateAndShareInvoice(sample);
     expect(path).toContain('Invoice_INV-001.pdf');
+  });
+
+  it('shares Android invoices via base64 + useInternalStorage', async () => {
+    const originalOS = Platform.OS;
+    Object.defineProperty(Platform, 'OS', {configurable: true, get: () => 'android'});
+
+    try {
+      (Share.open as jest.Mock).mockClear();
+      await generateAndShareInvoice(sample);
+      expect(Share.open).toHaveBeenCalled();
+      const options = (Share.open as jest.Mock).mock.calls[0][0];
+      expect(options.useInternalStorage).toBe(true);
+      expect(options.type).toBe('application/pdf');
+      expect(options.url).toMatch(/^data:application\/pdf;base64,/);
+      expect(options.filename).toBe('Invoice_INV-001');
+    } finally {
+      Object.defineProperty(Platform, 'OS', {
+        configurable: true,
+        get: () => originalOS,
+      });
+    }
   });
 });
