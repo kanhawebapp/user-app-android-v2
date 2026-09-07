@@ -41,12 +41,11 @@ const AstrologerCard: React.FC<AstrologerCardProps> = ({
 
   const experience = item?.experience || 0;
 
-  const skills =
-    item?.skills?.length > 0 ? item.skills.join(', ') : 'Vedic Astrology';
+  const skillsList =
+    item?.skills?.length > 0 ? item.skills : ['Vedic Astrology'];
 
-  const languages =
-    item?.languages?.length > 0 ? item.languages.join(', ') : 'Hindi';
-
+  const languagesList =
+    item?.languages?.length > 0 ? item.languages : ['Hindi'];
 
   const profileImage = item?.profilePic
     ? {
@@ -56,7 +55,7 @@ const AstrologerCard: React.FC<AstrologerCardProps> = ({
     }
     : images.Logo;
 
-// console.log("profileImage", profileImage)
+  // console.log("profileImage", profileImage)
   const { currentPrice: chatPrice, oldPrice: oldChatPrice } = getAstrologerPrice(
     item,
     'CHAT',
@@ -142,8 +141,9 @@ const AstrologerCard: React.FC<AstrologerCardProps> = ({
       </Text> */}
 
       {/* Skills */}
-      <Text numberOfLines={2} style={styles.skills}>
-        {skills}
+      <Text numberOfLines={1} style={styles.skills}>
+        {skillsList.slice(0, 2).join(', ')}
+        {skillsList.length > 2 ? '...' : ''}
       </Text>
 
       {/* Languages */}
@@ -156,7 +156,8 @@ const AstrologerCard: React.FC<AstrologerCardProps> = ({
         />
 
         <Text numberOfLines={1} style={styles.languageText}>
-          {languages}
+          {languagesList.slice(0, 2).join(', ')}
+          {languagesList.length > 2 ? '...' : ''}
         </Text>
       </View>
 

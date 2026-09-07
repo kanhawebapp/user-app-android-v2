@@ -18,17 +18,8 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({ skills }) => {
       <Icon name="star" size={20} color={colors.primary.main} />
 
       <View style={styles.skillsContainer}>
-        {skills.map((skill, index) => (
-          <View
-            key={index}
-            style={[
-              styles.skillBadge,
-              // {
-              //   backgroundColor: colors.primary.light + '20',
-              //   borderWidth: 1,
-              //   borderColor: colors.primary.light + '50',
-              // },
-            ]}>
+        {skills.slice(0, 3).map((skill, index) => (
+          <View key={index} style={styles.skillBadge}>
             <Text
               style={[
                 styles.skillText,
@@ -40,6 +31,14 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({ skills }) => {
             </Text>
           </View>
         ))}
+
+        {skills.length > 3 && (
+          <View style={styles.skillBadge}>
+            <Text style={styles.skillText}>
+              +{skills.length - 3} more
+            </Text>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -55,7 +54,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 1,
     // marginBottom: 16,
-    marginTop:-10
+    marginTop: -10
   },
   sectionTitle: {
     fontSize: 16,

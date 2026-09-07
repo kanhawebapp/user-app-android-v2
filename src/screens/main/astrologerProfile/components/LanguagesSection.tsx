@@ -1,6 +1,6 @@
 import React from 'react';
-import {View, StyleSheet} from 'react-native';
-import {Icon, Text, useTheme} from '../../../../components';
+import { View, StyleSheet } from 'react-native';
+import { Icon, Text, useTheme } from '../../../../components';
 
 type LanguagesSectionProps = {
   languages: string[];
@@ -19,7 +19,7 @@ export const LanguagesSection: React.FC<LanguagesSectionProps> = ({
       <Icon name="language" size={20} color={colors.primary.main} />
 
       <View style={styles.languagesContainer}>
-        {languages.map((language, index) => (
+        {languages.slice(0, 3).map((language, index) => (
           <View
             key={index}
             style={[
@@ -41,6 +41,28 @@ export const LanguagesSection: React.FC<LanguagesSectionProps> = ({
             </Text>
           </View>
         ))}
+
+        {languages.length > 3 && (
+          <View
+            style={[
+              styles.languageBadge,
+              {
+                backgroundColor: colors.primary.light,
+                borderWidth: 1,
+                borderColor: colors.border.light,
+              },
+            ]}>
+            <Text
+              style={[
+                styles.languageText,
+                {
+                  color: colors.primary.main,
+                },
+              ]}>
+              +{languages.length - 3} more
+            </Text>
+          </View>
+        )}
       </View>
     </View>
   );
