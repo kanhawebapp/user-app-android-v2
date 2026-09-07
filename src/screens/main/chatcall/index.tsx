@@ -6,6 +6,7 @@ import {
   TextInput,
   StatusBar,
   FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import { useTheme } from '../../../theme';
 import { ChatCallScreenProps, Astrologer } from './types';
@@ -30,7 +31,7 @@ const ChatCallScreen: React.FC<ChatCallScreenProps> = ({
   const theme = useTheme();
   const colors = theme.colors;
 
-  const { data = [], loading, refresh } = useAstrologers();
+  const { data = [], loading, loadMore, refresh } = useAstrologers();
 
   const astrologers = React.useMemo(() => {
     return data.map((item: any) => {
@@ -313,6 +314,17 @@ const handleBackFromChat = useCallback(() => {
               ListEmptyComponent={!loading ? renderEmptyState : null}
               refreshing={loading}
               onRefresh={refresh}
+              onEndReached={loadMore}
+              onEndReachedThreshold={0.5}
+              ListFooterComponent={
+                loading ? (
+                  <ActivityIndicator
+                    size="small"
+                    color="#6C2BD9"
+                    style={{margin: 10}}
+                  />
+                ) : null
+              }
             />
           </View>
         );
