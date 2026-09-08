@@ -17,6 +17,7 @@ import {useAppStore, useAuthStore} from '../../stores';
 import {GoBack} from '../../components';
 import PrivacyPolicyScreen from '../../screens/legal/PrivacyPolicyScreen';
 import {softDeleteUser} from '../../services/api/deleteAccount/delete-account.api';
+import {useToast} from '../../context/ToastContext';
 
 interface SettingsScreenProps {
   onNavigateBack?: () => void;
@@ -29,6 +30,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({onNavigateBack}) => {
 
   const {isDarkMode, toggleTheme, language, setLanguage} = useAppStore();
   const authState = useAuthStore();
+  const {showSuccess, showError} = useToast();
 
   const [notifications, setNotifications] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -51,22 +53,11 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({onNavigateBack}) => {
               const result = await softDeleteUser();
 
               if (result.success) {
-                Alert.alert(
-                  'Success',
-                  result.message || 'Account deleted successfully',
-                  [
-                    {
-                      text: 'OK',
-                      onPress: () => {
-                        authState.logout();
-                        useAppStore.getState().setIsLoggedIn(false);
-                      },
-                    },
-                  ],
-                );
+                showSuccess(result.message || 'Account deleted successfully');
+                authState.logout();
+                useAppStore.getState().setIsLoggedIn(false);
               } else {
-                Alert.alert(
-                  'Error',
+                showError(
                   result.message ||
                     'Failed to delete account. Please try again.',
                 );
@@ -76,7 +67,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({onNavigateBack}) => {
                 error?.response?.data?.errors?.[0]?.message ||
                 error?.message ||
                 'Something went wrong. Please try again.';
-              Alert.alert('Error', message);
+              showError(message);
             } finally {
               setIsDeleting(false);
             }
