@@ -15,6 +15,7 @@ import {
 
 import { useTheme } from '../../theme';
 import { useChatStore } from '../../services/chat/chat.store';
+import { useCallStore } from '../../services/call/call.store';
 import { useChatActions } from '../../services/chat/chat.hooks';
 import { useCall } from '../../services/call';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -39,26 +40,34 @@ interface QueueBubbleProps {
 export const QueueBubble: React.FC<QueueBubbleProps> = () => {
   const { colors } = useTheme();
 
-  const queueData = useChatStore(state => state.queueData);
-
+  const chatQueueData = useChatStore(state => state.queueData);
   const chatStatus = useChatStore(state => state.chatStatus);
+  const chatQueueTimeLeft = useChatStore(state => state.queueTimeLeft);
 
-  const queueTimeLeft = useChatStore(state => state.queueTimeLeft);
+  const callQueueData = useCallStore(state => state.queueData);
+  const callStatus = useCallStore(state => state.status);
+  const callQueueTimeLeft = useCallStore(state => state.queueTimeLeft);
 
   const userData = useChatStore(state => state.userData);
-
   const userPayload = useChatStore(state => state.userPayload);
-
   const selectedAstrologer = useChatStore(state => state.selectedAstrologer);
-
-  const stopTimer = useChatStore(state => state.stopTimer);
+  const stopChatTimer = useChatStore(state => state.stopTimer);
 
   const { cancelChatRequest } = useChatActions();
-
   const { cancelCallRequest } = useCall();
 
-  const shouldShow =
-    chatStatus === 'queued' && !!queueData && queueTimeLeft > 0;
+  const isCallQueue =
+    (callStatus === 'queued' || callStatus === 'waiting' || callStatus === 'queue_checking') &&
+    !!callQueueData &&
+    callQueueTimeLeft > 0;
+
+  const isChatQueue =
+    chatStatus === 'queued' && !!chatQueueData && chatQueueTimeLeft > 0;
+
+  // Prefer call queue when call is pending so states stay independent in UI.
+  const shouldShow = isCallQueue || isChatQueue;
+  const queueData = isCallQueue ? callQueueData : chatQueueData;
+  const queueTimeLeft = isCallQueue ? callQueueTimeLeft : chatQueueTimeLeft;
 
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -257,12 +266,13 @@ export const QueueBubble: React.FC<QueueBubbleProps> = () => {
       }
     } catch (e) { }
 
-    if (parsedPayload?.consultationType === 'call') {
+    if (parsedPayload?.consultationType === 'call' || isCallQueue) {
        cancelCallRequest({
-        roomId: parsedPayload?.room_id,
-        astroId: parsedPayload?.astro_id,
-        userId: parsedPayload?.user_id,
+        roomId: parsedPayload?.room_id || useCallStore.getState().roomId,
+        astroId: parsedPayload?.astro_id || useCallStore.getState().calleeId,
+        userId: parsedPayload?.user_id || useCallStore.getState().callerId,
       });
+      useCallStore.getState().stopQueueTimer();
     } else {
         cancelChatRequest({
         roomId: parsedPayload?.room_id,
@@ -270,10 +280,10 @@ export const QueueBubble: React.FC<QueueBubbleProps> = () => {
         userId: parsedPayload?.user_id,
         type:"chat"
       });
+      stopChatTimer();
         }
 
-    stopTimer();
-  }, [userPayload, cancelCallRequest, cancelChatRequest, stopTimer]);
+  }, [userPayload, cancelCallRequest, cancelChatRequest, stopChatTimer, isCallQueue]);
 
   /*
   |--------------------------------------------------------------------------

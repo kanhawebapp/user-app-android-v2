@@ -93,9 +93,15 @@ const ChatCallScreen: React.FC<ChatCallScreenProps> = ({
 
 
  useEffect(() => {
+  // Only reset navigation for cancelled/rejected/idle.
+  // Do NOT unmount on `completed` — RatingModal lives inside ChatScreen and
+  // must stay mounted until the user submits/closes the rating (prior working flow).
+  // `idle` happens after rating Exit/Chat Again (store.reset) — must clear the
+  // hasNavigated latch so the next acceptance can open ChatScreen again.
   if (
     chatStatus === 'rejected' ||
-    chatStatus === 'cancelled'
+    chatStatus === 'cancelled' ||
+    chatStatus === 'idle'
   ) {
     console.log(
       '[ChatCallScreen] Reset navigation:',
@@ -104,6 +110,7 @@ const ChatCallScreen: React.FC<ChatCallScreenProps> = ({
 
     hasNavigatedRef.current = false;
     setShowChatScreen(false);
+    useChatStore.getState().setShouldNavigateToChat(false);
   }
 }, [chatStatus]);
 
@@ -130,16 +137,22 @@ const ChatCallScreen: React.FC<ChatCallScreenProps> = ({
       hasNavigatedRef.current,
     );
 
+    // Single source of truth: only open ChatScreen when SocketService
+    // explicitly set shouldNavigateToChat after a valid acceptance.
+    // Do NOT gate on hasNavigatedRef here — a fresh accept always sets
+    // shouldNavigateToChat=true and must open even if a prior session
+    // left the latch stuck true (regression: ChatScreen never showed).
     if (
+      shouldNavigateToChat &&
       chatStatus === 'active' &&
       roomIdStr &&
       roomIdStr !== 'undefined' &&
-      roomIdStr !== 'null' &&
-      !hasNavigatedRef.current
+      roomIdStr !== 'null'
     ) {
       console.log('[ChatCallScreen] Navigating to chat screen');
       hasNavigatedRef.current = true;
       setShowChatScreen(true);
+      useChatStore.getState().setShouldNavigateToChat(false);
     }
   }, [chatStatus, roomId, shouldNavigateToChat]);
 
@@ -148,6 +161,7 @@ const handleBackFromChat = useCallback(() => {
 
   setShowChatScreen(false);
   hasNavigatedRef.current = false;
+  useChatStore.getState().setShouldNavigateToChat(false);
 }, []);
   const handleEndChat = useCallback(() => {
     setShowChatScreen(false);

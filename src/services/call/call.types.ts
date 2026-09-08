@@ -43,6 +43,7 @@ export interface CallState {
   participant: CallParticipant | null;
   status:
     | 'idle'
+    | 'waiting'
     | 'queue_checking'
     | 'queued'
     | 'calling'

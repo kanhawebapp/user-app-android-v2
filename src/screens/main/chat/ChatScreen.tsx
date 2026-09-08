@@ -234,6 +234,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       setIsTyping(false);
       setChatStatus('completed');
       setRechargeModal(false);
+      // Same as manual End Chat: open RatingModal directly so leave/astrologer-end
+      // does not depend only on a status race with parent remounts.
+      setShowRatingModal(true);
     },
     onRechargeSuccess: parsedTime => {
       setRechargeModal(false);

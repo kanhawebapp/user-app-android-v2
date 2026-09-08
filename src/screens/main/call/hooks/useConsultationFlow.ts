@@ -1,5 +1,4 @@
 import {useState, useRef, useCallback} from 'react';
-import {useNavigation} from '@react-navigation/native';
 
 import {useAuthStore} from '../../../../stores';
 import {useToast} from '../../../../context/ToastContext';
@@ -17,7 +16,6 @@ interface SubmitParams {
 
 export const useConsultationFlow = ({onNavigateToTab}: any = {}) => {
   const user = useAuthStore(state => state.user);
-  const navigation = useNavigation<any>();
 
   const {showSuccess, showError} = useToast();
 
@@ -27,9 +25,6 @@ export const useConsultationFlow = ({onNavigateToTab}: any = {}) => {
 
   const submitConsultationRequest = useCallback(
     async ({astrologer, consultationType, formData, onClose}: SubmitParams) => {
-      // console.log('[ConsultationFlow] Submitting consultation request:', {
-      //   astrologer,
-      // });
       if (!astrologer) {
         return {success: false};
       }
@@ -44,7 +39,8 @@ export const useConsultationFlow = ({onNavigateToTab}: any = {}) => {
       try {
         const result = await sendChatRequest({
           astrologerId: astrologer.id,
-          astrologerName: astrologer.displayName || astrologer.name || 'Astrologer',
+          astrologerName:
+            astrologer.displayName || astrologer.name || 'Astrologer',
 
           userProfile: {
             id: user?.id || '',
@@ -70,16 +66,12 @@ export const useConsultationFlow = ({onNavigateToTab}: any = {}) => {
         console.log('[ConsultationFlow] Request result:', result);
 
         if (!result.success) {
-          const errorMessage =
-            result?.error ||
-            'Something went wrong';
+          const errorMessage = result?.error || 'Something went wrong';
 
           console.log('[ConsultationFlow] Intake failed:', errorMessage);
           console.log('[ConsultationFlow] Stopping preparation loader');
 
           showError(errorMessage);
-          // Close the intake modal so the toast is visible and the user
-          // is not stuck on Preparing consultation...
           onClose?.();
 
           return {
@@ -88,47 +80,23 @@ export const useConsultationFlow = ({onNavigateToTab}: any = {}) => {
           };
         }
 
-        // showSuccess('Connecting you with astrologer...');
-
-        const {isCall, isQueued, callId} = result;
+        const {isCall} = result;
 
         onClose?.();
 
-        // ==========================
-        // CALL FLOW
-        // ==========================
+        // CALL FLOW — mirror chat: return immediately; global queue +
+        // AppContent opens Call when callStore reaches 'calling'.
         if (isCall) {
-          if (isQueued) {
-            console.log('[ConsultationFlow] Call queued');
-
-            onNavigateToTab?.('chatCall');
-
-            return {
-              success: true,
-            };
-          }
-
-          console.log('[ConsultationFlow] Direct call navigation');
-
-          navigation.navigate('Call', {
-            callId: callId || `call_${Date.now()}`,
-            participant: {
-              id: astrologer.id,
-              name: astrologer.displayName || astrologer.name || 'Astrologer',
-              image: astrologer.profilePic || astrologer.image,
-
-            },
-            isIncoming: false,
-          });
-
+          console.log(
+            '[ConsultationFlow] Call request sent — awaiting global queue/ready',
+          );
+          onNavigateToTab?.('chatCall');
           return {
             success: true,
           };
         }
 
-        // ==========================
         // CHAT FLOW
-        // ==========================
         useChatStore.getState().setSelectedAstrologer({
           id: astrologer.id,
           name: astrologer.displayName || astrologer.name || 'Astrologer',
@@ -146,9 +114,7 @@ export const useConsultationFlow = ({onNavigateToTab}: any = {}) => {
         };
       } catch (error: any) {
         const errorMessage =
-          error?.message ||
-          error?.error ||
-          'Something went wrong';
+          error?.message || error?.error || 'Something went wrong';
 
         console.error('[ConsultationFlow] Request error:', error);
         console.log('[ConsultationFlow] Intake failed:', errorMessage);
@@ -167,7 +133,7 @@ export const useConsultationFlow = ({onNavigateToTab}: any = {}) => {
         setLoading(false);
       }
     },
-    [user, navigation, onNavigateToTab, showSuccess, showError],
+    [user, onNavigateToTab, showSuccess, showError],
   );
 
   return {

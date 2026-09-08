@@ -395,6 +395,7 @@ import InCallManager from 'react-native-incall-manager';
 import {useNavigation} from '@react-navigation/native';
 import {useChatStore} from '../chat/chat.store';
 import {callTimerService} from './call.timer';
+import {resetCallReadyFlag} from './call.queue';
 
 const stopRingbackSafely = () => {
   try {
@@ -761,6 +762,16 @@ export const useCall = () => {
           astroId,
         );
 
+        const callStatus = useCallStore.getState().status;
+        const wasQueued =
+          callStatus === 'queued' ||
+          callStatus === 'queue_checking' ||
+          callStatus === 'waiting';
+
+        // Clear independent call queue + signal global handlers to ignore.
+        useCallStore.getState().cancelPendingCallQueue();
+        resetCallReadyFlag();
+
         // 1. Update local state and cleanup
         webRTCService.emitState('ended');
 
@@ -778,8 +789,10 @@ export const useCall = () => {
         };
         console.log('emitting cancel_call_request with payload:', payload);
         socket?.emit('cancel_call_request', payload);
-        console.log('call cancel succeed, navigating back');
-        if (navigation.canGoBack()) {
+
+        // Queue cancel happens on ChatCall/Home — do not pop navigation.
+        if (!wasQueued && navigation.canGoBack()) {
+          console.log('call cancel succeed, navigating back');
           navigation.goBack();
         }
       } catch (error) {
@@ -787,7 +800,7 @@ export const useCall = () => {
         stopRingbackSafely();
       }
     },
-    [performCallCleanup],
+    [performCallCleanup, navigation],
   );
 
   const endCall = useCallback(

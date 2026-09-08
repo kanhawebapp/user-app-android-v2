@@ -6,6 +6,10 @@ import {socketService, resetChatAcceptedFlag} from '../socket/socket.service';
 import {SOCKET_EVENTS} from '../socket/socket.events';
 import {useChatStore} from './chat.store';
 import {useCallStore} from '../call/call.store';
+import {
+  promoteCallToCalling,
+  resetCallReadyFlag,
+} from '../call/call.queue';
 import {ChatRequestInput, ChatRequestResult} from './chat.types';
 import { Platform } from 'react-native';
 
@@ -181,12 +185,18 @@ export const sendChatRequest = async (
     }
 
     // ============================================================
-    // CALL FLOW — streamlined, no heavy logging in hot path
+    // CALL FLOW — same architecture as CHAT (fire-and-forget + global queue)
+    // Queue/acceptance lives in SocketService + call.queue.ts / callStore.
+    // Do NOT attach per-request QUEUE_* listeners here (chat does not either).
     // ============================================================
     if (input.consultationType === 'call') {
       const callId = generateCallId();
 
-      // Single batched setState (4 individual calls → 1)
+      // Reset acceptance/queue mutexes for a fresh request (mirrors chat).
+      resetChatAcceptedFlag();
+      resetCallReadyFlag();
+
+      useCallStore.getState().reset();
       useCallStore.setState({
         callId,
         callerId: input.userProfile.id,
@@ -197,15 +207,12 @@ export const sendChatRequest = async (
           name: input.astrologerName || 'Astrologer',
           image: input.userProfile?.profilePic || '',
         },
+        status: 'waiting',
+        pendingCallCancelled: false,
+        shouldNavigateToCall: false,
+        queueData: null,
+        queueTimeLeft: 0,
       });
-
-      // Block 'calling' until the queue decision arrives (prevents
-      // CallScreen + QueueBubble from appearing simultaneously)
-      useCallStore.getState().setStatus('queue_checking');
-
-      // connectAndWait: fresh socket (creates + resolves) or cached (resolves instantly
-      // via the .once guard). Either path is safe here.
-      const socket = await socketService.connectAndWait();
 
       const socketPayload = prepareSocketPayload(
         intakeResponse,
@@ -224,269 +231,54 @@ export const sendChatRequest = async (
       };
 
       useChatStore.getState().setUserPayload(callPayload);
-
-      // ───────────────────────────────────────────────────────────────────────
-      // Queue management promise for calls.
-      // Attach QUEUE_POSITION and QUEUE_UPDATE listeners synchronously BEFORE
-      // emitting call_request so there is no race with the server response.
-      // Architecture: wait for proper server events instead of a short timeout.
-      // The call store status stays 'queue_checking' until we know the outcome.
-      // ───────────────────────────────────────────────────────────────────────
-      let emitResult: boolean = false;
-
-      const queueManagementPromise = new Promise<{
-        isQueued: boolean;
-        isCall: boolean;
-      }>((resolve, reject) => {
-        let queueResolved = false;
-        let queueEventReceived = false;
-        let queueTimerRef: NodeJS.Timeout | null = null;
-        let queueWindowTimer: NodeJS.Timeout | null = null;
-        let inactivityTimerRef: NodeJS.Timeout | null = null;
-
-        const INACTIVITY_TIMEOUT_MS = 45000;
-
-        const callStore = useCallStore.getState();
-        const chatStore = useChatStore.getState();
-
-        const cleanupQueueListeners = () => {
-          if (queueTimerRef) {
-            clearInterval(queueTimerRef);
-            queueTimerRef = null;
-          }
-          if (inactivityTimerRef) {
-            clearTimeout(inactivityTimerRef);
-            inactivityTimerRef = null;
-          }
-          if (queueWindowTimer) {
-            clearTimeout(queueWindowTimer);
-            queueWindowTimer = null;
-          }
-          socket.off(SOCKET_EVENTS.QUEUE_POSITION, handleQueuePosition);
-          socket.off(SOCKET_EVENTS.QUEUE_UPDATE, handleQueueUpdate);
-          socket.off('disconnect', handleDisconnect);
-          chatStore.setIsChatTimerStarted(true);
-        };
-
-        const resetInactivityTimer = () => {
-          if (inactivityTimerRef) {
-            clearTimeout(inactivityTimerRef);
-          }
-          inactivityTimerRef = setTimeout(() => {
-            if (queueResolved) {
-              return;
-            }
-            console.warn(
-              '[ChatService] Queue inactivity timeout (45s) - no updates received',
-            );
-            cleanupQueueListeners();
-            callStore.setStatus('idle');
-            rejectOnce('Queue inactivity timeout - no updates received');
-          }, INACTIVITY_TIMEOUT_MS);
-        };
-
-        const startQueueTimer = (seconds: number) => {
-          if (queueTimerRef) {
-            clearInterval(queueTimerRef);
-          }
-          chatStore.setQueueTimeLeft(seconds);
-          queueTimerRef = setInterval(() => {
-            const current = chatStore.queueTimeLeft;
-            if (current <= 1) {
-              clearInterval(queueTimerRef!);
-              queueTimerRef = null;
-            } else {
-              chatStore.setQueueTimeLeft(current - 1);
-            }
-          }, 1000);
-        };
-
-        const handleQueuePosition = (data: any) => {
-          if (queueResolved) {
-            return;
-          }
-
-          queueEventReceived = true;
-
-          const position = data?.position ?? 0;
-          const waitTime = Number(
-            data?.waitTime ?? data?.estimatedWaitTime ?? 0,
-          );
-
-          if (waitTime < 0) {
-            return;
-          }
-
-          resetInactivityTimer();
-
-          chatStore.setQueueData({
-            position,
-            waitTime,
-            estimatedWaitTime: waitTime,
-            astrologerId: data?.astrologerId ?? '',
-            astrologerName: data?.astrologerName ?? '',
-            roomId: data?.roomId ?? intakeResponse.roomId,
-            message: data?.message ?? '',
-          });
-
-          // If queued (position > 0 or waitTime > 0), stay in queue state
-          if (position > 0 || waitTime > 0) {
-            if (queueWindowTimer) {
-              clearTimeout(queueWindowTimer);
-              queueWindowTimer = null;
-            }
-            callStore.setStatus('queued');
-            if (waitTime > 0) {
-              startQueueTimer(waitTime);
-            }
-            return;
-          }
-
-          // Direct call path: position === 0 && waitTime <= 0
-          if (position === 0 && waitTime <= 0) {
-            queueResolved = true;
-            cleanupQueueListeners();
-            callStore.setStatus('calling');
-            chatStore.clearQueue();
-            chatStore.setShouldNavigateToCall(true);
-            resolveOnce({isQueued: false, isCall: true});
-          }
-        };
-
-        const handleQueueUpdate = (data: any) => {
-          if (queueResolved) {
-            return;
-          }
-
-          const position = data?.position ?? -1;
-          const waitTime = Number(
-            data?.waitTime ?? data?.estimatedWaitTime ?? 0,
-          );
-
-          resetInactivityTimer();
-
-          chatStore.updateQueueData({
-            position,
-            waitTime,
-            estimatedWaitTime: waitTime,
-            astrologerId: data?.astrologerId,
-            astrologerName: data?.astrologerName,
-          });
-
-          // Update timer if waitTime > 0, clear if waitTime <= 0
-          if (waitTime > 0) {
-            startQueueTimer(waitTime);
-          } else if (queueTimerRef) {
-            clearInterval(queueTimerRef);
-            queueTimerRef = null;
-          }
-
-          // Only resolve when position === 0 && waitTime <= 0
-          if (position === 0 && waitTime <= 0) {
-            queueResolved = true;
-            cleanupQueueListeners();
-            callStore.setStatus('calling');
-            chatStore.clearQueue();
-            chatStore.setShouldNavigateToCall(true);
-            resolveOnce({isQueued: false, isCall: true});
-          }
-        };
-
-        const handleDisconnect = () => {
-          if (queueResolved) {
-            return;
-          }
-          queueResolved = true;
-          cleanupQueueListeners();
-          callStore.setStatus('idle');
-          rejectOnce('Socket disconnected during queue wait');
-        };
-
-        const resolveOnce = (value: {isQueued: boolean; isCall: boolean}) => {
-          if (queueResolved) {
-            return;
-          }
-          queueResolved = true;
-          resolve(value);
-        };
-
-        const rejectOnce = (err: any) => {
-          if (queueResolved) {
-            return;
-          }
-          queueResolved = true;
-          reject(err);
-        };
-
-        queueWindowTimer = setTimeout(() => {
-          if (queueResolved || queueEventReceived) {
-            return;
-          }
-          // No queue event received -> direct call
-          callStore.setStatus('calling');
-          resolveOnce({isQueued: false, isCall: true});
-        }, 600);
-
-        socket.on(SOCKET_EVENTS.QUEUE_POSITION, handleQueuePosition);
-        socket.on(SOCKET_EVENTS.QUEUE_UPDATE, handleQueueUpdate);
-        socket.on('disconnect', handleDisconnect);
-
-        // ── Emit call_request AFTER all listeners are registered ──────────────────
-        emitResult = socketService.emit('call_request', callPayload);
-
-        if (!emitResult) {
-          cleanupQueueListeners();
-          clearTimeout(queueWindowTimer);
-          callStore.setStatus('idle');
-          rejectOnce('Failed to emit call_request');
-          return;
-        }
-
-        console.log('[ChatService] call_request emitted:', emitResult);
+      // Selected astrologer helps QueueBubble / Call UI (same as chat path).
+      useChatStore.getState().setSelectedAstrologer({
+        id: input.astrologerId,
+        name: input.astrologerName || 'Astrologer',
+        displayName: input.astrologerName || 'Astrologer',
+        image: input.userProfile?.profilePic || '',
+        rating: 0,
+        experience: '',
+        skills: [],
+        isAvailableForChat: false,
       });
 
-      // ── Await the queue-management result ───────────────────────────────────
-      // This blocks the function return. Callers may proceed to CallScreen only
-      // after this promise resolves — either because the queue cleared, or because
-      // no queue exists (direct call path resolved synchronously from QUEUE_POSITION).
-      try {
-        const queueResult = await queueManagementPromise;
-        const isQueued = queueResult.isQueued ?? false;
+      console.log('[ChatService] Connecting to socket for call...');
+      await socketService.connectAndWait();
 
-        console.log('[ChatService] Queue result received:', {
-          isQueued,
-          isCall: queueResult.isCall,
-        });
+      const emitted = socketService.emit('call_request', callPayload);
+      console.log('[ChatService] call_request emitted:', emitted);
 
-        // Guard against race: cancelPendingCallQueue is set by
-        // QueueBubble when the user taps "Cancel Request".
-        const {pendingCallCancelled} = useChatStore.getState();
-        if (pendingCallCancelled && !isQueued) {
-          console.log(
-            '[ChatService] Queue was cancelled by user — aborting call flow',
-          );
-          return {
-            success: false,
-            error: 'Call request cancelled by user',
-          };
-        }
-
-        return {
-          success: true,
-          isCall: queueResult.isCall,
-          ...(isQueued ? {isQueued: true, callId} : {callId}),
-          roomId: intakeResponse.roomId,
-          intakeResponse,
-          socketEmitted: emitResult,
-        };
-      } catch (error: any) {
-        console.error('[ChatService] Queue promise error:', error);
+      if (!emitted) {
         useCallStore.getState().reset();
         return {
           success: false,
-          error: error?.message || 'Queue flow error',
+          error: 'Failed to emit call_request',
         };
       }
+
+      // Soft fallback like chat's initial queue window: if no QUEUE_* arrives,
+      // promote to calling so AppContent can open Call (WebRTC still waits
+      // for callAcceptedByAstrologer on Call screen). Cancelled if queued first.
+      setTimeout(() => {
+        const call = useCallStore.getState();
+        if (
+          call.status === 'waiting' &&
+          !call.queueData &&
+          !call.pendingCallCancelled
+        ) {
+          promoteCallToCalling('no-queue soft timeout');
+        }
+      }, 800);
+
+      return {
+        success: true,
+        isCall: true,
+        callId,
+        roomId: intakeResponse.roomId,
+        intakeResponse,
+        socketEmitted: emitted,
+      };
     }
 
     // ============ CHAT FLOW (existing) ============

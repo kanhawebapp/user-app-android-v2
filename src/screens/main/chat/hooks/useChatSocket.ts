@@ -51,7 +51,9 @@ export const useChatSocket = ({
     };
   }, [socket, roomId, userId]);
 
-  // Chat completed event listener
+  // Chat completed / leave event listeners
+  // End Chat emits chatCompleted; astrologer/user leave often emits leave_chat.
+  // Both must reach onChatCompleted so RatingModal can open (same as End Chat).
   useEffect(() => {
     if (!socket || !roomId) {
       return;
@@ -71,15 +73,33 @@ export const useChatSocket = ({
       onChatCompleted();
     };
 
+    const handleLeaveChat = (data: any) => {
+      if (!data) {
+        return;
+      }
+
+      const dataRoomId = data?.roomId || data?.room_id || data?.roomid;
+      // Same permissive room check as chatCompleted (allow missing roomId).
+      if (dataRoomId && dataRoomId !== roomId) {
+        return;
+      }
+
+      console.log('[CHAT LEAVE - BOTH SIDE SYNC]', data);
+      onChatCompleted();
+    };
+
     socket.off(SOCKET_EVENTS.CHAT_COMPLETED, handleChatCompleted);
     socket.off(SOCKET_EVENTS.CHAT_COMPLETED_EVENT, handleChatCompleted);
+    socket.off(SOCKET_EVENTS.LEAVE_CHAT_EVENT, handleLeaveChat);
 
     socket.on(SOCKET_EVENTS.CHAT_COMPLETED, handleChatCompleted);
     socket.on(SOCKET_EVENTS.CHAT_COMPLETED_EVENT, handleChatCompleted);
+    socket.on(SOCKET_EVENTS.LEAVE_CHAT_EVENT, handleLeaveChat);
 
     return () => {
       socket.off(SOCKET_EVENTS.CHAT_COMPLETED, handleChatCompleted);
       socket.off(SOCKET_EVENTS.CHAT_COMPLETED_EVENT, handleChatCompleted);
+      socket.off(SOCKET_EVENTS.LEAVE_CHAT_EVENT, handleLeaveChat);
     };
   }, [socket, roomId, onChatCompleted]);
 

@@ -371,7 +371,7 @@ const AnimatedAppContent: React.FC<AnimatedAppContentProps> = ({
   const navigationRef = React.useRef(null);
   const [showAstrologerList, setShowAstrologerList] = useState(false);
   const callStatus = useCallStore(state => state.status);
-  const shouldNavigateToCall = useChatStore(
+  const shouldNavigateToCall = useCallStore(
     state => state.shouldNavigateToCall,
   );
   const participant = useCallStore(state => state.participant);
@@ -384,7 +384,7 @@ const AnimatedAppContent: React.FC<AnimatedAppContentProps> = ({
     }
   }, []);
 
-  // Navigate to CallScreen when queue resolves to calling state
+  // Navigate to CallScreen when global call queue resolves to calling
   React.useEffect(() => {
     if (
       callStatus === 'calling' &&
@@ -404,7 +404,7 @@ const AnimatedAppContent: React.FC<AnimatedAppContentProps> = ({
           },
           isIncoming: false,
         });
-        useChatStore.getState().setShouldNavigateToCall(false);
+        useCallStore.getState().setShouldNavigateToCall(false);
       }
     }
   }, [callStatus, shouldNavigateToCall, participant, callId]);

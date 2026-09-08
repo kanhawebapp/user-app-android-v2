@@ -13,20 +13,29 @@ let typingTimeout: NodeJS.Timeout | null = null;
 
 export const useChatSocket = (socket: Socket | null) => {
   const registeredRef = useRef(false);
+  const handlersRef = useRef<{
+    handleChatRejected: (data: {roomId?: string; reason?: string}) => void;
+    handleReceiveMessage: (data: ChatMessage) => void;
+    handleTypingStatus: (data: {
+      roomId?: string;
+      isTyping?: boolean;
+      senderType?: string;
+    }) => void;
+    handleLeaveChat: (data: {roomId?: string; reason?: string}) => void;
+    handleUserDisconnected: (data: {
+      roomId?: string;
+      userType?: string;
+    }) => void;
+    handleError: (data: {message?: string}) => void;
+  } | null>(null);
+
   const {
     roomId,
-    setQueueData,
-    updateQueueData,
     setChatStatus,
     addMessage,
     setTypingStatus,
-    setChatRoom,
     setIsConnected,
     setError,
-    clearQueue,
-    startTimer,
-    stopTimer,
-    userPayload,
   } = useChatStore();
 
   const registerListeners = useCallback(() => {
@@ -46,90 +55,22 @@ export const useChatSocket = (socket: Socket | null) => {
       setIsConnected(false);
     });
 
-    socket.on(SOCKET_EVENTS.QUEUE_POSITION, data => {
-      if (!data) {
-        return;
-      }
+    // QUEUE_POSITION / QUEUE_UPDATE / CHAT_ACCEPTED are owned by SocketService
+    // global listeners. Registering them here caused duplicate acceptance paths
+    // and blanket socket.off() on unmount stripped the global handlers.
 
-      const storeState = useChatStore.getState();
-      const { chatStatus, isChatTimerStarted } = storeState;
-
-      // Ignore if chat is already in a terminal/active state
-      if (chatStatus === 'active' || isChatTimerStarted) {
-        return;
-      }
-
-      let waitTime = Number(data?.waitTime ?? data?.estimatedWaitTime ?? 0);
-      if (!waitTime || waitTime <= 0) {
-        return;
-      }
-
-      const normalized = {
-        position: data?.position ?? 0,
-        waitTime,
-        estimatedWaitTime: waitTime,
-        astrologerId: data?.astrologerId ?? '',
-        astrologerName: data?.astrologerName ?? '',
-        roomId: data?.roomId || data?.room_id || null,
-        message: data?.message ?? '',
-        chatCallType: data?.type ?? 'queue_update',
-      };
-
-      storeState.setQueueData(normalized);
-      storeState.setChatStatus('queued');
-      storeState.startTimer(waitTime);
-    });
-
-    socket.on(SOCKET_EVENTS.QUEUE_UPDATE, data => {
-      console.log('[ChatSocket] Queue update:', data);
-      updateQueueData(data);
-    });
-
-    socket.on(SOCKET_EVENTS.CHAT_ACCEPTED, data => {
-      const storeState = useChatStore.getState();
-      const terminalOrActiveStates: Set<string> = new Set([
-        'active',
-        'completed',
-        'rejected',
-        'cancelled',
-      ]);
-      if (terminalOrActiveStates.has(storeState.chatStatus)) {
-        return;
-      }
-
-      const incomingRoomId = data?.roomId || data?.roomid || data?.room_id;
-      const currentRoomId = storeState.roomId;
-
-      console.log('[ChatSocket] Chat accepted:', {
-        incoming: incomingRoomId,
-        current: currentRoomId,
-      });
-
-      if (incomingRoomId === currentRoomId || !currentRoomId) {
-        console.log('[ChatTimer] Chat accepted - starting chat session');
-        storeState.clearQueue();
-        storeState.stopTimer();
-        storeState.setChatRoom({
-          roomId: incomingRoomId || currentRoomId || '',
-          astrologerId: data?.astrologerId || '',
-          astrologerName: data?.astrologerName || '',
-          userId: '',
-          status: 'active',
-          maximumTime: Number(data?.maximumTime ?? data?.maximum_time ?? 0),
-        });
-        storeState.setChatStatus('active');
-      }
-    });
-
-    socket.on(SOCKET_EVENTS.CHAT_REJECTED, data => {
-      console.log('[ChatSocket] Chat rejected:', data.roomId,roomId);
+    const handleChatRejected = (data: {
+      roomId?: string;
+      reason?: string;
+    }) => {
+      console.log('[ChatSocket] Chat rejected:', data.roomId, roomId);
       if (data.roomId === roomId) {
         setChatStatus('rejected');
         setError(data.reason || 'Chat request was rejected');
       }
-    });
+    };
 
-    socket.on(SOCKET_EVENTS.RECEIVE_MESSAGE, (data: ChatMessage) => {
+    const handleReceiveMessage = (data: ChatMessage) => {
       console.log('[ChatSocket] Received message:', data);
       if (data.roomId === roomId) {
         addMessage({
@@ -137,56 +78,90 @@ export const useChatSocket = (socket: Socket | null) => {
           status: 'delivered',
         });
       }
-    });
+    };
 
-    socket.on(SOCKET_EVENTS.TYPING_STATUS, data => {
+    const handleTypingStatus = (data: {
+      roomId?: string;
+      isTyping?: boolean;
+      senderType?: string;
+    }) => {
       console.log('[ChatSocket] Typing status:', data);
       if (data.roomId === roomId) {
         setTypingStatus({
-          isTyping: data.isTyping,
-          senderType: data.senderType,
+          isTyping: !!data.isTyping,
+          senderType: data.senderType as any,
         });
       }
-    });
+    };
 
-    socket.on(SOCKET_EVENTS.LEAVE_CHAT_EVENT, data => {
+    const handleLeaveChat = (data: {
+      roomId?: string;
+      roomid?: string;
+      room_id?: string;
+      reason?: string;
+    }) => {
       console.log('[ChatSocket] Leave chat:', data);
-      if (data.roomId === roomId) {
-        setChatStatus('completed');
-        setError(data.reason || 'Chat ended by astrologer');
+      const incomingRoomId =
+        data?.roomId || data?.roomid || data?.room_id || null;
+      const currentRoomId = roomId ? String(roomId) : null;
+      if (
+        incomingRoomId &&
+        currentRoomId &&
+        String(incomingRoomId) !== currentRoomId
+      ) {
+        return;
       }
-    });
+      if (!currentRoomId && !incomingRoomId) {
+        return;
+      }
+      setChatStatus('completed');
+      setError(data.reason || 'Chat ended by astrologer');
+    };
 
-    socket.on(SOCKET_EVENTS.USER_DISCONNECTED, data => {
+    const handleUserDisconnected = (data: {
+      roomId?: string;
+      userType?: string;
+    }) => {
       console.log('[ChatSocket] User disconnected:', data);
       if (data.roomId === roomId) {
         setError(
-          `${data.userType === 'astrologer' ? 'Astrologer' : 'User'
+          `${
+            data.userType === 'astrologer' ? 'Astrologer' : 'User'
           } disconnected`,
         );
       }
-    });
+    };
 
-    socket.on(SOCKET_EVENTS.ERROR, data => {
+    const handleError = (data: {message?: string}) => {
       console.log('[ChatSocket] Error:', data);
-      setError(data.message);
-    });
+      setError(data.message || 'Socket error');
+    };
+
+    handlersRef.current = {
+      handleChatRejected,
+      handleReceiveMessage,
+      handleTypingStatus,
+      handleLeaveChat,
+      handleUserDisconnected,
+      handleError,
+    };
+
+    socket.on(SOCKET_EVENTS.CHAT_REJECTED, handleChatRejected);
+    socket.on(SOCKET_EVENTS.RECEIVE_MESSAGE, handleReceiveMessage);
+    socket.on(SOCKET_EVENTS.TYPING_STATUS, handleTypingStatus);
+    socket.on(SOCKET_EVENTS.LEAVE_CHAT_EVENT, handleLeaveChat);
+    socket.on(SOCKET_EVENTS.USER_DISCONNECTED, handleUserDisconnected);
+    socket.on(SOCKET_EVENTS.ERROR, handleError);
 
     console.log('[ChatSocket] Listeners registered');
   }, [
     socket,
     roomId,
-    setQueueData,
-    updateQueueData,
     setChatStatus,
     addMessage,
     setTypingStatus,
-    setChatRoom,
     setIsConnected,
     setError,
-    clearQueue,
-    startTimer,
-    stopTimer,
   ]);
 
   useEffect(() => {
@@ -196,16 +171,23 @@ export const useChatSocket = (socket: Socket | null) => {
 
     return () => {
       if (socket && registeredRef.current) {
-        socket.off(SOCKET_EVENTS.QUEUE_POSITION);
-        socket.off(SOCKET_EVENTS.QUEUE_UPDATE);
-        socket.off(SOCKET_EVENTS.CHAT_ACCEPTED);
-        socket.off(SOCKET_EVENTS.CHAT_REJECTED);
-        socket.off(SOCKET_EVENTS.RECEIVE_MESSAGE);
-        socket.off(SOCKET_EVENTS.TYPING_STATUS);
-        socket.off(SOCKET_EVENTS.LEAVE_CHAT_EVENT);
-        socket.off(SOCKET_EVENTS.CHAT_COMPLETED_EVENT);
-        socket.off(SOCKET_EVENTS.USER_DISCONNECTED);
-        socket.off(SOCKET_EVENTS.ERROR);
+        const handlers = handlersRef.current;
+        // Only remove this hook's handlers — never blanket-off global events.
+        if (handlers) {
+          socket.off(SOCKET_EVENTS.CHAT_REJECTED, handlers.handleChatRejected);
+          socket.off(
+            SOCKET_EVENTS.RECEIVE_MESSAGE,
+            handlers.handleReceiveMessage,
+          );
+          socket.off(SOCKET_EVENTS.TYPING_STATUS, handlers.handleTypingStatus);
+          socket.off(SOCKET_EVENTS.LEAVE_CHAT_EVENT, handlers.handleLeaveChat);
+          socket.off(
+            SOCKET_EVENTS.USER_DISCONNECTED,
+            handlers.handleUserDisconnected,
+          );
+          socket.off(SOCKET_EVENTS.ERROR, handlers.handleError);
+          handlersRef.current = null;
+        }
         registeredRef.current = false;
         console.log('[ChatSocket] Listeners cleaned up');
       }

@@ -4,6 +4,13 @@ import { API_BASE_URL } from '../../constants/api.constants';
 import { SOCKET_EVENTS } from './socket.events';
 import { useChatStore } from '../chat/chat.store';
 import { useCallStore } from '../call/call.store';
+import {
+  applyCallQueuePosition,
+  applyCallQueueUpdate,
+  isCallRequestPending,
+  isCallSessionActive,
+  resetCallReadyFlag,
+} from '../call/call.queue';
 
 export interface SocketServiceState {
   socket: Socket<ServerToClientEvents, ClientToServerEvents> | null;
@@ -25,6 +32,8 @@ interface RawQueueData {
   room_id?: string;
   roomid?: string;
   message?: string;
+  type?: string;
+  data?: {type?: string};
 }
 
 interface RawChatAcceptedData {
@@ -86,25 +95,35 @@ class SocketService {
 
   private handleChatAccepted = (
     data: RawChatAcceptedData,
-    isAlias: boolean = false,
+    _isAlias: boolean = false,
   ) => {
     if (!data) {
       console.warn('[SocketService] Empty data in chatAccepted');
       return;
     }
 
+    // Atomic session guard FIRST — prevents race when multiple listeners
+    // (or near-simultaneous events) both observe queued/waiting.
+    if (this.chatAcceptedHandled) {
+      console.log(
+        '[SocketService] Chat already accepted for this session, ignoring duplicate',
+      );
+      return;
+    }
+
     const incomingRoomId = normalizeRoomId(data);
     if (!incomingRoomId) {
       console.warn(
-        `[SocketService] Invalid roomId in chatAccepted${isAlias ? ' (alias)' : ''
-        }, ignoring`,
+        '[SocketService] Invalid roomId in chatAccepted, ignoring',
         data,
       );
       return;
     }
 
     const storeState = useChatStore.getState();
-    const currentRoomId = storeState.roomId;
+    const currentRoomId = storeState.roomId
+      ? String(storeState.roomId)
+      : null;
 
     // Reject if chat is already in a terminal/active state
     const terminalOrActiveStates: Set<string> = new Set([
@@ -125,10 +144,42 @@ class SocketService {
       return;
     }
 
+    const isQueuedOrWaiting =
+      storeState.chatStatus === 'waiting' ||
+      storeState.chatStatus === 'queued';
+    if (!isQueuedOrWaiting) {
+      console.warn(
+        '[SocketService] Chat acceptance ignored - status is not queued/waiting',
+        {
+          incoming: incomingRoomId,
+          current: currentRoomId,
+          status: storeState.chatStatus,
+        },
+      );
+      return;
+    }
 
-    // ADD HERE
+    // Pending intake roomId is authoritative. Never accept a different request.
+    if (!currentRoomId) {
+      console.warn(
+        '[SocketService] Chat acceptance ignored - no pending roomId',
+        {incoming: incomingRoomId},
+      );
+      return;
+    }
+    if (incomingRoomId !== currentRoomId) {
+      console.warn(
+        '[SocketService] Chat acceptance ignored - roomId mismatch (stale/other request)',
+        {
+          incoming: incomingRoomId,
+          current: currentRoomId,
+          status: storeState.chatStatus,
+        },
+      );
+      return;
+    }
+
     const queuePosition = storeState.queueData?.position;
-
     if (queuePosition !== undefined && queuePosition > 0) {
       console.warn(
         '[SocketService] Chat acceptance ignored - user is still in queue',
@@ -141,20 +192,13 @@ class SocketService {
       return;
     }
 
+    // Claim acceptance before any store writes (sync mutex).
+    this.chatAcceptedHandled = true;
+
     console.log('[SocketService] Chat Accepted:', {
       incoming: incomingRoomId,
       current: currentRoomId,
-      isAlias,
     });
-
-    if (this.chatAcceptedHandled) {
-      console.log(
-        '[SocketService] Chat already accepted for this session, ignoring duplicate',
-      );
-      return;
-    }
-
-    this.chatAcceptedHandled = true;
 
     // Fully stop and clear all queue state before transitioning to active
     storeState.stopTimer();
@@ -164,7 +208,7 @@ class SocketService {
     storeState.setChatStatus('active');
     storeState.setShouldNavigateToChat(true);
     storeState.setChatRoom({
-      roomId: incomingRoomId,
+      roomId: currentRoomId,
       astrologerId: data?.astrologerId || '',
       astrologerName: data?.astrologerName || '',
       userId: '',
@@ -174,7 +218,7 @@ class SocketService {
 
     console.log(
       '[SocketService] Chat accepted, set shouldNavigateToChat=true, roomId:',
-      incomingRoomId,
+      currentRoomId,
     );
   };
 
@@ -201,7 +245,7 @@ class SocketService {
       SOCKET_EVENTS.ERROR,
     ];
     eventsToOff.forEach(event => socket.off(event));
-    (socket as any).off('chatAcceptedByAstrologer');
+    // CHAT_ACCEPTED already === 'chatAcceptedByAstrologer'; no second off needed.
 
     const store = useChatStore.getState();
 
@@ -212,38 +256,82 @@ class SocketService {
       'cancelled',
     ]);
 
-    const callTerminalOrActiveStates: Set<string> = new Set([
-      'calling',
-      'ringing',
-      'connecting',
-      'connecting_webrtc',
-      'creating_offer',
-      'sending_offer',
-      'waiting_answer',
-      'creating_answer',
-      'waiting_connection',
-      'connected',
-      'ended',
-      'rejected',
-    ]);
+    const isChatRequestPending = () => {
+      const status = useChatStore.getState().chatStatus;
+      return status === 'waiting' || status === 'queued';
+    };
+
+    /**
+     * Route shared QUEUE_* events to call OR chat independently.
+     * Prefer explicit payload type, then pending call/chat request state.
+     * Never write call queue into chatStore or vice versa.
+     */
+    const resolveQueueTarget = (
+      data: RawQueueData,
+    ): 'call' | 'chat' | null => {
+      const payloadType = String(
+        data?.type ?? data?.data?.type ?? '',
+      ).toLowerCase();
+      if (payloadType === 'call') {
+        return 'call';
+      }
+      if (payloadType === 'chat') {
+        return 'chat';
+      }
+
+      const incomingRoom = normalizeRoomId(data);
+      const callPending = isCallRequestPending();
+      const chatPending = isChatRequestPending();
+      const callRoomId = useCallStore.getState().roomId;
+      const chatRoomId = useChatStore.getState().roomId;
+
+      if (incomingRoom && callPending && callRoomId && incomingRoom === String(callRoomId)) {
+        return 'call';
+      }
+      if (incomingRoom && chatPending && chatRoomId && incomingRoom === String(chatRoomId)) {
+        return 'chat';
+      }
+
+      const userPayload = useChatStore.getState().userPayload as
+        | {consultationType?: string}
+        | null;
+      if (userPayload?.consultationType === 'call' && callPending) {
+        return 'call';
+      }
+      if (userPayload?.consultationType !== 'call' && chatPending) {
+        return 'chat';
+      }
+      if (callPending && !chatPending) {
+        return 'call';
+      }
+      if (chatPending && !callPending) {
+        return 'chat';
+      }
+      return null;
+    };
 
     (socket as any).on(SOCKET_EVENTS.QUEUE_POSITION, (data: RawQueueData) => {
       if (!data) {
         console.warn('[SocketService] Empty queue_position data');
         return;
       }
+console.log('[SocketService] queue_position event received:', data);
+      const target = resolveQueueTarget(data);
 
-      const storeState = useChatStore.getState();
-      if (terminalOrActiveStates.has(storeState.chatStatus)) {
-        // console.log('[ChatSocket] Queue position>>:');
-
+      if (target === 'call') {
+        if (isCallSessionActive()) {
+          return;
+        }
+        applyCallQueuePosition(data);
         return;
       }
 
-      const callStoreState = useCallStore.getState();
-      if (callTerminalOrActiveStates.has(callStoreState.status)) {
-        // console.log('[CallSocket] Queue position>>:');
+      if (target !== 'chat') {
+        return;
+      }
 
+      const storeState = useChatStore.getState();
+      if (terminalOrActiveStates.has(storeState.chatStatus)) {
         return;
       }
 
@@ -266,7 +354,7 @@ class SocketService {
         astrologerName: data?.astrologerName ?? '',
         roomId: normalizeRoomId(data),
         message: data?.message ?? '',
-        type: data?.type ?? '',
+        type: data?.type ?? 'chat',
       });
       storeState.setChatStatus('queued');
       if (waitTime > 0) {
@@ -274,12 +362,28 @@ class SocketService {
       } else if (position === 0 && waitTime === 0) {
         storeState.stopTimer();
         storeState.clearQueue();
-        storeState.startInitialQueueTimer(storeState.roomId ?? normalizeRoomId(data));
+        storeState.startInitialQueueTimer(
+          storeState.roomId ?? normalizeRoomId(data),
+        );
       }
     });
 
     (socket as any).on(SOCKET_EVENTS.QUEUE_UPDATE, (data: RawQueueData) => {
       if (!data) {
+        return;
+      }
+
+      const target = resolveQueueTarget(data);
+
+      if (target === 'call') {
+        if (isCallSessionActive()) {
+          return;
+        }
+        applyCallQueueUpdate(data);
+        return;
+      }
+
+      if (target !== 'chat') {
         return;
       }
 
@@ -298,29 +402,24 @@ class SocketService {
         astrologerId: data?.astrologerId,
         astrologerName: data?.astrologerName,
         roomId: normalizeRoomId(data),
-        type: data?.data?.type ?? '',
+        type: data?.data?.type ?? data?.type ?? 'chat',
       });
 
-      // When position becomes 0 and no wait time — queue resolved
+      // Chat queue resolved — keep waiting for CHAT_ACCEPTED (unchanged).
       if (position === 0 && waitTime <= 0) {
         storeState.stopTimer();
         storeState.clearQueue();
-        // Mark chat store as queued (call flow driven by callStore status = 'calling')
         storeState.setChatStatus('queued');
       }
     });
 
+    // SOCKET_EVENTS.CHAT_ACCEPTED === 'chatAcceptedByAstrologer'.
+    // Register exactly once — a second .on for the same name double-fires
+    // handleChatAccepted and produces false "duplicate acceptance" warnings.
     (socket as any).on(
       SOCKET_EVENTS.CHAT_ACCEPTED,
       (data: RawChatAcceptedData) => {
         this.handleChatAccepted(data, false);
-      },
-    );
-
-    (socket as any).on(
-      'chatAcceptedByAstrologer',
-      (data: RawChatAcceptedData) => {
-        this.handleChatAccepted(data, true);
       },
     );
 
@@ -415,14 +514,31 @@ class SocketService {
         room_id?: string;
         reason?: string;
       }) => {
-        const roomId = normalizeRoomId(data);
-        const currentRoomId = useChatStore.getState().roomId;
+        const storeState = useChatStore.getState();
+        const incomingRoomId = normalizeRoomId(data);
+        const currentRoomId = storeState.roomId
+          ? String(storeState.roomId)
+          : null;
 
-        if (roomId && roomId === currentRoomId) {
-          console.log('[SocketService] leave_chat:', data);
-          store.setChatStatus('completed');
-          store.setError(data?.reason || 'Chat ended by astrologer');
+        // Match ChatScreen chatCompleted: allow missing roomId while chat is active.
+        if (
+          incomingRoomId &&
+          currentRoomId &&
+          incomingRoomId !== currentRoomId
+        ) {
+          return;
         }
+        if (
+          storeState.chatStatus !== 'active' &&
+          storeState.chatStatus !== 'queued' &&
+          storeState.chatStatus !== 'waiting'
+        ) {
+          return;
+        }
+
+        console.log('[SocketService] leave_chat:', data);
+        storeState.setChatStatus('completed');
+        storeState.setError(data?.reason || 'Chat ended by astrologer');
       },
     );
 
@@ -434,13 +550,30 @@ class SocketService {
         room_id?: string;
         ratingNeeded?: boolean;
       }) => {
-        const roomId = normalizeRoomId(data);
-        const currentRoomId = useChatStore.getState().roomId;
+        const storeState = useChatStore.getState();
+        const incomingRoomId = normalizeRoomId(data);
+        const currentRoomId = storeState.roomId
+          ? String(storeState.roomId)
+          : null;
 
-        if (roomId && roomId === currentRoomId) {
-          console.log('[SocketService] chatCompleted:', data);
-          store.setChatStatus('completed');
+        if (
+          incomingRoomId &&
+          currentRoomId &&
+          incomingRoomId !== currentRoomId
+        ) {
+          return;
         }
+        if (
+          storeState.chatStatus !== 'active' &&
+          storeState.chatStatus !== 'queued' &&
+          storeState.chatStatus !== 'waiting' &&
+          storeState.chatStatus !== 'completed'
+        ) {
+          return;
+        }
+
+        console.log('[SocketService] chatCompleted:', data);
+        storeState.setChatStatus('completed');
       },
     );
 
@@ -511,6 +644,7 @@ class SocketService {
       this.connecting = true;
       this.listenersRegistered = false;
       this.chatAcceptedHandled = false;
+      resetCallReadyFlag();
       console.log('[SocketService] Creating new socket connection...');
 
       const socket = io(SOCKET_URL, {
@@ -544,6 +678,7 @@ class SocketService {
         this.connected = false;
         this.listenersRegistered = false;
         this.chatAcceptedHandled = false;
+        resetCallReadyFlag();
       });
     });
   }
@@ -614,6 +749,7 @@ class SocketService {
       this.connecting = false;
       this.listenersRegistered = false;
       this.chatAcceptedHandled = false;
+      resetCallReadyFlag();
       console.log('[SocketService] Disconnected and reset');
     }
   }
