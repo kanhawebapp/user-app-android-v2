@@ -12,6 +12,8 @@ export interface Banner {
   imageUrl: string;
 
   status: boolean;
+
+  bannerType?: string;
 }
 
 export interface BannerPagination {

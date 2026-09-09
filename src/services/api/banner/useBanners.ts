@@ -20,7 +20,6 @@ export const useBanners = (language = 'en') => {
       setError(null);
 
       const res = await getBanners(language);
-
       setData(res.data || []);
 
       setTotalCount(res.totalCount || 0);

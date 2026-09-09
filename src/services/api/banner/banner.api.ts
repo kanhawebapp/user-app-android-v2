@@ -20,7 +20,7 @@ query GetBanners($language: String) {
       bannerlink
 
       imageUrl
-
+      bannerType
       status
     }
   }

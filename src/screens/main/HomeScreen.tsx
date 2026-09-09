@@ -270,9 +270,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
 
   const heroBanners = useMemo(() => {
     const BASE_IMAGE_URL = DEFAULT_API_CONFIG.baseUrl;
-    // const BASE_IMAGE_URL = DEFAULT_API_CONFIG.baseUrl.replace('/api', '/images/');
 
-    return bannerResponse.map((item: any) => ({
+    const mobileBanners = bannerResponse.filter(
+      item => String(item.bannerType || '').toUpperCase() === 'MOBILE',
+    );
+    return mobileBanners.map((item: any) => ({
       id: item.id,
       title: item.heading || '',
       subtitle: item.subheading || '',
@@ -283,6 +285,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         : `${BASE_IMAGE_URL}${item.imageUrl}`,
     }));
   }, [bannerResponse]);
+
 
   //healing new
   const { services, refresh: refreshServices } = useServices();
@@ -331,11 +334,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           />
         }>
         {/* 1. Hero Banner */}
-        <HeroBanner
-          data={heroBanners}
-          onCtaPress={handleCtaPress}
-          style={styles.section}
-        />
+        {heroBanners.length > 0 && (
+          <HeroBanner
+            data={heroBanners}
+            onCtaPress={handleCtaPress}
+            style={styles.section}
+          />
+        )}
 
         {/* 4. Ongoing Live Sessions */}
         {/* <OngoingLive
@@ -447,7 +452,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         }}
         onSubmit={async formData => {
           if (!chatTargetAstrologer) {
-            return {success: false};
+            return { success: false };
           }
 
           return submitConsultationRequest({
