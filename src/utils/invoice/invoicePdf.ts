@@ -1652,46 +1652,74 @@ export const saveInvoiceFile = async (
   base64: string,
   fileName: string,
 ): Promise<string> => {
-  const dirs = ReactNativeBlobUtil.fs.dirs;
-  const dir =
-    Platform.OS === 'android'
-      ? dirs.CacheDir || dirs.DocumentDir
-      : dirs.DocumentDir || dirs.CacheDir;
-
-  if (!dir) {
-    throw new Error('No writable directory available for invoice PDF');
-  }
-
-  const filePath = `${dir}/${fileName}`;
-
-  console.log('INVOICE PDF WRITE START:', filePath);
-
   try {
-    await ReactNativeBlobUtil.fs.writeFile(filePath, base64, 'base64');
-  } catch (e) {
-    throw new Error(`Invoice PDF write failed: ${errorMessage(e)}`);
-  }
+    if (Platform.OS === 'android') {
+      // Public Android Downloads folder
+      const downloadPath =
+        `/storage/emulated/0/Download/${fileName}`;
 
-  const exists = await ReactNativeBlobUtil.fs.exists(filePath);
-  if (!exists) {
-    throw new Error(`Invoice PDF missing after write: ${filePath}`);
-  }
+      console.log(
+        'INVOICE PUBLIC DOWNLOAD PATH:',
+        downloadPath,
+      );
 
-  try {
-    const stat = await ReactNativeBlobUtil.fs.stat(filePath);
-    console.log('INVOICE PDF SIZE:', stat?.size ?? 'unknown');
-    if (stat?.size != null && Number(stat.size) <= 0) {
-      throw new Error(`Invoice PDF is empty: ${filePath}`);
+      await ReactNativeBlobUtil.fs.writeFile(
+        downloadPath,
+        base64,
+        'base64',
+      );
+
+      const exists =
+        await ReactNativeBlobUtil.fs.exists(downloadPath);
+
+      if (!exists) {
+        throw new Error(
+          `Invoice PDF not found after saving: ${downloadPath}`,
+        );
+      }
+
+      const stat =
+        await ReactNativeBlobUtil.fs.stat(downloadPath);
+
+      console.log(
+        'INVOICE PDF SIZE:',
+        stat?.size,
+      );
+
+      console.log(
+        'INVOICE PDF SAVED:',
+        downloadPath,
+      );
+
+      return downloadPath;
     }
-  } catch (e) {
-    if (String(errorMessage(e)).includes('empty')) {
-      throw e;
-    }
-    console.log('INVOICE PDF STAT WARN:', errorMessage(e));
-  }
 
-  console.log('INVOICE PDF SAVED:', filePath);
-  return filePath;
+    // iOS
+    const filePath =
+      `${ReactNativeBlobUtil.fs.dirs.DocumentDir}/${fileName}`;
+
+    await ReactNativeBlobUtil.fs.writeFile(
+      filePath,
+      base64,
+      'base64',
+    );
+
+    console.log(
+      'INVOICE IOS SAVED:',
+      filePath,
+    );
+
+    return filePath;
+  } catch (e) {
+    console.log(
+      'INVOICE DOWNLOAD ERROR:',
+      errorMessage(e),
+    );
+
+    throw new Error(
+      `Invoice PDF download failed: ${errorMessage(e)}`,
+    );
+  }
 };
 
 // ============================================================

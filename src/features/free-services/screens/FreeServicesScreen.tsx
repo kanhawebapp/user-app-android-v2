@@ -47,6 +47,8 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
     [services],
   );
 
+  console.log('Active Services:', activeServices);
+
   const isHoroscopeService = (item: any) => {
     const slug = (item?.slug || '').toLowerCase();
     const title = (item?.title || '').toLowerCase();
