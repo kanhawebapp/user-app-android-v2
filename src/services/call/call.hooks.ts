@@ -503,6 +503,14 @@ export const useCall = () => {
   // Single source of truth for end / reject / remote-end.  All three paths
   // below call this so nothing is ever missed.
   const performCallCleanup = useCallback(() => {
+    // Idempotency guard: timer expiry, user press, and socket echoes
+    // (call_ended_by_user → server → call_ended_by_astrologer) can all race
+    // into this same path. Only the first invocation must run the heavy
+    // cleanup; duplicates just no-op.
+    if (callEndedInProgressRef.current) {
+      console.log('[Call] Cleanup already in progress — skipping duplicate');
+      return;
+    }
     callEndedInProgressRef.current = true;
 
     // Stop the live countdown
@@ -514,6 +522,12 @@ export const useCall = () => {
 
     // Fully reset the service store (clears participant, callId, streams, …)
     useCallStore.getState().reset();
+
+    // reset() wipes status back to 'idle', which would prevent the
+    // CallScreen navigation-back effect (keyed on 'ended'/'rejected') from
+    // firing and leave the Call screen mounted on top of the idle screen.
+    // Restore a terminal status so UI + navigation react correctly.
+    useCallStore.setState({status: 'ended'});
   }, []);
 
   // ── Rejected ─────────────────────────────────────────────────────────────
@@ -805,6 +819,12 @@ export const useCall = () => {
 
   const endCall = useCallback(
     async ({roomId, astroId}: {roomId: any; astroId: any}) => {
+      // Guard against duplicate end-call triggers (timer expiry, user press,
+      // and socket echoes). Only the first invocation should emit to the server.
+      if (callEndedInProgressRef.current) {
+        console.log('[Call] endCall already in progress — skipping duplicate');
+        return;
+      }
       try {
         performCallCleanup();
         const socket = socketService.getSocket();
