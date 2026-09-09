@@ -64,7 +64,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
           <View style={styles.astrologerMeta}>
             <Text style={[styles.ratingText, { color: colors.text.secondary }]}>
               {astrologer?.rating != null
-                ? astrologer.rating.toFixed(2)
+                ? astrologer.rating.toFixed(1)
                 : '0.00'}{' '}
               <AntDesign name='star' size={18} color='gold' />
 
