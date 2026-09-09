@@ -595,6 +595,7 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
           onNavigateToAstrologerProfile: handleNavigateToAstrologerProfile,
           onNavigateToServiceDetails: handleNavigateToServiceDetails,
           onNavigateToBlogListing: handleNavigateToBlogListing,
+          onNavigateToFreeServices: () => setSidebarScreen('free_services'),
         })}
       </View>
 

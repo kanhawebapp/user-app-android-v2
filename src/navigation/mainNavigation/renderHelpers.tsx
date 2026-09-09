@@ -163,6 +163,7 @@ export interface RenderScreenProps {
   onNavigateToAstrologerProfile?: (astrologer: any) => void;
   onNavigateToServiceDetails?: (service: any) => void;
   onNavigateToBlogListing?: () => void;
+  onNavigateToFreeServices?: () => void;
 }
 
 export const renderScreen = ({
@@ -175,6 +176,7 @@ export const renderScreen = ({
   onNavigateToAstrologerProfile,
   onNavigateToServiceDetails,
   onNavigateToBlogListing,
+  onNavigateToFreeServices,
 }: RenderScreenProps) => {
   // Get shimmer fallback for current tab
   const shimmerFallback = getTabShimmerFallback(activeTab);
@@ -194,6 +196,7 @@ export const renderScreen = ({
             onNavigateToAstrologerProfile={onNavigateToAstrologerProfile}
             onNavigateToServiceDetails={onNavigateToServiceDetails}
             onNavigateToBlogListing={onNavigateToBlogListing}
+            onNavigateToFreeServices={onNavigateToFreeServices}
           />
         </Suspense>
       );

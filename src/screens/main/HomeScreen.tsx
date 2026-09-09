@@ -19,6 +19,7 @@ import {
   Testimonials,
   TrustSection,
 } from './home/components';
+import FreeServicesRow from './home/components/FreeServicesRow';
 import useScreenTracking from '../../services/analytics/hooks/useScreenTracking';
 import { HomeScreenProps, ProblemCategory } from './home/types';
 import HomeAstrologers from './home/components/RecommendedAstrologers';
@@ -51,6 +52,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   onNavigateToProblemBaseAstroScreen,
   onNavigateToServiceDetails,
   onNavigateToBlogListing,
+  onNavigateToFreeServices,
 }) => {
   const theme = useTheme();
   const colors = theme.colors;
@@ -342,6 +344,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           onViewAllPress={handleViewAllLive}
           style={styles.section}
         /> */}
+
+        {/* Free Services Row */}
+        <FreeServicesRow
+          onViewAllPress={onNavigateToFreeServices}
+          style={styles.section}
+        />
 
         {/* 5. Upcoming Live Sessions */}
         <UpcomingLive

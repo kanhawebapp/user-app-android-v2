@@ -135,7 +135,7 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
           />
         </View>
 
-        <View
+        {/* <View
           style={[
             styles.statusBadge,
             {
@@ -150,7 +150,7 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
             }}>
             {item.isActive ? 'ACTIVE' : 'INACTIVE'}
           </Text>
-        </View>
+        </View> */}
       </View>
 
       {/* Title */}

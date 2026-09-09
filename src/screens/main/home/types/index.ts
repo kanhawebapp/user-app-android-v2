@@ -19,7 +19,6 @@ export interface ProblemCategoryProps {
   categories?: ProblemCategory[];
   onCategoryPress?: (category: ProblemCategory) => void;
   style?: ViewStyle;
-
 }
 
 // ==================== Navigation Props ====================
@@ -39,8 +38,9 @@ export interface HomeScreenProps {
   onNavigateToBlogPost?: (postId: string) => void;
   onNavigateToAstrologerList?: () => void;
   onNavigateToProblemBaseAstroScreen?: (category: ProblemCategory) => void;
-   onNavigateToServiceDetails?:any
+  onNavigateToServiceDetails?: any;
   onNavigateToBlogListing?: () => void;
+  onNavigateToFreeServices?: () => void;
 }
 
 // ==================== Auth Handler Type ====================
