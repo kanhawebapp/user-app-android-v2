@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 import {
   View,
   StyleSheet,
@@ -7,18 +7,17 @@ import {
   StatusBar,
   ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '../../../theme';
 import { Text } from '../../../components/Text';
 import { Icon } from '../../../components/Icon';
 import { Card } from '../../../components/Card';
-import { useFreeServices } from '../../../services/api/freeServices/useFreeServices';
 import { GoBack } from '../../../components';
 import MuhurtaPanel from '../components/MuhurtaPanel';
 import PanchangPanel from '../components/PanchangPanel';
 import KundliPanel from '../components/KundliPanel';
+import { useFreeServicesInteraction } from '../hooks/useFreeServicesInteraction';
 import { getMuhurtaServiceKind } from '../utils/muhurtaService';
 import { isKundliService } from '../utils/kundliService';
 
@@ -35,77 +34,42 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
   const colors = theme.colors;
   const insets = useSafeAreaInsets();
 
-  const navigation = useNavigation<any>();
-  const { data: services, loading } = useFreeServices();
-  const [selectedService, setSelectedService] = useState<any | null>(null);
+  const {
+    activeServices,
+    loading,
+    error,
+    selectedService,
+    setSelectedService,
+    handleServicePress,
+    handleMuhurtaSuccess,
+    handlePanchangSuccess,
+    handleKundliSuccess,
+  } = useFreeServicesInteraction({ onServicePress });
 
-
-  const activeServices = useMemo(
-    () =>
-      services
-        ?.filter(
-          item =>
-            item.isActive &&
-            item.slug !== 'freeservices/numerology' &&
-            item.title?.toLowerCase() !== 'numerology',
-        )
-        ?.sort((a, b) => a.order - b.order) || [],
-    [services],
-  );
-
-  console.log('Active Services:', activeServices);
-
-  const isHoroscopeService = (item: any) => {
-    const slug = (item?.slug || '').toLowerCase();
-    const title = (item?.title || '').toLowerCase();
+  if (error) {
     return (
-      slug === 'horoscope' ||
-      title === 'horoscope' ||
-      title.includes('horoscope')
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor: colors.background.primary,
+          },
+        ]}>
+        <StatusBar barStyle={theme.isDark ? 'light-content' : 'dark-content'} />
+        <GoBack onBack={onNavigateBack} title="Free Services" />
+        <View style={styles.empty}>
+          <Text
+            variant="body"
+            style={{
+              marginTop: 12,
+              color: colors.text.secondary,
+            }}>
+            Unable to load free services
+          </Text>
+        </View>
+      </View>
     );
-  };
-
-  const handleServicePress = (item: any) => {
-    const title = item?.title || '';
-    const kind = getMuhurtaServiceKind(title);
-    if (kind !== 'other') {
-      setSelectedService(item);
-      return;
-    }
-
-    if (isKundliService(title)) {
-      setSelectedService(item);
-      return;
-    }
-
-    if (isHoroscopeService(item)) {
-      navigation.navigate('Horoscope');
-      return;
-    }
-
-    onServicePress?.(item);
-  };
-
-  const handleMuhurtaSuccess = (result: any) => {
-    navigation.navigate('MuhurtaDetails', {
-      result,
-      serviceTitle: selectedService?.title,
-    });
-  };
-
-  const handlePanchangSuccess = (result: any) => {
-    navigation.navigate('PanchangDetails', {
-      result,
-      serviceTitle: selectedService?.title,
-    });
-  };
-
-  const handleKundliSuccess = (result: any) => {
-    navigation.navigate('KundliCards', {
-      result,
-      serviceTitle: selectedService?.title,
-    });
-  };
+  }
 
   const renderService = ({ item }: { item: any }) => (
     <TouchableOpacity
@@ -118,7 +82,6 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
         },
       ]}
       onPress={() => handleServicePress(item)}>
-      {/* Top Row */}
       <View style={styles.cardHeader}>
         <View
           style={[
@@ -134,26 +97,8 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
             library="MaterialIcons"
           />
         </View>
-
-        {/* <View
-          style={[
-            styles.statusBadge,
-            {
-              backgroundColor: item.isActive ? '#DCFCE7' : '#FEE2E2',
-            },
-          ]}>
-          <Text
-            variant="captionSmall"
-            weight="semibold"
-            style={{
-              color: item.isActive ? '#16A34A' : '#DC2626',
-            }}>
-            {item.isActive ? 'ACTIVE' : 'INACTIVE'}
-          </Text>
-        </View> */}
       </View>
 
-      {/* Title */}
       <Text
         variant="body"
         weight="bold"
@@ -163,57 +108,6 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
         }}>
         {item.title}
       </Text>
-
-      {/* Order */}
-      {/* <Text
-        variant="captionSmall"
-        style={{
-          color: colors.text.secondary,
-          marginTop: 4,
-        }}>
-        Display Order: {item.order}
-      </Text> */}
-
-      {/* Slug */}
-      {/* <Text
-        numberOfLines={1}
-        variant="captionSmall"
-        style={{
-          color: colors.text.tertiary,
-          marginTop: 8,
-        }}>
-        Slug: {item.slug}
-      </Text>
-
-      {/* Href */}
-      {/* <Text
-        numberOfLines={1}
-        variant="captionSmall"
-        style={{
-          color: colors.primary.main,
-          marginTop: 2,
-        }}>
-        {item.href}
-      </Text> */}
-
-      {/* Footer */}
-      {/* <View style={styles.footerRow}>
-        <Text
-          variant="captionSmall"
-          style={{
-            color: colors.text.tertiary,
-          }}>
-          #{item.order}
-        </Text>
-
-        <Text
-          variant="captionSmall"
-          style={{
-            color: colors.text.tertiary,
-          }}>
-          {new Date(item.createdAt).toLocaleDateString()}
-        </Text>
-      </View> */}
     </TouchableOpacity>
   );
 
@@ -249,7 +143,7 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
                 opacity: 0.9,
                 marginTop: 4,
               }}>
-              Total Services: {services?.length || 0}
+              Total Services: {activeServices?.length || 0}
             </Text>
           </View>
         </View>
@@ -367,14 +261,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
 
-  // iconContainer: {
-  //   width: 60,
-  //   height: 60,
-  //   borderRadius: 30,
-  //   justifyContent: 'center',
-  //   alignItems: 'center',
-  // },
-
   empty: {
     alignItems: 'center',
     marginTop: 100,
@@ -418,11 +304,8 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 24,
     borderRadius: 20,
-    // overflow: 'hidden',
-    // marginHorizontal: 16,
     alignSelf: 'center',
 
-    // Gradient use nahi kar rahe to solid primary color
     backgroundColor: '#6D28D9',
 
     shadowColor: '#000',

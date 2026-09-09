@@ -1,4 +1,4 @@
-import React, {useMemo, useState} from 'react';
+import React from 'react';
 import {
   View,
   StyleSheet,
@@ -6,11 +6,10 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
 import {useTheme} from '../../../../../theme';
 import {Text} from '../../../../../components/Text';
 import {Icon} from '../../../../../components/Icon';
-import {useFreeServices} from '../../../../../services/api/freeServices/useFreeServices';
+import {useFreeServicesInteraction} from '../../../../../features/free-services/hooks/useFreeServicesInteraction';
 import {getMuhurtaServiceKind} from '../../../../../features/free-services/utils/muhurtaService';
 import {isKundliService} from '../../../../../features/free-services/utils/kundliService';
 import MuhurtaPanel from '../../../../../features/free-services/components/MuhurtaPanel';
@@ -30,74 +29,17 @@ const FreeServicesRow: React.FC<FreeServicesRowProps> = ({
 }) => {
   const theme = useTheme();
   const colors = theme.colors;
-  const navigation = useNavigation<any>();
-  const {data: services, loading, error} = useFreeServices();
-  const [selectedService, setSelectedService] = useState<any | null>(null);
-
-  const activeServices = useMemo(
-    () =>
-      services
-        ?.filter(
-          item =>
-            item.isActive &&
-            item.slug !== 'freeservices/numerology' &&
-            item.title?.toLowerCase() !== 'numerology',
-        )
-        ?.sort((a, b) => a.order - b.order) || [],
-    [services],
-  );
-
-  const isHoroscopeService = (item: any) => {
-    const slug = (item?.slug || '').toLowerCase();
-    const title = (item?.title || '').toLowerCase();
-    return (
-      slug === 'horoscope' ||
-      title === 'horoscope' ||
-      title.includes('horoscope')
-    );
-  };
-
-  const handleServicePress = (item: any) => {
-    const title = item?.title || '';
-    const kind = getMuhurtaServiceKind(title);
-    if (kind !== 'other') {
-      setSelectedService(item);
-      return;
-    }
-
-    if (isKundliService(title)) {
-      setSelectedService(item);
-      return;
-    }
-
-    if (isHoroscopeService(item)) {
-      navigation.navigate('Horoscope');
-      return;
-    }
-
-    onServicePress?.(item);
-  };
-
-  const handleMuhurtaSuccess = (result: any) => {
-    navigation.navigate('MuhurtaDetails', {
-      result,
-      serviceTitle: selectedService?.title,
-    });
-  };
-
-  const handlePanchangSuccess = (result: any) => {
-    navigation.navigate('PanchangDetails', {
-      result,
-      serviceTitle: selectedService?.title,
-    });
-  };
-
-  const handleKundliSuccess = (result: any) => {
-    navigation.navigate('KundliCards', {
-      result,
-      serviceTitle: selectedService?.title,
-    });
-  };
+  const {
+    activeServices,
+    loading,
+    error,
+    selectedService,
+    setSelectedService,
+    handleServicePress,
+    handleMuhurtaSuccess,
+    handlePanchangSuccess,
+    handleKundliSuccess,
+  } = useFreeServicesInteraction({ onServicePress });
 
   if (error) {
     return (
@@ -240,7 +182,7 @@ const styles = StyleSheet.create({
   },
   serviceCard: {
     width: 120,
-    minHeight: 100,
+    minHeight: 80,
     borderRadius: 16,
     padding: 14,
     alignItems: 'center',

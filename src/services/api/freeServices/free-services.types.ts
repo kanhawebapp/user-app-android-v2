@@ -18,7 +18,7 @@
 //   updatedAt: string;
 // }
 
-interface FreeService {
+export interface FreeService {
   id: string;
   title: string;
   slug: string;
