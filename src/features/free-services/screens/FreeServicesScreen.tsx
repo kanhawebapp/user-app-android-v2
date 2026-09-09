@@ -1,4 +1,4 @@
-import React, {useMemo, useState} from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -7,20 +7,20 @@ import {
   StatusBar,
   ActivityIndicator,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import {useTheme} from '../../../theme';
-import {Text} from '../../../components/Text';
-import {Icon} from '../../../components/Icon';
-import {Card} from '../../../components/Card';
-import {useFreeServices} from '../../../services/api/freeServices/useFreeServices';
-import {GoBack} from '../../../components';
+import { useTheme } from '../../../theme';
+import { Text } from '../../../components/Text';
+import { Icon } from '../../../components/Icon';
+import { Card } from '../../../components/Card';
+import { useFreeServices } from '../../../services/api/freeServices/useFreeServices';
+import { GoBack } from '../../../components';
 import MuhurtaPanel from '../components/MuhurtaPanel';
 import PanchangPanel from '../components/PanchangPanel';
 import KundliPanel from '../components/KundliPanel';
-import {getMuhurtaServiceKind} from '../utils/muhurtaService';
-import {isKundliService} from '../utils/kundliService';
+import { getMuhurtaServiceKind } from '../utils/muhurtaService';
+import { isKundliService } from '../utils/kundliService';
 
 interface FreeServicesScreenProps {
   onNavigateBack?: () => void;
@@ -36,13 +36,19 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
   const insets = useSafeAreaInsets();
 
   const navigation = useNavigation<any>();
-  const {data: services, loading} = useFreeServices();
+  const { data: services, loading } = useFreeServices();
   const [selectedService, setSelectedService] = useState<any | null>(null);
+
 
   const activeServices = useMemo(
     () =>
       services
-        ?.filter(item => item.isActive)
+        ?.filter(
+          item =>
+            item.isActive &&
+            item.slug !== 'freeservices/numerology' &&
+            item.title?.toLowerCase() !== 'numerology',
+        )
         ?.sort((a, b) => a.order - b.order) || [],
     [services],
   );
@@ -101,7 +107,7 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
     });
   };
 
-  const renderService = ({item}: {item: any}) => (
+  const renderService = ({ item }: { item: any }) => (
     <TouchableOpacity
       activeOpacity={0.8}
       style={[
@@ -232,7 +238,7 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
           />
 
           <View style={styles.bannerText}>
-            <Text variant="h6" weight="bold" style={{color: '#FFF'}}>
+            <Text variant="h6" weight="bold" style={{ color: '#FFF' }}>
               Free Astrology Services
             </Text>
 
