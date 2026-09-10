@@ -1,26 +1,51 @@
 {
   "project_info": {
-    "project_number": "34150780780",
-    "project_id": "dhwaniastro-c3460",
-    "storage_bucket": "dhwaniastro-c3460.firebasestorage.app"
+    "project_number": "561636150059",
+    "project_id": "dhwaniastro-customer",
+    "storage_bucket": "dhwaniastro-customer.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:34150780780:android:530c4af6ed66e2053aed49",
+        "mobilesdk_app_id": "1:561636150059:android:f787fc2d79a47a8234136e",
         "android_client_info": {
-          "package_name": "com.dhwaniastro"
+          "package_name": "com.DhwaniAstro.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "561636150059-2npi0ce1sk58vf04ukav6u6oncgl3hft.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.DhwaniAstro.app",
+            "certificate_hash": "e9adb96086e7d2ab23352c2f84e1e8d25d6c7c98"
+          }
+        },
+        {
+          "client_id": "561636150059-1nhdo4kv4tevi297l6ufsuomqrfcc5qo.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyDKwijCDCy24iBu6MmtC-FngqxOJh2m_zQ"
+          "current_key": "AIzaSyCeZbo4XN_NUxZfEA-yyJXittvm7GseTM8"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "561636150059-1nhdo4kv4tevi297l6ufsuomqrfcc5qo.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "561636150059-5qeu8ksm8kqqevk06cruu7t0o7o3tmie.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.dhwaniastro.customer"
+              }
+            }
+          ]
         }
       }
     }

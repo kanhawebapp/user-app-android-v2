@@ -1,4 +1,4 @@
-package com.dhwaniastro
+package com.DhwaniAstro.app
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

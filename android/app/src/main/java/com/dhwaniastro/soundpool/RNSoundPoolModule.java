@@ -1,4 +1,4 @@
-package com.dhwaniastro.soundpool;
+package com.DhwaniAstro.app.soundpool;
 
 import android.media.AudioAttributes;
 import android.media.MediaPlayer;

@@ -1,7 +1,8 @@
 import {OneSignal} from 'react-native-onesignal';
 
 class OneSignalService {
-  private appId = '4d271e90-fc1e-496a-992b-36fb0ea43b33';
+  // private appId = '4d271e90-fc1e-496a-992b-36fb0ea43b33';
+  private appId = 'e84db3b2-3286-47c4-ac4f-cbf86b86ff91';
 
   init() {
     OneSignal.initialize(this.appId);

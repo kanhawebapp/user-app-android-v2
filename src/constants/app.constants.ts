@@ -14,8 +14,8 @@ export const APP_INFO = {
   NAME: 'DhwaniAstro',
   VERSION: '1.0.0',
   BUILD_NUMBER: '1',
-  PACKAGE_NAME: 'com.dhwaniastro',
-  BUNDLE_ID: 'com.dhwaniastro.app',
+  PACKAGE_NAME: 'com.DhwaniAstro.app',
+  BUNDLE_ID: 'com.DhwaniAstro.app',
 } as const;
 
 // ============================================

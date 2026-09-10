@@ -76,9 +76,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.dhwaniastro"
+    namespace "com.DhwaniAstro.app"
     defaultConfig {
-        applicationId "com.dhwaniastro"
+        applicationId "com.DhwaniAstro.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
