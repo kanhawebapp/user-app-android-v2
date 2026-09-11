@@ -7,7 +7,6 @@ import React, {useCallback, useState} from 'react';
 import {
   View,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   StatusBar,
   Linking,
@@ -123,14 +122,18 @@ const SupportScreen: React.FC<SupportScreenProps> = ({onNavigateBack}) => {
         <View style={styles.placeholder} />
       </View> */}
      <GoBack onBack={onNavigateBack} title='Support' />
-      <ScrollView
+      <FlatList
+        data={[{key: 'content'}]}
+        keyExtractor={item => item.key}
         contentContainerStyle={[
           styles.scrollContent,
           {paddingBottom: insets.bottom + 100},
         ]}
-        showsVerticalScrollIndicator={false}>
-        {/* Header Card */}
-        <Card style={styles.headerCard}>
+        showsVerticalScrollIndicator={false}
+        renderItem={() => (
+          <>
+            {/* Header Card */}
+            <Card style={styles.headerCard}>
           <View style={styles.headerContent}>
             <Icon
               name="headset-mic"
@@ -231,6 +234,7 @@ const SupportScreen: React.FC<SupportScreenProps> = ({onNavigateBack}) => {
               keyExtractor={item => item.id.toString()}
               contentContainerStyle={styles.listContent}
               showsVerticalScrollIndicator={false}
+              nestedScrollEnabled={true}
               renderItem={({item}) => {
                 const expanded = expandedId === item.id;
 
@@ -348,7 +352,9 @@ const SupportScreen: React.FC<SupportScreenProps> = ({onNavigateBack}) => {
             />
           }
         /> */}
-      </ScrollView>
+          </>
+        )}
+      />
     </View>
   );
 };
