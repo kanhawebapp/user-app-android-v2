@@ -37,7 +37,7 @@ export const getFreeServices = async () => {
       GET_FREE_SERVICES,
     );
 
-    console.log('FREE SERVICES RESPONSE:', JSON.stringify(response, null, 2));
+    // console.log('FREE SERVICES RESPONSE:', JSON.stringify(response, null, 2));
 
     return response.getFreeServices;
   } catch (error: any) {

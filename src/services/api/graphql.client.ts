@@ -441,10 +441,10 @@ export const graphqlRequest = async <T>(
     // );
 
     if (response.data.errors?.length) {
-      console.log(
-        'GRAPHQL ERRORS =>',
-        JSON.stringify(response.data.errors, null, 2),
-      );
+      // console.log(
+      //   'GRAPHQL ERRORS =>',
+      //   JSON.stringify(response.data.errors, null, 2),
+      // );
 
       throw new Error(response.data.errors[0].message);
     }
