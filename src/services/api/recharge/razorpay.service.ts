@@ -2,6 +2,7 @@
 import { Platform } from 'react-native';
 import RazorpayCheckout from 'react-native-razorpay';
 import { getIPLocation } from '../../location/location.service';
+import { RAZORPAY_KEY } from '../../../constants/api.constants';
 
 export const openRazorpayCheckout = async ({
   order,
@@ -25,7 +26,7 @@ export const openRazorpayCheckout = async ({
 
     currency: order?.currency || 'INR',
 
-    key: 'rzp_test_SNXjhTOgP1CIx0',
+    key: RAZORPAY_KEY.NEXT_PUBLIC_RAZORPAY_KEY_ID,
 
     amount: amount,
 

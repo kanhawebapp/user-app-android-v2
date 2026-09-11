@@ -21,7 +21,7 @@ export const API_BASE_URL = {
 } as const;
 
 export const RAZORPAY_KEY = {
-  NEXT_PUBLIC_RAZORPAY_KEY_ID: 'rzp_test_SNXjhTOgP1CIx0',
+  NEXT_PUBLIC_RAZORPAY_KEY_ID: 'rzp_live_3zT42YgMgCfOim',
   NEXT_PUBLIC_RAZORPAY_SECRET: 'eqoAPlGUy4pzKTI3btotf4HZ',
 };
 
