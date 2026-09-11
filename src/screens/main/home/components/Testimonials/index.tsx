@@ -176,7 +176,7 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
         </View>
 
         {/* REVIEW BADGE */}
-        <View
+        {/* <View
           style={[
             styles.reviewBadge,
             {
@@ -199,7 +199,7 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
             }}>
             4.9
           </Text>
-        </View>
+        </View> */}
       </View>
 
       {/* TESTIMONIAL LIST */}
