@@ -3,7 +3,7 @@
  * Customer support and help options
  */
 
-import React, {useState} from 'react';
+import React, {useCallback, useState} from 'react';
 import {
   View,
   StyleSheet,
@@ -11,14 +11,19 @@ import {
   TouchableOpacity,
   StatusBar,
   Linking,
+  ActivityIndicator,
+  FlatList,
+  Text as RNText,
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useTheme} from '../../theme';
+import {colors} from '../../theme/colors';
 import {Text} from '../../components/Text';
 import {Icon} from '../../components/Icon';
 import {Card} from '../../components/Card';
 import {Button} from '../../components/Button';
 import { GoBack } from '../../components';
+import {useFAQs} from '../../services/api/faq/useFAQs';
 
 interface SupportScreenProps {
   onNavigateBack?: () => void;
@@ -29,7 +34,12 @@ const SupportScreen: React.FC<SupportScreenProps> = ({onNavigateBack}) => {
   const colors = theme.colors;
   const insets = useSafeAreaInsets();
 
-  const [expandedFaq, setExpandedFaq] = useState<string | null>(null);
+  const {data: faqs, loading, error} = useFAQs();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const toggleFaq = useCallback((id: string) => {
+    setExpandedId(prev => (prev === id ? null : id));
+  }, []);
 
   const supportOptions = [
     {
@@ -63,33 +73,6 @@ const SupportScreen: React.FC<SupportScreenProps> = ({onNavigateBack}) => {
       icon: 'call',
       iconColor: colors.common.orange[500],
       backgroundColor: colors.common.orange[50],
-    },
-  ];
-
-  const faqs = [
-    {
-      id: '1',
-      question: 'How do I recharge my wallet?',
-      answer:
-        'Go to Wallet > Recharge > Select amount > Choose payment method > Complete payment',
-    },
-    {
-      id: '2',
-      question: 'How do I book a session with an astrologer?',
-      answer:
-        'Browse astrologers > Select astrologer > Choose Chat or Call > Select time slot > Confirm booking',
-    },
-    {
-      id: '3',
-      question: 'What is the refund policy?',
-      answer:
-        'Refunds are processed within 5-7 business days for cancelled sessions. Contact support for assistance.',
-    },
-    {
-      id: '4',
-      question: 'How do I update my profile?',
-      answer:
-        'Go to Profile > Edit Profile > Update your details > Save changes',
     },
   ];
 
@@ -230,48 +213,74 @@ const SupportScreen: React.FC<SupportScreenProps> = ({onNavigateBack}) => {
             style={{color: colors.text.primary, marginBottom: 12}}>
             Frequently Asked Questions
           </Text>
-          <Card style={styles.faqCard}>
-            {faqs.map((faq, index) => (
-              <View key={faq.id}>
-                <TouchableOpacity
-                  style={[
-                    styles.faqItem,
-                    index < faqs.length - 1 && {
-                      borderBottomWidth: StyleSheet.hairlineWidth,
-                      borderBottomColor: colors.border.light,
-                    },
-                  ]}
-                  onPress={() =>
-                    setExpandedFaq(expandedFaq === faq.id ? null : faq.id)
-                  }
-                  activeOpacity={0.7}>
-                  <View style={styles.faqQuestion}>
-                    <Text
-                      variant="body"
-                      weight="medium"
-                      style={{color: colors.text.primary, flex: 1}}>
-                      {faq.question}
-                    </Text>
-                    <Icon
-                      name={expandedFaq === faq.id ? 'remove' : 'add'}
-                      size={22}
-                      color={colors.icon.secondary}
-                      library="MaterialIcons"
-                    />
+          {loading ? (
+            <View style={styles.faqLoading}>
+              <ActivityIndicator size="large" color={colors.primary.main} />
+            </View>
+          ) : error ? (
+            <View style={styles.faqState}>
+              <RNText style={styles.error}>Failed to load FAQs: {error.message}</RNText>
+            </View>
+          ) : faqs.length === 0 ? (
+            <View style={styles.faqState}>
+              <RNText style={styles.empty}>No FAQs available at the moment.</RNText>
+            </View>
+          ) : (
+            <FlatList
+              data={faqs}
+              keyExtractor={item => item.id.toString()}
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
+              renderItem={({item}) => {
+                const expanded = expandedId === item.id;
+
+                return (
+                  <View
+                    style={[
+                      styles.card,
+                      expanded && {
+                        borderLeftColor: colors.primary.main,
+                        borderLeftWidth: 4,
+                      },
+                    ]}>
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      onPress={() => toggleFaq(item.id)}
+                      style={styles.questionRow}>
+                      <RNText
+                        style={[
+                          styles.question,
+                          expanded && {
+                            color: colors.primary.main,
+                          },
+                        ]}>
+                        {item.question}
+                      </RNText>
+                      <View
+                        style={[
+                          styles.iconContainer,
+                          expanded && {
+                            backgroundColor: colors.primary.main,
+                          },
+                        ]}>
+                        <Icon
+                          library="Feather"
+                          name={expanded ? 'minus' : 'plus'}
+                          size={18}
+                          color={expanded ? '#fff' : colors.primary.main}
+                        />
+                      </View>
+                    </TouchableOpacity>
+                    {expanded && (
+                      <View style={styles.answerContainer}>
+                        <RNText style={styles.answer}>{item.answer}</RNText>
+                      </View>
+                    )}
                   </View>
-                  {expandedFaq === faq.id && (
-                    <View style={styles.faqAnswer}>
-                      <Text
-                        variant="body"
-                        style={{color: colors.text.secondary, marginTop: 8}}>
-                        {faq.answer}
-                      </Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              </View>
-            ))}
-          </Card>
+                );
+              }}
+            />
+          )}
         </View>
 
         {/* Contact Info */}
@@ -305,7 +314,7 @@ const SupportScreen: React.FC<SupportScreenProps> = ({onNavigateBack}) => {
             <Text
               variant="body"
               style={{color: colors.text.secondary, marginLeft: 12}}>
-              +91 1234567890
+              +91 6366526901
             </Text>
           </View>
           <View style={styles.contactItem}>
@@ -404,20 +413,76 @@ const styles = StyleSheet.create({
   faqSection: {
     marginBottom: 24,
   },
-  faqCard: {
-    padding: 0,
-    overflow: 'hidden',
+  listContent: {
+    paddingBottom: 24,
   },
-  faqItem: {
-    padding: 16,
+  error: {
+    color: colors.error.main,
+    textAlign: 'center',
+    marginTop: 24,
   },
-  faqQuestion: {
+  empty: {
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginTop: 24,
+  },
+  card: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginBottom: 14,
+    borderRadius: 18,
+    paddingHorizontal: 18,
+    paddingVertical: 18,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+  },
+  questionRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  faqAnswer: {
-    marginTop: 4,
+  question: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text.primary,
+    paddingRight: 12,
+    lineHeight: 24,
+  },
+  iconContainer: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  answerContainer: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#EEEEEE',
+  },
+  answer: {
+    fontSize: 15,
+    lineHeight: 24,
+    color: colors.text.secondary,
+  },
+  faqLoading: {
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  faqState: {
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   contactCard: {
     padding: 16,
