@@ -82,6 +82,12 @@
 -dontwarn com.google.gson.**
 
 ############################################
+# react-native-blob-util
+############################################
+-keep class com.reactnativeblobsutil.** { *; }
+-dontwarn com.reactnativeblobsutil.**
+
+############################################
 # Keep Annotations
 ############################################
 -keepattributes *Annotation*

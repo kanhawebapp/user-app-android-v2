@@ -1645,8 +1645,8 @@ const errorMessage = (e: unknown): string => {
 
 /**
  * Save invoice PDF to app-accessible storage.
- * Android: CacheDir (fallback DocumentDir).
- * iOS: DocumentDir (fallback CacheDir).
+ * Uses app-private directory on Android (works on all API levels).
+ * Uses DocumentDir on iOS.
  */
 export const saveInvoiceFile = async (
   base64: string,
@@ -1654,12 +1654,11 @@ export const saveInvoiceFile = async (
 ): Promise<string> => {
   try {
     if (Platform.OS === 'android') {
-      // Public Android Downloads folder
       const downloadPath =
-        `/storage/emulated/0/Download/${fileName}`;
+        `${ReactNativeBlobUtil.fs.dirs.CacheDir}/${fileName}`;
 
       console.log(
-        'INVOICE PUBLIC DOWNLOAD PATH:',
+        'INVOICE DOWNLOAD PATH:',
         downloadPath,
       );
 
@@ -1691,10 +1690,53 @@ export const saveInvoiceFile = async (
         downloadPath,
       );
 
+      try {
+        if (
+          ReactNativeBlobUtil.MediaCollection &&
+          typeof ReactNativeBlobUtil.MediaCollection.copyToMediaStore ===
+            'function'
+        ) {
+          const result =
+            await ReactNativeBlobUtil.MediaCollection.copyToMediaStore(
+              {
+                name: fileName,
+                parentFolder: '',
+                mimeType: 'application/pdf',
+              },
+              'Download',
+              downloadPath,
+            );
+
+          console.log(
+            'INVOICE PUBLIC DOWNLOAD URL:',
+            result,
+          );
+
+          const publicPath =
+            `/storage/emulated/0/Download/${fileName}`;
+
+          const publicExists =
+            await ReactNativeBlobUtil.fs.exists(publicPath);
+
+          if (publicExists) {
+            console.log(
+              'INVOICE IN PUBLIC DOWNLOADS:',
+              publicPath,
+            );
+
+            return publicPath;
+          }
+        }
+      } catch (mediaErr) {
+        console.log(
+          'INVOICE MEDIASTORE COPY ERROR:',
+          errorMessage(mediaErr),
+        );
+      }
+
       return downloadPath;
     }
 
-    // iOS
     const filePath =
       `${ReactNativeBlobUtil.fs.dirs.DocumentDir}/${fileName}`;
 
