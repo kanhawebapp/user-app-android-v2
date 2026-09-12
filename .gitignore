@@ -37,6 +37,10 @@ local.properties
 # Local Gradle signing credentials
 android/gradle.properties.local
 
+# Local config files
+src/constants/config.constants.ts
+src/constants/api.constants.ts
+
 !debug.keystore
 
 # node.js
