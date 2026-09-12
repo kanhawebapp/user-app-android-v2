@@ -32,6 +32,10 @@ local.properties
 *.hprof
 .cxx/
 android/gradle.properties.local
+# Local config files
+src/constants/config.constants.ts
+src/constants/api.constants.ts
+
 *.keystore
 *.jks
 !debug.keystore
