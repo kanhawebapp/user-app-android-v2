@@ -41,14 +41,14 @@ const SupportScreen: React.FC<SupportScreenProps> = ({onNavigateBack}) => {
   }, []);
 
   const supportOptions = [
-    {
-      id: 'chat',
-      title: 'Live Chat',
-      description: 'Chat with our support team',
-      icon: 'chat',
-      iconColor: colors.primary.main,
-      backgroundColor: colors.primary.light + '20',
-    },
+    // {
+    //   id: 'chat',
+    //   title: 'Live Chat',
+    //   description: 'Chat with our support team',
+    //   icon: 'chat',
+    //   iconColor: colors.primary.main,
+    //   backgroundColor: colors.primary.light + '20',
+    // },
     {
       id: 'email',
       title: 'Email Support',
@@ -81,7 +81,7 @@ const SupportScreen: React.FC<SupportScreenProps> = ({onNavigateBack}) => {
         Linking.openURL('https://wa.me/9319490827');
         break;
       case 'call':
-        Linking.openURL('tel:+9163636526901');
+        Linking.openURL('tel:63636526901');
         break;
       case 'email':
         Linking.openURL('mailto:support@dhwaniastro.com');

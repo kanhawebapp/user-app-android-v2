@@ -312,7 +312,7 @@ export const Shop: React.FC<ShopProps> = ({items = [], style}) => {
       {/* SHOP BANNER */}
       <TouchableOpacity activeOpacity={0.9} onPress={openShop}>
         <LinearGradient
-          colors={['#6A3FCF', '#4A1E9E']}
+          colors={['#7f59d8', '#7649cc']}
           start={{x: 0, y: 0}}
           end={{x: 1, y: 1}}
           style={styles.bannerContainer}>
