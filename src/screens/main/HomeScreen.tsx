@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, StyleSheet, ScrollView, StatusBar, RefreshControl } from 'react-native';
-import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme';
 import {
   LoginRequiredModal,
@@ -313,13 +313,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         backgroundColor={colors.background.primary}
       />
 
-      <SafeAreaView
-        edges={['top']}
-        style={{
-          backgroundColor: colors.background.primary,
-        }}
-      />
-
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -357,12 +350,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         />
 
         {/* 5. Upcoming Live Sessions */}
-        <UpcomingLive
+        {/* <UpcomingLive
           sessions={upcomingLives}
           onSessionPress={handleLiveSessionPress}
           onViewAllPress={handleViewAllLive}
           style={styles.section}
-        />
+        /> */}
 
         {/* 6. Recommended Astrologers */}
         {/* <HomeAstrologers

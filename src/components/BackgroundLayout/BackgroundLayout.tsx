@@ -5,10 +5,10 @@ import {
   StatusBar,
   ImageStyle,
   Platform,
-  SafeAreaView,
   StyleProp,
   ViewStyle,
 } from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {useTheme} from '../../theme';
 import {backgroundLayoutStyle} from './backgroundLayoutStyle';
 import {BackgroundLayoutProps, GradientDirection} from './backgroundLayoutType';

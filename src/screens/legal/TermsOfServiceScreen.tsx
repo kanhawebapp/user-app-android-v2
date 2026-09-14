@@ -9,6 +9,7 @@ import {
 import {useTheme, typography} from '../../theme';
 import {Text} from '../../components/Text';
 import {Icon} from '../../components/Icon';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 interface TermsOfServiceScreenProps {
   onBack: () => void;
@@ -19,6 +20,7 @@ const TermsOfServiceScreen: React.FC<TermsOfServiceScreenProps> = ({
 }) => {
   const theme = useTheme();
   const colors = theme.colors;
+  const insets = useSafeAreaInsets();
 
   return (
     <View
@@ -35,6 +37,7 @@ const TermsOfServiceScreen: React.FC<TermsOfServiceScreenProps> = ({
           {
             backgroundColor: colors.background.primary,
             borderBottomColor: colors.border.main,
+            paddingTop: insets.top,
           },
         ]}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
@@ -276,7 +279,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    marginTop: 30,
   },
   backButton: {
     padding: 8,

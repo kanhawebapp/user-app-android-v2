@@ -139,7 +139,7 @@ const GoBack: React.FC<GoBackProps> = ({
       style={[
         goBackStyle.container,
         {
-          // paddingTop: insets.top + 1,
+          paddingTop: insets.top,
           backgroundColor: colors.background.primary,
         },
       ]}>

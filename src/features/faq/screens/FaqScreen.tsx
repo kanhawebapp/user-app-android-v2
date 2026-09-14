@@ -5,12 +5,10 @@ import {
   FlatList,
   ActivityIndicator,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
 } from 'react-native';
 import { useFAQs } from '../../../services/api/faq/useFAQs';
 
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GoBack, Icon, useTheme } from '../../../components';
 import { colors } from '../../../theme/colors';
 
@@ -22,7 +20,6 @@ const FaqScreen = ({ onNavigateBack }: FaqScreenProps) => {
   const { data, loading, error } = useFAQs();
   const theme = useTheme();
   const colors = theme.colors;
-  const insets = useSafeAreaInsets();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const toggleFAQ = useCallback((id: string) => {
@@ -46,7 +43,7 @@ const FaqScreen = ({ onNavigateBack }: FaqScreenProps) => {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={styles.container}>
       {/* Header */}
 
 
@@ -123,7 +120,7 @@ const FaqScreen = ({ onNavigateBack }: FaqScreenProps) => {
           );
         }}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 

@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     // justifyContent: 'center',
     // // paddingHorizontal: 20,
-    marginTop: 45,
+    marginTop: 30,
   },
 
   cardContainer: {

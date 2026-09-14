@@ -450,9 +450,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  headerContainer: {
-    marginTop: 40,
-  },
+  headerContainer: {},
 
   heroContainer: {
     alignItems: 'center',

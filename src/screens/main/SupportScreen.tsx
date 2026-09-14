@@ -78,10 +78,10 @@ const SupportScreen: React.FC<SupportScreenProps> = ({onNavigateBack}) => {
   const handleSupportOptionPress = (optionId: string) => {
     switch (optionId) {
       case 'whatsapp':
-        Linking.openURL('https://wa.me/1234567890');
+        Linking.openURL('https://wa.me/9319490827');
         break;
       case 'call':
-        Linking.openURL('tel:+1234567890');
+        Linking.openURL('tel:+9163636526901');
         break;
       case 'email':
         Linking.openURL('mailto:support@dhwaniastro.com');
