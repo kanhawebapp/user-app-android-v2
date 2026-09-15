@@ -413,7 +413,6 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
     paddingTop: 12,
-    marginBottom: 40,
   },
   replyPreview: {
     flexDirection: 'row',

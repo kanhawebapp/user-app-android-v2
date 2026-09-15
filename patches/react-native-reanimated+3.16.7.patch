@@ -1,0 +1,16 @@
+diff --git a/node_modules/react-native-reanimated/android/build.gradle b/node_modules/react-native-reanimated/android/build.gradle
+--- a/node_modules/react-native-reanimated/android/build.gradle
++++ b/node_modules/react-native-reanimated/android/build.gradle
+@@ -252,6 +252,9 @@
+                 arguments "-DANDROID_STL=c++_shared",
+                         "-DREACT_NATIVE_MINOR_VERSION=${REACT_NATIVE_MINOR_VERSION}",
+                         "-DANDROID_TOOLCHAIN=clang",
++                        "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
++                        "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384",
++                        "-DCMAKE_MODULE_LINKER_FLAGS=-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384",
+                         "-DREACT_NATIVE_DIR=${toPlatformFileString(reactNativeRootDir.path)}",
+                         "-DJS_RUNTIME=${JS_RUNTIME}",
+                         "-DJS_RUNTIME_DIR=${jsRuntimeDir}",
+                         "-DIS_NEW_ARCHITECTURE_ENABLED=${IS_NEW_ARCHITECTURE_ENABLED}",
+                         "-DIS_REANIMATED_EXAMPLE_APP=${isReanimatedExampleApp()}",
+                         "-DREANIMATED_VERSION=${REANIMATED_VERSION}"

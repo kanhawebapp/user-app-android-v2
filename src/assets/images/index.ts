@@ -19,6 +19,11 @@ const images = {
   healing: require('./healing.webp'),
   OM: require('./Om.png'),
   Zodiac: require('./zodiac2.png'),
+  Abhijeet: require('./abhijeet.png'),
+  Horoscope: require('./horoscope.png'),
+  Panchang: require('./panchang.png'),
+  Chaughadiya: require('./chaughadiya.png'),
+  Kundli: require('./kundli.png'),
 };
 
 // const bottomImg ={

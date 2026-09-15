@@ -6,15 +6,15 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import {useTheme} from '../../../../../theme';
-import {Text} from '../../../../../components/Text';
-import {Icon} from '../../../../../components/Icon';
-import {useFreeServicesInteraction} from '../../../../../features/free-services/hooks/useFreeServicesInteraction';
-import {getMuhurtaServiceKind} from '../../../../../features/free-services/utils/muhurtaService';
-import {isKundliService} from '../../../../../features/free-services/utils/kundliService';
+import { useTheme } from '../../../../../theme';
+import { Text } from '../../../../../components/Text';
+import { useFreeServicesInteraction } from '../../../../../features/free-services/hooks/useFreeServicesInteraction';
+import { getMuhurtaServiceKind } from '../../../../../features/free-services/utils/muhurtaService';
+import { isKundliService } from '../../../../../features/free-services/utils/kundliService';
 import MuhurtaPanel from '../../../../../features/free-services/components/MuhurtaPanel';
 import PanchangPanel from '../../../../../features/free-services/components/PanchangPanel';
 import KundliPanel from '../../../../../features/free-services/components/KundliPanel';
+import FreeServiceIcon from '../../../../../features/free-services/components/FreeServiceIcon';
 
 export interface FreeServicesRowProps {
   onViewAllPress?: () => void;
@@ -48,11 +48,11 @@ const FreeServicesRow: React.FC<FreeServicesRowProps> = ({
           <Text
             variant="h6"
             weight="semibold"
-            style={{color: colors.text.primary}}>
+            style={{ color: colors.text.primary }}>
             Free Services
           </Text>
         </View>
-        <Text style={[styles.errorText, {color: colors.text.secondary}]}>
+        <Text style={[styles.errorText, { color: colors.text.secondary }]}>
           Unable to load free services
         </Text>
       </View>
@@ -69,7 +69,7 @@ const FreeServicesRow: React.FC<FreeServicesRowProps> = ({
         <Text
           variant="h6"
           weight="semibold"
-          style={{color: colors.text.primary}}>
+          style={{ color: colors.text.primary }}>
           Free Services
         </Text>
         {onViewAllPress && (
@@ -107,27 +107,13 @@ const FreeServicesRow: React.FC<FreeServicesRowProps> = ({
                 },
               ]}
               onPress={() => handleServicePress(item)}>
-              <View
-                style={[
-                  styles.iconContainer,
-                  {
-                    backgroundColor: colors.primary.light + '20',
-                  },
-                ]}>
-                <Icon
-                  name="auto-awesome"
-                  size={22}
-                  color={colors.primary.main}
-                  library="MaterialIcons"
-                />
-              </View>
+              <FreeServiceIcon service={item} />
               <Text
                 variant="caption"
                 weight="semibold"
                 numberOfLines={2}
                 style={{
                   color: colors.text.primary,
-                  marginTop: 8,
                   textAlign: 'center',
                 }}>
                 {item.title}
@@ -187,14 +173,7 @@ const styles = StyleSheet.create({
     padding: 14,
     alignItems: 'center',
     marginHorizontal: 4,
-    borderWidth: 1,
-  },
-  iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
+    // borderWidth: 1,
   },
   loaderRow: {
     paddingHorizontal: 16,

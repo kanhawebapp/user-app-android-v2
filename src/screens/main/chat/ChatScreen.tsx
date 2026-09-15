@@ -15,6 +15,7 @@ import {
   Alert,
   BackHandler,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../theme';
 import { useAuthStore } from '../../../stores/auth.store';
 import { useChatStore } from '../../../services/chat/chat.store';
@@ -61,6 +62,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
 }) => {
   const theme = useTheme();
   const colors = theme.colors;
+  const insets = useSafeAreaInsets();
   const flatListRef = useRef<FlatList>(null);
   const profileAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -334,7 +336,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: colors.background.primary }]}
-      keyboardVerticalOffset={0}>
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'android' ? -insets.bottom : 0}>
       <StatusBar
         barStyle={theme.isDark ? 'light-content' : 'dark-content'}
         backgroundColor={colors.background.primary}
@@ -375,7 +378,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         data={messages}
         renderItem={renderMessage}
         keyExtractor={item => item.id}
+        style={styles.messagesFlex}
         contentContainerStyle={styles.messagesList}
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         onContentSizeChange={() =>
           flatListRef.current?.scrollToEnd({ animated: true })
@@ -482,6 +487,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   container: {
+    flex: 1,
+  },
+  messagesFlex: {
     flex: 1,
   },
   chatDismissOverlay: {

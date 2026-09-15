@@ -17,6 +17,7 @@ import { GoBack } from '../../../components';
 import MuhurtaPanel from '../components/MuhurtaPanel';
 import PanchangPanel from '../components/PanchangPanel';
 import KundliPanel from '../components/KundliPanel';
+import FreeServiceIcon from '../components/FreeServiceIcon';
 import { useFreeServicesInteraction } from '../hooks/useFreeServicesInteraction';
 import { getMuhurtaServiceKind } from '../utils/muhurtaService';
 import { isKundliService } from '../utils/kundliService';
@@ -71,45 +72,35 @@ const FreeServicesScreen: React.FC<FreeServicesScreenProps> = ({
     );
   }
 
-  const renderService = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      style={[
-        styles.serviceCard,
-        {
-          backgroundColor: colors.background.secondary,
-          borderColor: colors.border.light,
-        },
-      ]}
-      onPress={() => handleServicePress(item)}>
-      <View style={styles.cardHeader}>
-        <View
-          style={[
-            styles.iconContainer,
-            {
-              backgroundColor: colors.primary.light + '20',
-            },
-          ]}>
-          <Icon
-            name="auto-awesome"
-            size={24}
-            color={colors.primary.main}
-            library="MaterialIcons"
-          />
+  const renderService = ({ item }: { item: any }) => {
+    return (
+      <TouchableOpacity
+        activeOpacity={0.8}
+        style={[
+          styles.serviceCard,
+          {
+            backgroundColor: colors.background.secondary,
+            borderColor: colors.border.light,
+          },
+        ]}
+        onPress={() => handleServicePress(item)}>
+        <View style={styles.cardHeader}>
+          <FreeServiceIcon service={item} />
         </View>
-      </View>
 
-      <Text
-        variant="body"
-        weight="bold"
-        style={{
-          color: colors.text.primary,
-          marginTop: 12,
-        }}>
-        {item.title}
-      </Text>
-    </TouchableOpacity>
-  );
+        <Text
+          variant="body"
+          weight="bold"
+          style={{
+            color: colors.text.primary,
+            marginTop: 5,
+            textAlign: 'center',
+          }}>
+          {item.title}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View
@@ -271,14 +262,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  iconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
   statusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -296,6 +279,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 14,
     marginBottom: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
     borderWidth: 1,
   },
 

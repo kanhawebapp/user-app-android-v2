@@ -1406,16 +1406,7 @@ export const buildInvoiceBase64 = async (
 
   y -= 32;
 
-  drawText(
-    page,
-    'To view your transaction history, please visit:',
-    PAD_X,
-    y,
-    11,
-    helv,
-  );
 
-  y -= 17;
 
   const historyUrl =
     invoice.transactionHistoryUrl &&

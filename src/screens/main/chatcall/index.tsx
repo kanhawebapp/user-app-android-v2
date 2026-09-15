@@ -92,36 +92,36 @@ const ChatCallScreen: React.FC<ChatCallScreenProps> = ({
   const hasNavigatedRef = useRef(false);
 
 
- useEffect(() => {
-  // Only reset navigation for cancelled/rejected/idle.
-  // Do NOT unmount on `completed` — RatingModal lives inside ChatScreen and
-  // must stay mounted until the user submits/closes the rating (prior working flow).
-  // `idle` happens after rating Exit/Chat Again (store.reset) — must clear the
-  // hasNavigated latch so the next acceptance can open ChatScreen again.
-  if (
-    chatStatus === 'rejected' ||
-    chatStatus === 'cancelled' ||
-    chatStatus === 'idle'
-  ) {
-    console.log(
-      '[ChatCallScreen] Reset navigation:',
-      chatStatus,
-    );
+  useEffect(() => {
+    // Only reset navigation for cancelled/rejected/idle.
+    // Do NOT unmount on `completed` — RatingModal lives inside ChatScreen and
+    // must stay mounted until the user submits/closes the rating (prior working flow).
+    // `idle` happens after rating Exit/Chat Again (store.reset) — must clear the
+    // hasNavigated latch so the next acceptance can open ChatScreen again.
+    if (
+      chatStatus === 'rejected' ||
+      chatStatus === 'cancelled' ||
+      chatStatus === 'idle'
+    ) {
+      console.log(
+        '[ChatCallScreen] Reset navigation:',
+        chatStatus,
+      );
 
-    hasNavigatedRef.current = false;
-    setShowChatScreen(false);
-    useChatStore.getState().setShouldNavigateToChat(false);
-  }
-}, [chatStatus]);
+      hasNavigatedRef.current = false;
+      setShowChatScreen(false);
+      useChatStore.getState().setShouldNavigateToChat(false);
+    }
+  }, [chatStatus]);
 
-//  const { completeChat } = useChatActions();
+  //  const { completeChat } = useChatActions();
 
 
-//   // ⚠️ Testing only
-// useEffect(() => {
-//   console.log('[TEST] Force complete chat');
-//   completeChat();
-// }, []);
+  //   // ⚠️ Testing only
+  // useEffect(() => {
+  //   console.log('[TEST] Force complete chat');
+  //   completeChat();
+  // }, []);
 
   useEffect(() => {
     const roomIdStr = roomId ? String(roomId) : null;
@@ -156,13 +156,13 @@ const ChatCallScreen: React.FC<ChatCallScreenProps> = ({
     }
   }, [chatStatus, roomId, shouldNavigateToChat]);
 
-const handleBackFromChat = useCallback(() => {
-  console.log('[ChatCallScreen] Closing chat screen');
+  const handleBackFromChat = useCallback(() => {
+    console.log('[ChatCallScreen] Closing chat screen');
 
-  setShowChatScreen(false);
-  hasNavigatedRef.current = false;
-  useChatStore.getState().setShouldNavigateToChat(false);
-}, []);
+    setShowChatScreen(false);
+    hasNavigatedRef.current = false;
+    useChatStore.getState().setShouldNavigateToChat(false);
+  }, []);
   const handleEndChat = useCallback(() => {
     setShowChatScreen(false);
   }, []);
@@ -254,7 +254,7 @@ const handleBackFromChat = useCallback(() => {
               barStyle={theme.isDark ? 'light-content' : 'dark-content'}
               backgroundColor={colors.background.primary}
             />
-
+            {/* 
             <View
               style={[
                 styles.header,
@@ -263,11 +263,11 @@ const handleBackFromChat = useCallback(() => {
                   borderBottomColor: colors.border.light,
                 },
               ]}>
-              {/* <Text
+              <Text
                 style={[styles.headerSubtitle, { color: colors.text.secondary }]}>
                 {getHeaderSubtitle()}
-              </Text> */}
-            </View>
+              </Text>
+            </View> */}
 
             <View
               style={[
@@ -335,7 +335,7 @@ const handleBackFromChat = useCallback(() => {
                   <ActivityIndicator
                     size="small"
                     color="#6C2BD9"
-                    style={{margin: 10}}
+                    style={{ margin: 10 }}
                   />
                 ) : null
               }

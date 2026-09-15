@@ -252,7 +252,7 @@ const TermsOfServiceScreen: React.FC<TermsOfServiceScreenProps> = ({
           us at support@dhwaniastro.com.
         </Text>
 
-        <Text
+        {/* <Text
           variant="caption"
           color={colors.text.tertiary}
           style={styles.lastUpdated}>
@@ -262,7 +262,7 @@ const TermsOfServiceScreen: React.FC<TermsOfServiceScreenProps> = ({
             month: 'long',
             day: 'numeric',
           })}
-        </Text>
+        </Text> */}
       </ScrollView>
     </View>
   );
