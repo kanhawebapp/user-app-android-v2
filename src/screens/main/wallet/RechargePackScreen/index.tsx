@@ -130,7 +130,7 @@ const RechargePackScreen: React.FC<RechargePackScreenProps> = ({
         {/* Amount to Pay Summary */}
 
       </ScrollView>
-      <Card style={styles.summaryCard}>
+      <Card style={[styles.summaryCard, { marginBottom: insets.bottom + 88 }]}>
         <Text
           variant="body"
           weight="semibold"

@@ -6,8 +6,6 @@ import {
   Text,
   StyleSheet,
   Animated,
-  Platform,
-  PermissionsAndroid,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../../theme';
@@ -50,29 +48,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const sendOpacityAnim = useRef(new Animated.Value(0.5)).current;
   const inputFocusAnim = useRef(new Animated.Value(0)).current;
 
-  // ================= PERMISSION =================
-  const requestPermission = async () => {
-    if (Platform.OS !== 'android') {
-      return true;
-    }
-
-    const granted = await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES,
-    );
-
-    return granted === PermissionsAndroid.RESULTS.GRANTED;
-  };
-
   // ================= IMAGE PICK =================
   const handlePickImage = useCallback(async () => {
     try {
-      const ok = await requestPermission();
-      if (!ok) {
-        return;
-      }
-
+      // Android Photo Picker / iOS system picker; no media permission required.
       const res = await launchImageLibrary({
         mediaType: 'photo',
+        selectionLimit: 1,
         quality: 0.7,
       });
 

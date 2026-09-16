@@ -90,8 +90,8 @@ android {
         applicationId "com.DhwaniAstro.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 42
-        versionName "2.0.1"
+        versionCode 44
+        versionName "2.0.3"
     }
     signingConfigs {
         debug {
@@ -139,6 +139,8 @@ dependencies {
     debugImplementation("com.facebook.react:flipper-integration")
     implementation platform('com.google.firebase:firebase-bom:32.7.0')
     implementation 'com.google.firebase:firebase-crashlytics'
+    // AndroidX Photo Picker contract used by react-native-image-picker (minSdk < 30).
+    implementation("androidx.activity:activity:1.9.3")
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
