@@ -5,9 +5,6 @@ import {
   TouchableOpacity,
   Animated,
   Dimensions,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
   Pressable,
   Keyboard,
 } from 'react-native';
@@ -179,43 +176,41 @@ export const OTPModal: React.FC<OTPModalProps> = ({
             transform: [{translateY}],
           },
         ]}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <ScrollView
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={styles.content}>
-            {/* Drag indicator */}
-            <View style={styles.dragIndicator} />
-            <View style={styles.headerIcon}>
-              {/* <Image source={images.VerifyOtp} style={styles.headerIconImage} /> */}
-              <VerifyOtp />
-            </View>
-            {/* Header */}
-            <View style={styles.header}>
+          <View style={styles.content}>
+            <View style={styles.topSection}>
+              {/* Drag indicator */}
+              <View style={styles.dragIndicator} />
+              <View style={styles.headerIcon}>
+                {/* <Image source={images.VerifyOtp} style={styles.headerIconImage} /> */}
+                <VerifyOtp />
+              </View>
+              {/* Header */}
+              <View style={styles.header}>
+                <Text
+                  variant="h5"
+                  weight="semibold"
+                  style={{textAlign: 'center', color: colors.text.primary}}>
+                  {/* {title} */}
+                  Verify Otp
+                </Text>
+
+                {/* <TouchableOpacity onPress={onClose}>
+                  <Icon name="close" size={22} />
+                </TouchableOpacity> */}
+              </View>
+
+              {/* Subtitle */}
               <Text
-                variant="h5"
-                weight="semibold"
-                style={{textAlign: 'center', color: colors.text.primary}}>
-                {/* {title} */}
-                Verify Otp
+                variant="body"
+                align="center"
+                color={theme.colors.text.tertiary}
+                style={styles.subtitle}>
+                {AUTH_LABELS.OTP_SUBTITLE_DEFAULT}
               </Text>
-
-              {/* <TouchableOpacity onPress={onClose}>
-                <Icon name="close" size={22} />
-              </TouchableOpacity> */}
+              <Text style={styles.phoneNum} variant="h6">
+                +91{phoneNumber}
+              </Text>
             </View>
-
-            {/* Subtitle */}
-            <Text
-              variant="body"
-              align="center"
-              color={theme.colors.text.tertiary}
-              style={styles.subtitle}>
-              {AUTH_LABELS.OTP_SUBTITLE_DEFAULT}
-            </Text>
-            <Text style={styles.phoneNum} variant="h6">
-              +91{phoneNumber}
-            </Text>
 
             {/* OTP */}
             <View style={styles.otpSection}>
@@ -269,11 +264,8 @@ export const OTPModal: React.FC<OTPModalProps> = ({
                 </TouchableOpacity>
               )}
             </View>
-
-            {/* Button */}
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </Animated.View>
+          </View>
+        </Animated.View>
     </View>
   );
 };
@@ -294,12 +286,19 @@ const styles = StyleSheet.create({
   sheet: {
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
-    maxHeight: '75%',
+    maxHeight: '100%',
+    flexShrink: 1,
   },
 
   content: {
     padding: 20,
     paddingBottom: 30,
+  },
+
+  topSection: {
+    flexShrink: 1,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
   },
 
   dragIndicator: {

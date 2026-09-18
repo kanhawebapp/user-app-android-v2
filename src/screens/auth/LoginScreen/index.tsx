@@ -243,19 +243,19 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
             </View>
           </Card>
         </ScrollView>
-      </KeyboardAvoidingView>
 
-      {/* OTP Modal */}
-      <OTPModal
-        visible={isOTPModalVisible}
-        onClose={handleCloseOTPModal}
-        onSubmit={handleOTPVerify}
-        phoneNumber={phoneNumber}
-        onResendOTP={handleResendOTP}
-        loading={isOTPVerifying}
-        error={otpError || undefined}
-        title={AUTH_LABELS.OTP_VERIFY_BUTTON}
-      />
+        {/* OTP Modal */}
+        <OTPModal
+          visible={isOTPModalVisible}
+          onClose={handleCloseOTPModal}
+          onSubmit={handleOTPVerify}
+          phoneNumber={phoneNumber}
+          onResendOTP={handleResendOTP}
+          loading={isOTPVerifying}
+          error={otpError || undefined}
+          title={AUTH_LABELS.OTP_VERIFY_BUTTON}
+        />
+      </KeyboardAvoidingView>
 
       {/* First-login Name Popup */}
       <EnterNameModal
