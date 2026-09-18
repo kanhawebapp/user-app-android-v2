@@ -66,7 +66,53 @@ diff --git a/node_modules/react-native/ReactAndroid/build.gradle b/node_modules/
 diff --git a/node_modules/react-native/ReactAndroid/hermes-engine/build.gradle b/node_modules/react-native/ReactAndroid/hermes-engine/build.gradle
 --- a/node_modules/react-native/ReactAndroid/hermes-engine/build.gradle
 +++ b/node_modules/react-native/ReactAndroid/hermes-engine/build.gradle
-@@ -170,8 +170,10 @@
+@@ -96,22 +96,35 @@
+     into(hermesDir)
+ }
+ 
+ task configureBuildForHermes(type: Exec) {
+     workingDir(hermesDir)
+     inputs.dir(hermesDir)
+     outputs.files(hermesBuildOutputFileTree)
+-    commandLine(
+-        windowsAwareCommandLine(
+-            findCmakePath(cmakeVersion),
+-            Os.isFamily(Os.FAMILY_WINDOWS) ? "-GNMake Makefiles" : "",
+-            "-S",
+-            ".",
+-            "-B",
+-            hermesBuildDir.toString(),
+-            "-DJSI_DIR=" + jsiDir.absolutePath
+-        )
+-    )
++    // Host hermesc is built with Apple Clang. On recent Xcode, linking fails
++    // with "library 'System' not found" unless CMAKE_OSX_SYSROOT points at the
++    // MacOSX SDK (SDKROOT is often iPhoneOS or empty in Android Studio / CLI).
++    def macosSdk = System.getenv("SDKROOT")
++    if (Os.isFamily(Os.FAMILY_MAC)) {
++        if (macosSdk == null || macosSdk.isEmpty() || macosSdk.contains("iPhone") || macosSdk.contains("Watch") || macosSdk.contains("AppleTV")) {
++            macosSdk = "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
++        }
++        environment "SDKROOT", macosSdk
++        environment "CMAKE_OSX_SYSROOT", macosSdk
++    }
++    def cmakeArgs = [
++            findCmakePath(cmakeVersion),
++            Os.isFamily(Os.FAMILY_WINDOWS) ? "-GNMake Makefiles" : "",
++            "-S",
++            ".",
++            "-B",
++            hermesBuildDir.toString(),
++            "-DJSI_DIR=" + jsiDir.absolutePath
++    ]
++    if (Os.isFamily(Os.FAMILY_MAC) && macosSdk != null) {
++        cmakeArgs.add("-DCMAKE_OSX_SYSROOT=" + macosSdk)
++    }
++    commandLine(windowsAwareCommandLine(*cmakeArgs.findAll { it }))
+ }
+ 
+ task buildHermesC(dependsOn: configureBuildForHermes, type: Exec) {
+@@ -170,8 +183,10 @@
      if (rootProject.hasProperty("ndkPath")) {
          ndkPath rootProject.ext.ndkPath
      }
@@ -78,7 +124,7 @@ diff --git a/node_modules/react-native/ReactAndroid/hermes-engine/build.gradle b
      }
  
      defaultConfig {
-@@ -190,9 +192,9 @@
+@@ -190,9 +205,9 @@
                  // We intentionally build Hermes with Intl support only. This is to simplify
                  // the build setup and to avoid overcomplicating the build-type matrix.
                  arguments "-DHERMES_ENABLE_INTL=True"

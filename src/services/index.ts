@@ -16,3 +16,9 @@ export {mmkvStorage, mmkv} from './storage/mmkv.storage';
 
 // Logging
 export {loggingService} from './logging';
+
+export {
+  checkForUpdate,
+  startFlexibleUpdate,
+  completeUpdate,
+} from './inAppUpdateService';

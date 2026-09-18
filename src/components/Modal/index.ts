@@ -6,4 +6,5 @@ export {GiftModal} from './GiftModal';
 export {ChatRequestModal} from './ChatRequestModal';
 export {RatingModal} from './RatingModal';
 export {ThankYouModal} from './ThankYouModal';
+export {UpdateReadyModal} from './UpdateReadyModal';
 export type {ChatRequestData} from './ChatRequestModal';

@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import RenderHTML from 'react-native-render-html';
 import { useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, useTheme } from '../../../theme';
 import { Icon } from '../../../components/Icon';
 import { Text } from '../../../components/Text';
@@ -45,6 +46,7 @@ const AstrologerProfileScreen: React.FC<AstrologerProfileScreenProps> = ({
 }) => {
   const theme = useTheme();
   const colors = theme.colors;
+  const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const [refreshing, setRefreshing] = useState(false);
   const [showChatRequestModal, setShowChatRequestModal] = useState(false);
@@ -251,6 +253,7 @@ const displayIndicatorColor = isOffline ? '#EF4444' : indicatorColor;
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}> */}
       <ScrollView
+        style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -349,7 +352,7 @@ const displayIndicatorColor = isOffline ? '#EF4444' : indicatorColor;
             borderTopWidth: 1,
             flexDirection: 'row',
             gap: 12,
-            paddingBottom: 24,
+            paddingBottom: Math.max(insets.bottom, 8),
           },
         ]}>
 

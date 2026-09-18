@@ -12,6 +12,8 @@ import {useToast} from '../../context/ToastContext';
 import {MainNavigator} from '../../screens/main';
 import SkeletonLoader from '../SkeletonLoader';
 import {QueueBubble} from '../QueueBubble';
+import {UpdateReadyModal} from '../Modal';
+import {useInAppUpdate} from '../../hooks/useInAppUpdate';
 import {setNavigator} from '../../services/navigation/NavigationService';
 import {useCallStore} from '../../services/call/call.store';
 import {useChatStore} from '../../services/chat/chat.store';
@@ -174,6 +176,9 @@ const AppContent: React.FC = () => {
 
   // Toast hook for showing welcome message
   const {showSuccess} = useToast();
+  const {isUpdateReadyVisible, handleRestart} = useInAppUpdate({
+    enabled: onboardingCompleted && hasInitialized && !showSplash,
+  });
 
   const onboardingVariants: SplashScreenVariant[] = hasSeenOnboarding2
     ? ['onboarding1']
@@ -335,6 +340,10 @@ const AppContent: React.FC = () => {
           onLogout={() => {
             setIsLoggedIn(false);
           }}
+        />
+        <UpdateReadyModal
+          visible={isUpdateReadyVisible}
+          onRestart={handleRestart}
         />
       </View>
     );

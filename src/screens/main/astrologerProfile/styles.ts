@@ -11,6 +11,9 @@ export const styles = StyleSheet.create({
     borderBottomLeftRadius: 100,
     borderBottomRightRadius: 100,
   },
+  scrollView: {
+    flex: 1,
+  },
   scrollContent: {
     paddingBottom: 32,
   },
@@ -37,7 +40,6 @@ export const styles = StyleSheet.create({
   actionContainer: {
     paddingHorizontal: 16,
     paddingTop: 8,
-    paddingBottom: 24,
     gap: 12,
   },
   actionButton: {

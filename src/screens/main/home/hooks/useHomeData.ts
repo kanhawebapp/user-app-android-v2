@@ -336,25 +336,25 @@ const DEFAULT_TRUST_FEATURES: TrustFeature[] = [
   },
   {
     id: '6',
-    title: '13L+ Happy Customers',
+    title: '10L+ Happy Customers',
     description: 'Loved by millions of users across India',
     icon: 'groups',
     iconLibrary: 'MaterialIcons',
   },
-  {
-    id: '7',
-    title: 'Certified & Abhimantrit',
-    description: 'Spiritual and certified astrologers',
-    icon: 'auto-awesome',
-    iconLibrary: 'MaterialIcons',
-  },
-  {
-    id: '8',
-    title: 'Safe & Trusted Guidance',
-    description: 'Your privacy and trust is our priority',
-    icon: 'shield',
-    iconLibrary: 'MaterialIcons',
-  },
+  // {
+  //   id: '7',
+  //   title: 'Certified & Abhimantrit',
+  //   description: 'Spiritual and certified astrologers',
+  //   icon: 'auto-awesome',
+  //   iconLibrary: 'MaterialIcons',
+  // },
+  // {
+  //   id: '8',
+  //   title: 'Safe & Trusted Guidance',
+  //   description: 'Your privacy and trust is our priority',
+  //   icon: 'shield',
+  //   iconLibrary: 'MaterialIcons',
+  // },
 ];
 
 // Default shop items
