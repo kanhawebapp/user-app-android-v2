@@ -162,7 +162,6 @@ import {
 import {sendChatRequest} from '../../../services/chat/chat.service';
 import {useChatStore} from '../../../services/chat/chat.store';
 import {useAuthStore} from '../../../stores/auth.store';
-import {useNavigation} from '@react-navigation/native';
 import {useToast} from '../../../context/ToastContext';
 import type {Astrologer} from '../../../services/api/recomandedAstrologer/astrologer.types';
 
@@ -182,7 +181,6 @@ const AstrologerListScreen: React.FC<AstrologerListScreenProps> = ({
     resetFilters,
   } = useAstrologers();
 
-  const navigation = useNavigation();
   const user = useAuthStore(state => state.user);
   const isAuthenticated = useAuthStore(
     (state: {isAuthenticated: any}) => state.isAuthenticated,
@@ -342,44 +340,35 @@ const AstrologerListScreen: React.FC<AstrologerListScreenProps> = ({
 
         const {isCall} = result;
 
+        setShowChatRequestModal(false);
+        setChatTargetAstrologer(null);
+
+        // CALL FLOW — mirror submitConsultationRequest: don't navigate to the
+        // Call screen directly. Return to the main navigation (onBack) and let
+        // the global call queue promote to 'calling', which AppContent watches
+        // to open Call on a navigator that actually has the 'Call' route.
         if (isCall) {
-          setShowChatRequestModal(false);
-          setChatTargetAstrologer(null);
-
-          navigation.navigate(
-            'Call' as never,
-            {
-              callId: result.callId || `call_${Date.now()}`,
-              participant: {
-                id: chatTargetAstrologer.id,
-                name:
-                  chatTargetAstrologer.displayName ||
-            chatTargetAstrologer.name ||
-            'Astrologer',
-                image: chatTargetAstrologer.profilePic,
-              },
-              isIncoming: false,
-            } as never,
-          );
-        } else {
-          setShowChatRequestModal(false);
-
-          useChatStore.getState().setSelectedAstrologer({
-            id: chatTargetAstrologer.id,
-            name:
-              chatTargetAstrologer.displayName ||
-            chatTargetAstrologer.name ||
-            'Astrologer',
-            image: chatTargetAstrologer.profilePic,
-            rating: chatTargetAstrologer.rating,
-            experience: String(chatTargetAstrologer.experience),
-            skills: chatTargetAstrologer.skills,
-            isAvailableForChat: true,
-          });
-
-          setChatTargetAstrologer(null);
-          navigation.navigate('chatCall' as never);
+          onBack?.();
+          return;
         }
+
+        // CHAT FLOW
+        useChatStore.getState().setSelectedAstrologer({
+          id: chatTargetAstrologer.id,
+          name:
+            chatTargetAstrologer.displayName ||
+          chatTargetAstrologer.name ||
+          'Astrologer',
+          image: chatTargetAstrologer.profilePic,
+          rating: chatTargetAstrologer.rating,
+          experience: String(chatTargetAstrologer.experience),
+          skills: chatTargetAstrologer.skills,
+          isAvailableForChat: true,
+        });
+
+        // Return to main navigation; MainNavigator auto-switches to the
+        // chatCall tab when SocketService accepts the chat.
+        onBack?.();
       } catch (error: any) {
         console.error('Request error:', error);
         showError(
@@ -396,7 +385,7 @@ const AstrologerListScreen: React.FC<AstrologerListScreenProps> = ({
       chatTargetAstrologer,
       user,
       consultationType,
-      navigation,
+      onBack,
       showSuccess,
       showError,
     ],
