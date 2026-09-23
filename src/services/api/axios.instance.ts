@@ -19,6 +19,7 @@ import type {ApiResponse, ApiError} from '../../types/global.types';
 import secureStorage from '../storage/secure.storage';
 import loggingService from '../logging';
 import {useConfigStore} from '../../stores/config.store';
+import {handleUnauthorized} from './unauthorized.handler';
 
 /**
  * Extended Axios request config with retry tracking properties
@@ -130,54 +131,66 @@ export const createAxiosInstance = (): AxiosInstance => {
     async (error: AxiosError<ApiResponse<unknown>>) => {
       const originalRequest = error.config as CustomAxiosRequestConfig;
 
-      // Handle 401 Unauthorized - Token refresh
-      if (
-        error.response?.status === HTTP_STATUS.UNAUTHORIZED &&
-        originalRequest &&
-        !originalRequest._retry
-      ) {
-        originalRequest._retry = true;
+      // Handle 401 Unauthorized — try token refresh, then centralized logout
+      if (error.response?.status === HTTP_STATUS.UNAUTHORIZED) {
+        const requestUrl = originalRequest?.url || '';
+        const isCredentialAuthRequest =
+          requestUrl.includes('/auth/login') ||
+          requestUrl.includes('/auth/verify-otp') ||
+          requestUrl.includes('/auth/forgot-password') ||
+          requestUrl.includes('/auth/reset-password');
 
-        try {
-          const refreshToken = await secureStorage.getItem(
-            STORAGE_KEYS.REFRESH_TOKEN,
-          );
+        // Do not treat failed login/OTP as session expiry
+        if (!isCredentialAuthRequest && originalRequest && !originalRequest._retry) {
+          originalRequest._retry = true;
 
-          if (refreshToken) {
-            const currentBaseUrl = getCurrentBaseUrl();
-            const response = await axios.post(
-              `${currentBaseUrl}/v1/auth/refresh-token`,
-              {
-                refreshToken,
-              },
+          try {
+            const refreshToken = await secureStorage.getItem(
+              STORAGE_KEYS.REFRESH_TOKEN,
             );
 
-            if (response.data?.data) {
-              const {accessToken, refreshToken: newRefreshToken} =
-                response.data.data;
-
-              await secureStorage.setItem(
-                STORAGE_KEYS.ACCESS_TOKEN,
-                accessToken,
-              );
-              await secureStorage.setItem(
-                STORAGE_KEYS.REFRESH_TOKEN,
-                newRefreshToken,
+            if (refreshToken) {
+              const currentBaseUrl = getCurrentBaseUrl();
+              const response = await axios.post(
+                `${currentBaseUrl}/v1/auth/refresh-token`,
+                {
+                  refreshToken,
+                },
               );
 
-              originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-              return axiosInstance(originalRequest);
+              if (response.data?.data) {
+                const {accessToken, refreshToken: newRefreshToken} =
+                  response.data.data;
+
+                await secureStorage.setItem(
+                  STORAGE_KEYS.ACCESS_TOKEN,
+                  accessToken,
+                );
+                await secureStorage.setItem(
+                  STORAGE_KEYS.REFRESH_TOKEN,
+                  newRefreshToken,
+                );
+
+                originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+                return axiosInstance(originalRequest);
+              }
             }
+          } catch {
+            loggingService.warn('[API] Token refresh failed, logging out');
           }
-        } catch (refreshError) {
-          // Clear auth data and redirect to login
-          await secureStorage.deleteItem(STORAGE_KEYS.ACCESS_TOKEN);
-          await secureStorage.deleteItem(STORAGE_KEYS.REFRESH_TOKEN);
-          await secureStorage.deleteItem(STORAGE_KEYS.USER_DATA);
 
-          loggingService.warn('[API] Token refresh failed, logging out');
+          await handleUnauthorized();
 
-          // Dispatch logout event
+          return Promise.reject({
+            code: 'SESSION_EXPIRED',
+            message: 'Session expired. Please login again.',
+            requiresLogout: true,
+          });
+        }
+
+        if (!isCredentialAuthRequest) {
+          await handleUnauthorized();
+
           return Promise.reject({
             code: 'SESSION_EXPIRED',
             message: 'Session expired. Please login again.',

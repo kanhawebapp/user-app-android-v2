@@ -1,11 +1,15 @@
 
 
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
-import { API_BASE_URL, TIMEOUT } from '../../constants/api.constants';
+import { API_BASE_URL, HTTP_STATUS, TIMEOUT } from '../../constants/api.constants';
 import { STORAGE_KEYS } from '../../constants/app.constants';
 import secureStorage from '../storage/secure.storage';
 import loggingService from '../logging';
 import { useAuthStore } from '../../stores/auth.store';
+import {
+  handleUnauthorized,
+  isUnauthorizedError,
+} from './unauthorized.handler';
 
 const resolveAccessToken = async (): Promise<string | null> => {
   const authToken = useAuthStore.getState().accessToken;
@@ -103,40 +107,14 @@ export const createGraphQLClient = (): AxiosInstance => {
   // );
 
   client.interceptors.response.use(
-    response => {
-      // console.log('====================');
-      // console.log('HTTP STATUS =>', response.status);
-
-      // console.log(
-      //   'HTTP RESPONSE =>',
-      //   JSON.stringify(response.data, null, 2),
-      // );
-
-      // console.log('====================');
-
-      return response;
-    },
-
-    (error: AxiosError) => {
-      // console.log('====================');
-      // console.log('AXIOS ERROR HIT');
-
-      // console.log(
-      //   'STATUS =>',
-      //   error?.response?.status,
-      // );
-
-      // console.log(
-      //   'DATA =>',
-      //   JSON.stringify(error?.response?.data, null, 2),
-      // );
-
-      // console.log(
-      //   'MESSAGE =>',
-      //   error?.message,
-      // );
-
-      // console.log('====================');
+    response => response,
+    async (error: AxiosError) => {
+      if (
+        error.response?.status === HTTP_STATUS.UNAUTHORIZED ||
+        isUnauthorizedError(error)
+      ) {
+        await handleUnauthorized();
+      }
 
       return Promise.reject(error);
     },
@@ -147,6 +125,8 @@ export const createGraphQLClient = (): AxiosInstance => {
 
 export const graphqlClient = createGraphQLClient();
 
+/** Auth mutations — 401/Unauthorized here is a credential failure, not session expiry */
+const AUTH_GRAPHQL_OPERATIONS = new Set(['RequestOtp', 'AuthWithOtp']);
 
 // export const graphqlRequest = async <T>(
 //   operationName: string,
@@ -259,6 +239,16 @@ export const graphqlRequest = async <T>(
     );
 
     console.log('===============================');
+
+    // GraphQL may return HTTP 200 with errors: [{ message: "Unauthorized" }]
+    // or HTTP 401 — both are handled centrally (interceptor covers HTTP 401;
+    // this covers Unauthorized error messages thrown above).
+    if (
+      isUnauthorizedError(error) &&
+      !AUTH_GRAPHQL_OPERATIONS.has(operationName)
+    ) {
+      await handleUnauthorized();
+    }
 
     throw error;
   }
