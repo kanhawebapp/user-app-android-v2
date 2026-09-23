@@ -20,6 +20,8 @@ export const useBanners = (language = 'en') => {
       setError(null);
 
       const res = await getBanners(language);
+
+      console.log('BANNERS HOOK RESPONSE:', res);
       setData(res.data || []);
 
       setTotalCount(res.totalCount || 0);

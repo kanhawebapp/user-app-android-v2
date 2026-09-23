@@ -8,6 +8,7 @@ import {BlogProps, BlogPost} from './types';
 import {blogStyles} from './styles';
 import {Card} from '../../../../../components';
 import {BlogDetailsModal} from './BlogDetailsModal';
+import { API_BASE_URL } from '../../../../../constants/api.constants';
 
 const getImageUrl = (url?: string) => {
   if (!url) {
@@ -18,7 +19,7 @@ const getImageUrl = (url?: string) => {
     return url;
   }
 
-  return `https://dhwaniastro.com${url}`;
+return `${API_BASE_URL.DEVELOPMENT}${url.replace(/^\/+/, '')}`;
 };
 
 const formatDate = (timestamp: string) => {

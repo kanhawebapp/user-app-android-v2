@@ -15,6 +15,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { Text } from '../../../../../components/Text';
 import { useBlogBySlug } from '../../../../../services/api/blogs/useBlogBySlug';
 import type { BlogDetail } from '../../../../../services/api/blogs/blog.types';
+import { API_BASE_URL } from '../../../../../constants/api.constants';
 
 interface Props {
   visible: boolean;
@@ -31,7 +32,7 @@ const getImageUrl = (url?: string) => {
     return url;
   }
 
-  return `https://dhwaniastro.com${url}`;
+  return `${API_BASE_URL.DEVELOPMENT}${url.replace(/^\/+/, '')}`;
 };
 
 const formatDate = (timestamp: string) => {

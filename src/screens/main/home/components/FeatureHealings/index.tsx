@@ -160,6 +160,7 @@ import { Button } from '../../../../../components/Button';
 import { FeaturedRemediesProps } from '../../types';
 import { Card } from '../../../../../components';
 import images from '../../../../../assets/images';
+import { API_BASE_URL } from '../../../../../constants/api.constants';
 
 export const FeatureHealings: React.FC<FeaturedRemediesProps> = ({
   remedies = [],
@@ -178,7 +179,7 @@ export const FeatureHealings: React.FC<FeaturedRemediesProps> = ({
       return url;
     }
 
-    return `https://dhwaniastro.com${url}`;
+return `${API_BASE_URL.DEVELOPMENT}${url.replace(/^\/+/, '')}`;
   };
 
   return (

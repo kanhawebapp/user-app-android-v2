@@ -3,6 +3,7 @@ import ReactNativeBlobUtil from 'react-native-blob-util';
 import {Platform} from 'react-native';
 import secureStorage from '../../storage/secure.storage';
 import {STORAGE_KEYS} from '../../../constants/app.constants';
+import { API_BASE_URL } from '../../../constants/api.constants';
 
 export const uploadImage = async (file: {
   uri: string;
@@ -18,7 +19,7 @@ export const uploadImage = async (file: {
 
     const res = await ReactNativeBlobUtil.fetch(
       'POST',
-      'https://dhwaniastro.com/userAuth/graphql',
+      API_BASE_URL.DEVELOPMENT + 'userAuth/graphql',
       {
         Authorization: `Bearer ${token}`,
         'x-apollo-operation-name': 'UploadImage',
