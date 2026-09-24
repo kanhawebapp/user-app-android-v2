@@ -17,7 +17,11 @@ interface SocialIconProps {
   style?: StyleProp<ViewStyle>;
 }
 
-const SocialIcon: React.FC<SocialIconProps> = ({social, onPress, style}) => {
+export const SocialIcon: React.FC<SocialIconProps> = ({
+  social,
+  onPress,
+  style,
+}) => {
   const theme = useTheme();
   const isDarkMode = theme.colors.background.primary === '#121212';
 

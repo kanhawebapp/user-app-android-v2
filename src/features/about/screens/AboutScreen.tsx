@@ -5,7 +5,6 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
-  Linking,
   Image,
   ActivityIndicator,
   Dimensions,
@@ -23,6 +22,9 @@ import {useTheme} from '../../../theme';
 import {useAboutPage} from '../../../services/api/about/useAboutPage';
 import {GoBack} from '../../../components';
 import {API_BASE_URL} from '../../../constants/api.constants';
+import {SOCIAL_MEDIA} from '../../../components/Sidebar/helpers';
+import {SocialIcon} from '../../../components/Sidebar';
+import {sidebarStyle} from '../../../components/Sidebar/sidebarStyle';
 
 interface AboutScreenProps {
   onNavigateBack?: () => void;
@@ -44,33 +46,6 @@ const AboutScreen: React.FC<AboutScreenProps> = ({onNavigateBack}) => {
   console.log('data about', data);
 
   const APP_VERSION = '1.0.0';
-
-  const socialLinks = [
-    {
-      id: 'instagram',
-      icon: 'instagram',
-      url: 'https://instagram.com',
-    },
-    {
-      id: 'facebook',
-      icon: 'facebook',
-      url: 'https://facebook.com',
-    },
-    {
-      id: 'youtube',
-      icon: 'youtube-play',
-      url: 'https://youtube.com',
-    },
-    {
-      id: 'twitter',
-      icon: 'twitter',
-      url: 'https://twitter.com',
-    },
-  ];
-
-  const handleSocialPress = (url: string) => {
-    Linking.openURL(url);
-  };
 
   const renderPersonCard = (
     item: any,
@@ -382,25 +357,9 @@ const AboutScreen: React.FC<AboutScreenProps> = ({onNavigateBack}) => {
             Follow Us
           </Text>
 
-          <View style={styles.socialRow}>
-            {socialLinks.map(item => (
-              <TouchableOpacity
-                key={item.id}
-                activeOpacity={0.75}
-                onPress={() => handleSocialPress(item.url)}
-                style={[
-                  styles.socialButton,
-                  {
-                    backgroundColor: colors.background.secondary,
-                  },
-                ]}>
-                <Icon
-                  name={item.icon}
-                  size={24}
-                  color={colors.primary.main}
-                  library="FontAwesome"
-                />
-              </TouchableOpacity>
+          <View style={sidebarStyle.socialMediaContainer}>
+            {SOCIAL_MEDIA.map(item => (
+              <SocialIcon key={item.key} social={item} />
             ))}
           </View>
         </View>
