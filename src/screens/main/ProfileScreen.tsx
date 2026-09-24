@@ -5,6 +5,7 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme';
@@ -81,6 +82,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const { profile } = useProfile();
   const { wallet } = useWallet();
   const balanceCoins = wallet?.balanceCoins ?? 0;
+  const profileImage = profile?.profileImage || profile?.profilePic;
 
   const [showLoginModal, setShowLoginModal] = React.useState(false);
   const [modalMessage, setModalMessage] = React.useState(
@@ -212,7 +214,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                   styles.avatarContainer,
                   { backgroundColor: colors.primary.main },
                 ]}>
-                {profile?.name ? (
+                {profileImage ? (
+                  <Image
+                    source={{uri: profileImage}}
+                    style={styles.avatarImage}
+                    resizeMode="cover"
+                  />
+                ) : profile?.name ? (
                   <Text
                     variant="h3"
                     weight="bold"
@@ -368,6 +376,12 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
   },
   editIconContainer: {
     position: 'absolute',

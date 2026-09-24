@@ -80,7 +80,7 @@ const getImageUriWithCacheRefresh = (
   return uri;
 };
 
-const UpdateProfileScreen = ({ onNavigateBack }: any) => {
+const UpdateProfileScreen = ({onNavigateBack, onNavigateToProfile}: any) => {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const {profile, loading, updating, refresh, updateProfile} = useProfile();
@@ -256,7 +256,7 @@ const UpdateProfileScreen = ({ onNavigateBack }: any) => {
         occupation: formData.occupation,
       });
       showSuccess('Profile updated successfully');
-      onNavigateBack();
+      onNavigateToProfile?.();
     } catch {
       showError('Failed to update profile');
     }

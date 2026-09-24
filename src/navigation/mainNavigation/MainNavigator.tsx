@@ -224,6 +224,11 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
     setSidebarScreen('edit_profile');
   }, []);
 
+  // Handler for profile navigation (used after saving profile edits)
+  const handleNavigateToProfile = useCallback(() => {
+    setSidebarScreen('profile');
+  }, [setSidebarScreen]);
+
   // Handler for notification press
   const handleNotificationPress = useCallback(() => {
     setIsNotificationVisible(true);
@@ -405,6 +410,7 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
           sidebarScreen,
           handleSidebarBack,
           handleNavigateToEditProfile,
+          onNavigateToProfile: handleNavigateToProfile,
           onNavigateToLogin,
           onNavigateToSignup,
           onNavigateToAstrologerProfile:

@@ -271,6 +271,7 @@ export interface RenderSidebarScreenProps {
   sidebarScreen: SidebarScreenKey;
   handleSidebarBack: () => void;
   handleNavigateToEditProfile?: () => void;
+  onNavigateToProfile?: () => void;
   onNavigateToLogin?: MainNavigatorProps['onNavigateToLogin'];
   onNavigateToSignup?: MainNavigatorProps['onNavigateToSignup'];
   onNavigateToAstrologerProfile?: (astrologer: any) => void;
@@ -281,6 +282,7 @@ export const renderSidebarScreen = ({
   sidebarScreen,
   handleSidebarBack,
   handleNavigateToEditProfile,
+  onNavigateToProfile,
   onNavigateToLogin,
   onNavigateToSignup,
   onNavigateToAstrologerProfile,
@@ -379,7 +381,10 @@ export const renderSidebarScreen = ({
     case 'edit_profile':
       return (
         <Suspense fallback={shimmerFallback}>
-          <UpdateProfileScreen onNavigateBack={handleSidebarBack} />
+          <UpdateProfileScreen
+            onNavigateBack={handleSidebarBack}
+            onNavigateToProfile={onNavigateToProfile}
+          />
         </Suspense>
       );
     default:
