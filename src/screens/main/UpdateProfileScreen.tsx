@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -9,6 +9,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import DatePicker from 'react-native-date-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,8 +20,10 @@ import { Button } from '../../components/Button';
 import { InputBox } from '../../components/InputBox';
 import { Card } from '../../components/Card';
 import { useProfile } from '../../services/api/profile/profile.hooks';
+import {useUploadProfileImage} from '../../services/api/upload/upload.hook';
 import { useToast } from '../../context/ToastContext';
 import { GoBack } from '../../components';
+import {launchImageLibrary} from 'react-native-image-picker';
 
 // const genderOptions = ['Male', 'Female'];
 const genderOptions = [
@@ -40,10 +43,49 @@ const formatTime = (d: Date): string => {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
+const PROFILE_IMAGE_MAX_SIZE = 2 * 1024 * 1024; // 2 MB
+const PROFILE_IMAGE_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const PROFILE_IMAGE_ALLOWED_EXTENSION = /\.(jpe?g|png|webp)$/i;
+
+const validateProfileImage = (asset: {
+  type?: string;
+  fileSize?: number;
+  fileName?: string;
+}): string | null => {
+  const type = (asset.type || '').toLowerCase();
+  const fileName = (asset.fileName || '').toLowerCase();
+
+  if (
+    !PROFILE_IMAGE_ALLOWED_TYPES.includes(type) &&
+    !PROFILE_IMAGE_ALLOWED_EXTENSION.test(fileName)
+  ) {
+    return 'Please select a JPG, JPEG, PNG, or WEBP image.';
+  }
+
+  if (asset.fileSize && asset.fileSize > PROFILE_IMAGE_MAX_SIZE) {
+    return 'Image size must be 2 MB or less.';
+  }
+
+  return null;
+};
+
+const getImageUriWithCacheRefresh = (
+  uri: string,
+  currentUri?: string | null,
+): string => {
+  if (currentUri && uri === currentUri) {
+    const separator = uri.includes('?') ? '&' : '?';
+    return `${uri}${separator}t=${Date.now()}`;
+  }
+  return uri;
+};
+
 const UpdateProfileScreen = ({ onNavigateBack }: any) => {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
-  const { profile, loading, updating, updateProfile } = useProfile();
+  const {profile, loading, updating, refresh, updateProfile} = useProfile();
+  const {upload: uploadProfileImage, loading: uploadingProfileImage} =
+    useUploadProfileImage();
   const { showSuccess, showError } = useToast();
 
   const [formData, setFormData] = useState({
@@ -55,6 +97,8 @@ const UpdateProfileScreen = ({ onNavigateBack }: any) => {
 
   const [birthDate, setBirthDate] = useState(new Date());
   const [birthTime, setBirthTime] = useState(new Date());
+
+  const [profileImageUri, setProfileImageUri] = useState<string | null>(null);
 
 
   const [openDate, setOpenDate] = useState(false);
@@ -78,59 +122,124 @@ const UpdateProfileScreen = ({ onNavigateBack }: any) => {
   // }, [profile]);
 
   useEffect(() => {
-  if (!profile) {
-    return;
-  }
-
-  setFormData({
-    name: profile.name || '',
-    gender: profile.gender || '',
-    occupation: profile.occupation || '',
-  });
-
-  // Birth Date
-  if (profile.birthDate) {
-    const date = new Date(Number(profile.birthDate));
-
-    if (!isNaN(date.getTime())) {
-      setBirthDate(date);
+    if (!profile) {
+      return;
     }
-  }
 
-  // Birth Time
-  if (profile.birthTime) {
-    const timeString = profile.birthTime.trim();
+    setFormData({
+      name: profile.name || '',
+      gender: profile.gender || '',
+      occupation: profile.occupation || '',
+    });
 
-    // Handles "4:17 AM", "04:17 AM", "4:17 PM", etc.
-    const match = timeString.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    // Birth Date
+    if (profile.birthDate) {
+      const date = new Date(Number(profile.birthDate));
 
-    if (match) {
-      let hours = parseInt(match[1], 10);
-      const minutes = parseInt(match[2], 10);
-      const period = match[3].toUpperCase();
-
-      if (period === 'PM' && hours < 12) {
-        hours += 12;
+      if (!isNaN(date.getTime())) {
+        setBirthDate(date);
       }
-
-      if (period === 'AM' && hours === 12) {
-        hours = 0;
-      }
-
-      const time = new Date();
-      time.setHours(hours);
-      time.setMinutes(minutes);
-      time.setSeconds(0);
-      time.setMilliseconds(0);
-
-      setBirthTime(time);
     }
-  }
-}, [profile]);
+
+    // Birth Time
+    if (profile.birthTime) {
+      const timeString = profile.birthTime.trim();
+
+      // Handles "4:17 AM", "04:17 AM", "4:17 PM", etc.
+      const match = timeString.match(/(\d+):(\d+)\s*(AM|PM)/i);
+
+      if (match) {
+        let hours = parseInt(match[1], 10);
+        const minutes = parseInt(match[2], 10);
+        const period = match[3].toUpperCase();
+
+        if (period === 'PM' && hours < 12) {
+          hours += 12;
+        }
+
+        if (period === 'AM' && hours === 12) {
+          hours = 0;
+        }
+
+        const time = new Date();
+        time.setHours(hours);
+        time.setMinutes(minutes);
+        time.setSeconds(0);
+        time.setMilliseconds(0);
+
+        setBirthTime(time);
+      }
+    }
+
+    const serverImage = profile.profileImage || profile.profilePic;
+    if (serverImage) {
+      setProfileImageUri(prev =>
+        getImageUriWithCacheRefresh(serverImage, prev),
+      );
+    }
+  }, [profile]);
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
+
+  const handleUploadProfileImage = useCallback(async () => {
+    if (uploadingProfileImage) {
+      return;
+    }
+
+    try {
+      const res = await launchImageLibrary({
+        mediaType: 'photo',
+        selectionLimit: 1,
+        quality: 0.7,
+      });
+
+      if (res.didCancel || !res.assets || res.assets.length === 0) {
+        return;
+      }
+
+      const asset = res.assets[0];
+
+      const validationError = validateProfileImage(asset);
+      if (validationError) {
+        showError(validationError);
+        return;
+      }
+
+      const file = {
+        uri: asset.uri!,
+        name: asset.fileName || `profile_${Date.now()}.jpg`,
+        type: asset.type || 'image/jpeg',
+      };
+
+      const result = await uploadProfileImage(file);
+      const uploadedUrl = result?.url || result?.user?.profileImage;
+      if (uploadedUrl) {
+        setProfileImageUri(prev =>
+          getImageUriWithCacheRefresh(uploadedUrl, prev),
+        );
+      }
+      showSuccess(result?.message || 'Profile image updated successfully');
+
+      if (uploadedUrl) {
+        await refresh();
+      }
+    } catch (error) {
+      const errMessage =
+        error instanceof Error
+          ? error.message
+          : 'Failed to update profile image';
+      console.log('PROFILE IMAGE UPLOAD ERROR:', error);
+      showError(errMessage);
+    }
+  }, [
+    uploadingProfileImage,
+    uploadProfileImage,
+    refresh,
+    showSuccess,
+    showError,
+  ]);
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
@@ -199,15 +308,49 @@ const UpdateProfileScreen = ({ onNavigateBack }: any) => {
           showsVerticalScrollIndicator={false}>
           {/* Profile Avatar Section */}
           <View style={styles.avatarSection}>
-            <View
-              style={[styles.avatar, { backgroundColor: colors.primary.main }]}>
-              <Text
+            <View style={styles.avatarWrapper}>
+              <View
+                style={[styles.avatar, { backgroundColor: colors.primary.main }]}>
+                {profileImageUri ? (
+                  <Image
+                    source={{uri: profileImageUri}}
+                    style={styles.avatarImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Text
+                    style={[
+                      styles.avatarText,
+                      { color: colors.primary.contrastText },
+                    ]}>
+                    {formData.name
+                      ? formData.name.charAt(0).toUpperCase()
+                      : '?'}
+                  </Text>
+                )}
+              </View>
+              <TouchableOpacity
                 style={[
-                  styles.avatarText,
-                  { color: colors.primary.contrastText },
-                ]}>
-                {formData.name ? formData.name.charAt(0).toUpperCase() : '?'}
-              </Text>
+                  styles.avatarEditIcon,
+                  { backgroundColor: colors.primary.main },
+                ]}
+                onPress={handleUploadProfileImage}
+                disabled={uploadingProfileImage}
+                hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+                {uploadingProfileImage ? (
+                  <ActivityIndicator
+                    size="small"
+                    color={colors.primary.contrastText}
+                  />
+                ) : (
+                  <Icon
+                    name="camera-alt"
+                    size={14}
+                    color={colors.primary.contrastText}
+                    library="MaterialIcons"
+                  />
+                )}
+              </TouchableOpacity>
             </View>
             <Text style={[styles.avatarHint, { color: colors.text.secondary }]}>
               {profile?.countryCode} {profile?.mobile}
@@ -507,6 +650,33 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: '#fff',
     marginBottom: 8,
+    overflow: 'hidden',
+  },
+
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
+
+  avatarWrapper: {
+    position: 'relative',
+    alignSelf: 'center',
+  },
+
+  avatarEditIcon: {
+    position: 'absolute',
+    bottom: 8,
+    right: 0,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    zIndex: 10,
+    elevation: 4,
   },
 
   avatarText: {

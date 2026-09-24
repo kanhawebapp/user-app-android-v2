@@ -195,6 +195,7 @@ export const useProfileStore = create<ProfileState>()(
           birthTime: user.birthTime,
           occupation: user.astrologerProfile?.bio,
           profilePic: user.profilePic ?? '',
+          profileImage: user.profileImage || user.profilePic || '',
         };
 
         set({

@@ -16,6 +16,7 @@ export interface User {
   email?: string;
   name: string;
   profilePic?: string;
+  profileImage?: string;
   dateOfBirth?: string;
   birthTime?: string;
   birthPlace?: string;

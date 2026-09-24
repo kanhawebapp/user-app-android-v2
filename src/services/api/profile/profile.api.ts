@@ -16,6 +16,7 @@ query GetUserProfile {
     birthDate
     birthTime
     occupation
+    profileImage
     __typename
   }
 }

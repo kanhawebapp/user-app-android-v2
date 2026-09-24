@@ -1,5 +1,6 @@
 export interface UserProfile {
   profilePic: string;
+  profileImage?: string;
   id: string;
   name: string;
   mobile: string;
