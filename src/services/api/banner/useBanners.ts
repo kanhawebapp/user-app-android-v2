@@ -21,7 +21,7 @@ export const useBanners = (language = 'en') => {
 
       const res = await getBanners(language);
 
-      console.log('BANNERS HOOK RESPONSE:', res);
+      // console.log('BANNERS HOOK RESPONSE:', res);
       setData(res.data || []);
 
       setTotalCount(res.totalCount || 0);
