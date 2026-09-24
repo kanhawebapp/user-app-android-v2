@@ -62,7 +62,13 @@ export const UserProfileSection: React.FC<UserProfileProps> = ({
             </Text>
           )}
         </View> */}
-        <AstroAvatar user={user} size={60} />
+        <AstroAvatar
+          user={{
+            name: user.name,
+            profilePic: user.profileImage || user.profilePic,
+          }}
+          size={60}
+        />
       </View>
       <View style={sidebarStyle.userDetails}>
         <Text
