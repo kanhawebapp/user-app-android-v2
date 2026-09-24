@@ -18,6 +18,7 @@ import {GoBack} from '../../components';
 import PrivacyPolicyScreen from '../../screens/legal/PrivacyPolicyScreen';
 import {softDeleteUser} from '../../services/api/deleteAccount/delete-account.api';
 import {useToast} from '../../context/ToastContext';
+import {version as APP_VERSION} from '../../../package.json';
 
 interface SettingsScreenProps {
   onNavigateBack?: () => void;
@@ -182,7 +183,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({onNavigateBack}) => {
           icon: 'info',
           iconLibrary: 'MaterialIcons' as const,
           type: 'navigation',
-          value: '1.0.0',
+          value: APP_VERSION,
         },
       ],
     },

@@ -25,6 +25,7 @@ import {API_BASE_URL} from '../../../constants/api.constants';
 import {SOCIAL_MEDIA} from '../../../components/Sidebar/helpers';
 import {SocialIcon} from '../../../components/Sidebar';
 import {sidebarStyle} from '../../../components/Sidebar/sidebarStyle';
+import {version as APP_VERSION} from '../../../../package.json';
 
 interface AboutScreenProps {
   onNavigateBack?: () => void;
@@ -44,8 +45,6 @@ const AboutScreen: React.FC<AboutScreenProps> = ({onNavigateBack}) => {
   const {data, loading} = useAboutPage();
 
   console.log('data about', data);
-
-  const APP_VERSION = '1.0.0';
 
   const renderPersonCard = (
     item: any,
