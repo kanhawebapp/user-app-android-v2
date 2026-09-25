@@ -345,3 +345,88 @@ export interface MajorDashaPeriod {
   start?: string;
   end?: string;
 }
+
+// ============================================
+// Kundli Dosha endpoints
+// https://json.astrologyapi.com/v1/manglik
+// https://json.astrologyapi.com/v1/kalsarpa_details
+// https://json.astrologyapi.com/v1/pitra_dosha_report
+// https://json.astrologyapi.com/v1/sadhesati_life_details
+// https://json.astrologyapi.com/v1/sadhesati_current_status
+//
+// All accept the same birth-details payload (AstrologyMuhurtaPayload).
+// ============================================
+
+/** Response from POST /v1/manglik (Manglik Dosha analysis). */
+export interface ManglikResponse {
+  is_present?: boolean;
+  /** e.g. 'EFFECTIVE' | 'LESS_EFFECTIVE'. */
+  manglik_status?: string;
+  percentage_manglik_present?: number | string;
+  percentage_manglik_after_cancellation?: number | string;
+  manglik_report?: string;
+  is_mars_manglik_cancelled?: boolean;
+  manglik_present_rule?: {
+    based_on_aspect?: string[];
+    based_on_house?: string[];
+  } | null;
+  manglik_cancel_rule?: string[];
+}
+
+/** Response from POST /v1/kalsarpa_details (Kaal Sarp Dosha analysis). */
+export interface KalsarpaResponse {
+  present?: boolean;
+  type?: string;
+  name?: string;
+  one_line?: string;
+  /** `report.report` is an HTML string rendered as paragraphs. */
+  report?: {
+    house_id?: number | string;
+    report?: string;
+  } | null;
+}
+
+/**
+ * Response from POST /v1/pitra_dosha_report (Pitra Dosha analysis).
+ * The API mostly returns `is_pitri_dosha_present`; both spellings are
+ * tolerated elsewhere.
+ */
+export interface PitraDoshaResponse {
+  is_pitri_dosha_present?: boolean;
+  is_pitra_dosha_present?: boolean;
+  rules_matched?: string[];
+  conclusion?: string;
+  remedies?: Array<string | Record<string, unknown>>;
+  effects?: Array<string | Record<string, unknown>>;
+  what_is_pitri_dosha?: string;
+}
+
+/** A single Sade Sati lifecycle event from POST /v1/sadhesati_life_details. */
+export interface SadhesatiLifeEvent {
+  moon_sign?: string;
+  saturn_sign?: string;
+  is_saturn_retrograde?: boolean;
+  /** One of SETTING_END | SETTING_START | PEAK_START | RISING_START | RISING_END. */
+  type?: string;
+  /** Epoch millisecond as a string. */
+  millisecond?: string | number;
+  /** dd-mm-yyyy. */
+  date?: string;
+  summary?: string;
+}
+
+/** POST /v1/sadhesati_life_details returns a chronological event array. */
+export type SadhesatiLifeDetailsResponse = SadhesatiLifeEvent[];
+
+/** Response from POST /v1/sadhesati_current_status. */
+export interface SadhesatiCurrentStatusResponse {
+  consideration_date?: string;
+  is_saturn_retrograde?: boolean;
+  moon_sign?: string;
+  saturn_sign?: string;
+  /** e.g. 'Yes, currently you are undergoing...'. */
+  is_undergoing_sadhesati?: string | boolean;
+  /** Whether Sade Sati is currently running. */
+  sadhesati_status?: boolean;
+  what_is_sadhesati?: string;
+}

@@ -17,8 +17,13 @@ import type {
   HoroscopeChartResponse,
   HoroscopeChartType,
   HoroscopeResponse,
+  KalsarpaResponse,
   MajorDashaPeriod,
+  ManglikResponse,
+  PitraDoshaResponse,
   PlanetPosition,
+  SadhesatiCurrentStatusResponse,
+  SadhesatiLifeDetailsResponse,
 } from './astrology.types';
 
 const ASTROLOGY_API_BASE_URL = 'https://json.astrologyapi.com';
@@ -321,4 +326,55 @@ export const getHoroscopeChart = async (
     });
     throw err;
   }
+};
+
+// ============================================
+// Kundli Dosha endpoints
+// https://json.astrologyapi.com/v1/manglik
+// https://json.astrologyapi.com/v1/kalsarpa_details
+// https://json.astrologyapi.com/v1/pitra_dosha_report
+// https://json.astrologyapi.com/v1/sadhesati_life_details
+// https://json.astrologyapi.com/v1/sadhesati_current_status
+//
+// All accept the same birth-details payload (day, month, year, hour, min,
+// lat, lon, tzone).
+// ============================================
+
+export const getManglik = async (
+  payload: AstrologyMuhurtaPayload,
+): Promise<ManglikResponse> => {
+  return requestAstrology<ManglikResponse>('/v1/manglik', payload);
+};
+
+export const getKalsarpaDetails = async (
+  payload: AstrologyMuhurtaPayload,
+): Promise<KalsarpaResponse> => {
+  return requestAstrology<KalsarpaResponse>('/v1/kalsarpa_details', payload);
+};
+
+export const getPitraDoshaReport = async (
+  payload: AstrologyMuhurtaPayload,
+): Promise<PitraDoshaResponse> => {
+  return requestAstrology<PitraDoshaResponse>(
+    '/v1/pitra_dosha_report',
+    payload,
+  );
+};
+
+export const getSadhesatiLifeDetails = async (
+  payload: AstrologyMuhurtaPayload,
+): Promise<SadhesatiLifeDetailsResponse> => {
+  return requestAstrology<SadhesatiLifeDetailsResponse>(
+    '/v1/sadhesati_life_details',
+    payload,
+  );
+};
+
+export const getSadhesatiCurrentStatus = async (
+  payload: AstrologyMuhurtaPayload,
+): Promise<SadhesatiCurrentStatusResponse> => {
+  return requestAstrology<SadhesatiCurrentStatusResponse>(
+    '/v1/sadhesati_current_status',
+    payload,
+  );
 };

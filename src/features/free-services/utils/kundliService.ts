@@ -197,6 +197,18 @@ export const isBirthChartCard = (name: string): boolean =>
 export const isGeneralLifePredictionCard = (name: string): boolean =>
   (name || '').toLowerCase().includes('life prediction');
 
+/** Returns true when the tapped kundli card opens the Kundli Dosha list. */
+export const isDoshaInKundliCard = (name: string): boolean =>
+  (name || '').toLowerCase().includes('dosha');
+
+/** The four dosha sections shown on the Kundli Dosha screen. */
+export const doshaCards: {name: string; named: string}[] = [
+  {name: 'Manglik Dosha', named: 'Check Manglik Dosha in your Kundli'},
+  {name: 'Kaal Sarp Dosha', named: 'Check Kaal Sarp Dosha in your Kundli'},
+  {name: 'Pitra Dosha', named: 'Check Pitra Dosha in your Kundli'},
+  {name: 'Sade Sati', named: 'How Sade Sati affects you?'},
+];
+
 /**
  * Builds the general_nakshatra_report request body from the birth details
  * already collected in the Kundli form payload, adding the gender.

@@ -3,6 +3,7 @@ import {useRoute, useNavigation} from '@react-navigation/native';
 import KundliCardsView from '../components/KundliCardsView';
 import {
   isBirthChartCard,
+  isDoshaInKundliCard,
   isGeneralLifePredictionCard,
 } from '../utils/kundliService';
 
@@ -24,6 +25,11 @@ const KundliCardsScreen = () => {
       });
     } else if (isGeneralLifePredictionCard(card?.name)) {
       navigation.navigate('GeneralLifePrediction', {
+        result,
+        serviceTitle,
+      });
+    } else if (isDoshaInKundliCard(card?.name)) {
+      navigation.navigate('KundliDosha', {
         result,
         serviceTitle,
       });

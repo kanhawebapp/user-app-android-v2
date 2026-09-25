@@ -94,6 +94,46 @@ const GeneralLifePredictionScreen = lazy(() =>
   })),
 );
 
+const KundliDoshaScreen = lazy(() =>
+  import('../../features/free-services/screens/KundliDoshaScreen').then(
+    module => ({
+      default: module.default,
+    }),
+  ),
+);
+
+const ManglikDoshaScreen = lazy(() =>
+  import('../../features/free-services/screens/ManglikDoshaScreen').then(
+    module => ({
+      default: module.default,
+    }),
+  ),
+);
+
+const KalsarpaDoshaScreen = lazy(() =>
+  import('../../features/free-services/screens/KalsarpaDoshaScreen').then(
+    module => ({
+      default: module.default,
+    }),
+  ),
+);
+
+const PitraDoshaScreen = lazy(() =>
+  import('../../features/free-services/screens/PitraDoshaScreen').then(
+    module => ({
+      default: module.default,
+    }),
+  ),
+);
+
+const SadeSatiScreen = lazy(() =>
+  import('../../features/free-services/screens/SadeSatiScreen').then(
+    module => ({
+      default: module.default,
+    }),
+  ),
+);
+
 const HoroscopeScreen = lazy(() =>
   import('../../features/horoscope/screens/ZodiacSelectionScreen').then(
     module => ({
@@ -151,6 +191,26 @@ export type RootStackParamList = {
     serviceTitle?: string;
   };
   GeneralLifePrediction: {
+    result?: any;
+    serviceTitle?: string;
+  };
+  KundliDosha: {
+    result?: any;
+    serviceTitle?: string;
+  };
+  ManglikDosha: {
+    result?: any;
+    serviceTitle?: string;
+  };
+  KalsarpaDosha: {
+    result?: any;
+    serviceTitle?: string;
+  };
+  PitraDosha: {
+    result?: any;
+    serviceTitle?: string;
+  };
+  SadeSati: {
     result?: any;
     serviceTitle?: string;
   };
@@ -483,6 +543,11 @@ const AnimatedAppContent: React.FC<AnimatedAppContentProps> = ({
             name="GeneralLifePrediction"
             component={GeneralLifePredictionScreen}
           />
+          <Stack.Screen name="KundliDosha" component={KundliDoshaScreen} />
+          <Stack.Screen name="ManglikDosha" component={ManglikDoshaScreen} />
+          <Stack.Screen name="KalsarpaDosha" component={KalsarpaDoshaScreen} />
+          <Stack.Screen name="PitraDosha" component={PitraDoshaScreen} />
+          <Stack.Screen name="SadeSati" component={SadeSatiScreen} />
           <Stack.Screen name="Horoscope" component={HoroscopeScreen} />
           <Stack.Screen
             name="HoroscopeDetails"
