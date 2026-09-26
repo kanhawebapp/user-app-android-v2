@@ -201,6 +201,17 @@ export const isGeneralLifePredictionCard = (name: string): boolean =>
 export const isDoshaInKundliCard = (name: string): boolean =>
   (name || '').toLowerCase().includes('dosha');
 
+/** Returns true when the tapped kundli card opens Match Making (Kundli Milan). */
+export const isMatchHoroscopeCard = (name: string): boolean => {
+  const normalized = (name || '').toLowerCase();
+  return (
+    normalized.includes('match') ||
+    normalized.includes('kundli milan') ||
+    normalized.includes('guna milan') ||
+    normalized.includes('ashtakoot')
+  );
+};
+
 /** The four dosha sections shown on the Kundli Dosha screen. */
 export const doshaCards: {name: string; named: string}[] = [
   {name: 'Manglik Dosha', named: 'Check Manglik Dosha in your Kundli'},

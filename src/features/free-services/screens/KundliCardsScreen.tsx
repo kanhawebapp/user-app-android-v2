@@ -5,6 +5,7 @@ import {
   isBirthChartCard,
   isDoshaInKundliCard,
   isGeneralLifePredictionCard,
+  isMatchHoroscopeCard,
 } from '../utils/kundliService';
 
 type KundliCardsRouteParams = {
@@ -28,6 +29,8 @@ const KundliCardsScreen = () => {
         result,
         serviceTitle,
       });
+    } else if (isMatchHoroscopeCard(card?.name)) {
+      navigation.navigate('MatchMaking');
     } else if (isDoshaInKundliCard(card?.name)) {
       navigation.navigate('KundliDosha', {
         result,

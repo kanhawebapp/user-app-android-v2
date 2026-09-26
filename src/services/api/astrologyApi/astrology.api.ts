@@ -20,6 +20,13 @@ import type {
   KalsarpaResponse,
   MajorDashaPeriod,
   ManglikResponse,
+  MatchAstroDetails,
+  MatchAshtakootPoints,
+  MatchMakingPayload,
+  MatchMakingReport,
+  MatchManglikReport,
+  MatchObstructions,
+  BirthPlace,
   PitraDoshaResponse,
   PlanetPosition,
   SadhesatiCurrentStatusResponse,
@@ -47,7 +54,11 @@ const buildFormBody = (payload: Record<string, unknown>) => {
   return params.toString();
 };
 
-const requestAstrology = async <T>(endpoint: string, payload: object) => {
+const requestAstrology = async <T>(
+  endpoint: string,
+  payload: object,
+  extraHeaders: Record<string, string> = {},
+) => {
   try {
     const response = await astrologyApiClient.request<T>({
       method: 'POST',
@@ -56,6 +67,7 @@ const requestAstrology = async <T>(endpoint: string, payload: object) => {
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+        ...extraHeaders,
       },
     });
 
@@ -117,6 +129,195 @@ export const geocodeAddress = async (
     display_name: firstResult.display_name,
     lat: firstResult.lat,
     lon: firstResult.lon,
+  };
+};
+
+// ============================================
+// Birth place resolution (latitude / longitude / timezone)
+//
+// Nominatim resolves the coordinates but does not return a timezone, so the
+// coordinates are looked up in a second, key-free reverse-timezone service.
+// Neither call sends credentials.
+// ============================================
+
+type ZonedDateParts = {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+};
+
+const getZonedDateParts = (
+  ianaTimezone: string,
+  date: Date,
+): ZonedDateParts | null => {
+  try {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: ianaTimezone,
+      hour12: false,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+
+    const partsFormatter = formatter as unknown as {
+      formatToParts?: (input: Date) => Array<{type: string; value: string}>;
+    };
+
+    if (typeof partsFormatter.formatToParts === 'function') {
+      const values: Record<string, string> = {};
+      partsFormatter.formatToParts(date).forEach(part => {
+        values[part.type] = part.value;
+      });
+
+      return {
+        year: Number(values.year),
+        month: Number(values.month),
+        day: Number(values.day),
+        // Intl can report hour 24 for midnight with hour12: false.
+        hour: Number(values.hour) % 24,
+        minute: Number(values.minute),
+        second: Number(values.second),
+      };
+    }
+
+    // Engines without formatToParts still produce a stable en-US string.
+    const match = /(\d+)\/(\d+)\/(\d+),?\s+(\d+):(\d+):(\d+)/.exec(
+      formatter.format(date),
+    );
+
+    if (!match) {
+      return null;
+    }
+
+    return {
+      month: Number(match[1]),
+      day: Number(match[2]),
+      year: Number(match[3]),
+      hour: Number(match[4]) % 24,
+      minute: Number(match[5]),
+      second: Number(match[6]),
+    };
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * UTC offset in hours of an IANA zone at a given instant, e.g. 5.5 for
+ * Asia/Kolkata. Returns null when the zone is unknown or Intl is missing.
+ */
+const getTimezoneOffsetHours = (
+  ianaTimezone: string,
+  at: Date,
+): number | null => {
+  const parts = getZonedDateParts(ianaTimezone, at);
+  if (!parts) {
+    return null;
+  }
+
+  // Reading the zone's wall clock as if it were UTC, then comparing it with the
+  // real instant, yields the zone's own offset — independent of the device's.
+  const wallClockAsUtc = Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute,
+    parts.second,
+  );
+
+  return Number(((wallClockAsUtc - at.getTime()) / 60000 / 60).toFixed(4));
+};
+
+interface TimezoneLookupResponse {
+  timezone?: string;
+  utc_offset_seconds?: number;
+}
+
+const lookupTimezoneForCoordinates = async (
+  lat: number,
+  lon: number,
+  at: Date,
+): Promise<{name: string | null; offsetHours: number}> => {
+  const url =
+    'https://api.open-meteo.com/v1/forecast?latitude=' +
+    lat +
+    '&longitude=' +
+    lon +
+    '&timezone=auto&current=temperature_2m';
+
+  const response = await axios.get<TimezoneLookupResponse>(url, {
+    timeout: 15000,
+  });
+
+  const name =
+    typeof response.data?.timezone === 'string' ? response.data.timezone : null;
+
+  if (name) {
+    // Prefer the historical offset for the birth moment, not "now".
+    const historical = getTimezoneOffsetHours(name, at);
+    if (historical !== null) {
+      return {name, offsetHours: historical};
+    }
+  }
+
+  // Used only when Intl cannot report the zone, e.g. an older JS engine.
+  const currentOffset = response.data?.utc_offset_seconds;
+  if (typeof currentOffset === 'number' && Number.isFinite(currentOffset)) {
+    return {name, offsetHours: Number((currentOffset / 3600).toFixed(4))};
+  }
+
+  throw new Error('No timezone found for the selected birth place.');
+};
+
+/**
+ * Resolves a selected place-of-birth into the values the astrology APIs need:
+ * latitude, longitude and the UTC offset in hours at `at` (the birth moment).
+ *
+ * Coordinates come from the same geocoder the rest of the Kundli flow uses.
+ * The timezone is required: falling back to the device's own offset would
+ * silently compute the chart for the wrong location, so a failed lookup is
+ * reported to the user instead.
+ */
+export const resolveBirthPlace = async (
+  address: string,
+  at: Date = new Date(),
+): Promise<BirthPlace> => {
+  const coords = await geocodeAddress(address);
+  const lat = Number(coords.lat);
+  const lon = Number(coords.lon);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    throw new Error('No coordinates found for the selected address.');
+  }
+
+  let lookup: {name: string | null; offsetHours: number};
+  try {
+    lookup = await lookupTimezoneForCoordinates(lat, lon, at);
+  } catch {
+    throw new Error(
+      'Unable to resolve the timezone of the selected birth place. Please check your connection and try again.',
+    );
+  }
+
+  if (!Number.isFinite(lookup.offsetHours)) {
+    throw new Error(
+      'Unable to resolve the timezone of the selected birth place. Please check your connection and try again.',
+    );
+  }
+
+  return {
+    place: coords.display_name,
+    lat,
+    lon,
+    timezone: lookup.offsetHours,
+    timezoneName: lookup.name,
   };
 };
 
@@ -375,6 +576,76 @@ export const getSadhesatiCurrentStatus = async (
 ): Promise<SadhesatiCurrentStatusResponse> => {
   return requestAstrology<SadhesatiCurrentStatusResponse>(
     '/v1/sadhesati_current_status',
+    payload,
+  );
+};
+
+// ============================================
+// Match Making (Kundli Milan) endpoints
+// https://json.astrologyapi.com/v1/match_making_report
+// https://json.astrologyapi.com/v1/match_manglik_report
+// https://json.astrologyapi.com/v1/match_astro_details
+// https://json.astrologyapi.com/v1/match_obstructions
+// https://json.astrologyapi.com/v1/match_ashtakoot_points
+//
+// All five accept the same two-person payload (MatchMakingPayload) and are
+// independent of each other, so the caller runs them in parallel.
+// ============================================
+
+/** The Match Making report text is always requested in English. */
+const MATCH_MAKING_HEADERS = {'Accept-Language': 'en'};
+
+const requestMatchMaking = <T>(
+  endpoint: string,
+  payload: MatchMakingPayload,
+): Promise<T> => requestAstrology<T>(endpoint, payload, MATCH_MAKING_HEADERS);
+
+/** POST /v1/match_making_report — overview flags and the match conclusion. */
+export const getMatchMakingReport = async (
+  payload: MatchMakingPayload,
+): Promise<MatchMakingReport> => {
+  return requestMatchMaking<MatchMakingReport>(
+    '/v1/match_making_report',
+    payload,
+  );
+};
+
+/** POST /v1/match_manglik_report — Manglik Dosha analysis of both parties. */
+export const getMatchManglikReport = async (
+  payload: MatchMakingPayload,
+): Promise<MatchManglikReport> => {
+  return requestMatchMaking<MatchManglikReport>(
+    '/v1/match_manglik_report',
+    payload,
+  );
+};
+
+/** POST /v1/match_astro_details — astro details of both parties. */
+export const getMatchAstroDetails = async (
+  payload: MatchMakingPayload,
+): Promise<MatchAstroDetails> => {
+  return requestMatchMaking<MatchAstroDetails>(
+    '/v1/match_astro_details',
+    payload,
+  );
+};
+
+/** POST /v1/match_obstructions — Vedha / other obstructions. */
+export const getMatchObstructions = async (
+  payload: MatchMakingPayload,
+): Promise<MatchObstructions> => {
+  return requestMatchMaking<MatchObstructions>(
+    '/v1/match_obstructions',
+    payload,
+  );
+};
+
+/** POST /v1/match_ashtakoot_points — the 8 Koota score sheet. */
+export const getMatchAshtakootPoints = async (
+  payload: MatchMakingPayload,
+): Promise<MatchAshtakootPoints> => {
+  return requestMatchMaking<MatchAshtakootPoints>(
+    '/v1/match_ashtakoot_points',
     payload,
   );
 };

@@ -430,3 +430,180 @@ export interface SadhesatiCurrentStatusResponse {
   sadhesati_status?: boolean;
   what_is_sadhesati?: string;
 }
+
+// ============================================
+// Match Making (Kundli Milan) endpoints
+// https://json.astrologyapi.com/v1/match_making_report
+// https://json.astrologyapi.com/v1/match_manglik_report
+// https://json.astrologyapi.com/v1/match_astro_details
+// https://json.astrologyapi.com/v1/match_obstructions
+// https://json.astrologyapi.com/v1/match_ashtakoot_points
+//
+// All five accept the same two-person payload (m_* for the male, f_* for the
+// female) and are meant to be requested in parallel.
+// ============================================
+
+/**
+ * A birth place resolved from the place-of-birth search: the display name
+ * plus the three values the Match Making API needs (lat / lon / timezone).
+ *
+ * The timezone is the UTC offset in hours at the birth moment, e.g. 5.5 for
+ * IST. It is derived from the place, never from the device.
+ */
+export interface BirthPlace {
+  /** Human readable place name (shown in the report header). */
+  place: string;
+  lat: number;
+  lon: number;
+  /** UTC offset in hours (e.g. 5.5 for IST, -5 for EST). */
+  timezone: number;
+  /** IANA timezone name when the lookup returned one, e.g. 'Asia/Kolkata'. */
+  timezoneName?: string | null;
+}
+
+/** Common request body shared by every match_making_* endpoint. */
+export interface MatchMakingPayload {
+  m_day: number;
+  m_month: number;
+  m_year: number;
+  m_hour: number;
+  m_min: number;
+  m_lat: number;
+  m_lon: number;
+  m_tzone: number;
+
+  f_day: number;
+  f_month: number;
+  f_year: number;
+  f_hour: number;
+  f_min: number;
+  f_lat: number;
+  f_lon: number;
+  f_tzone: number;
+}
+
+/**
+ * A status flag as returned by the match endpoints. The API documents these
+ * as `'Yes' | 'No' | '—'` but has also returned real booleans, so both are
+ * accepted and normalised for display.
+ */
+export type MatchStatusFlag = boolean | string | number | null;
+
+/** `ashtakoota` block of POST /v1/match_making_report. */
+export interface MatchAshtakootaSummary {
+  status?: MatchStatusFlag;
+  received_points?: number | string | null;
+  total_points?: number | string | null;
+}
+
+/** `manglik` block of POST /v1/match_making_report. */
+export interface MatchManglikSummary {
+  status?: MatchStatusFlag;
+  male_percentage?: number | string | null;
+  female_percentage?: number | string | null;
+}
+
+/** A simple present / absent flag block (rajju_dosha, vedha_dosha). */
+export interface MatchDoshaFlag {
+  status?: MatchStatusFlag;
+}
+
+/** Response from POST /v1/match_making_report (overview + conclusion). */
+export interface MatchMakingReport {
+  ashtakoota?: MatchAshtakootaSummary | null;
+  manglik?: MatchManglikSummary | null;
+  rajju_dosha?: MatchDoshaFlag | null;
+  vedha_dosha?: MatchDoshaFlag | null;
+  conclusion?: {
+    match_report?: string | null;
+  } | null;
+}
+
+/** Rules that make a party Manglik, grouped by aspect and by house. */
+export interface MatchManglikPresentRule {
+  based_on_aspect?: unknown[] | null;
+  based_on_house?: unknown[] | null;
+}
+
+/** Manglik analysis for one party of the match. */
+export interface MatchManglikAnalysis {
+  manglik_present_rule?: MatchManglikPresentRule | null;
+  manglik_cancel_rule?: unknown[] | null;
+  is_mars_manglik_cancelled?: boolean | null;
+  /** e.g. 'EFFECTIVE' | 'LESS_EFFECTIVE'. */
+  manglik_status?: string | null;
+  percentage_manglik_present?: number | string | null;
+  percentage_manglik_after_cancellation?: number | string | null;
+  manglik_report?: string | null;
+  is_present?: boolean | null;
+}
+
+/** Manglik analysis of the male of the match. */
+export type MaleManglikAnalysis = MatchManglikAnalysis;
+
+/** Manglik analysis of the female of the match. */
+export type FemaleManglikAnalysis = MatchManglikAnalysis;
+
+/** Response from POST /v1/match_manglik_report. */
+export interface MatchManglikReport {
+  male?: MaleManglikAnalysis | null;
+  female?: FemaleManglikAnalysis | null;
+  conclusion?: {
+    match?: boolean | null;
+    report?: string | null;
+  } | null;
+}
+
+/**
+ * Per-party astrological birth details in a match report. Reuses the
+ * /v1/astro_details shape, and tolerates the two nakshatra spellings the API
+ * has used (`Naksahtra` and `Nakshatra`).
+ */
+export interface MatchAstroPartyDetails extends AstroDetailsResponse {
+  Nakshatra?: string;
+  NakshatraLord?: string;
+}
+
+/** Response from POST /v1/match_astro_details. */
+export interface MatchAstroDetails {
+  male_astro_details?: MatchAstroPartyDetails | null;
+  female_astro_details?: MatchAstroPartyDetails | null;
+}
+
+/** Response from POST /v1/match_obstructions (Vedha / obstructions). */
+export interface MatchObstructions {
+  is_present?: boolean | null;
+  vedha_report?: string | null;
+  /** Either the vedha name (string) or a plain boolean flag. */
+  vedha_name?: string | boolean | null;
+}
+
+/** A single Koota (Gun) of the Ashtakoota Milan score sheet. */
+export interface Koota {
+  description?: string | null;
+  male_koot_attribute?: string | null;
+  female_koot_attribute?: string | null;
+  total_points?: number | null;
+  received_points?: number | null;
+}
+
+/** Response from POST /v1/match_ashtakoot_points. */
+export interface MatchAshtakootPoints {
+  varna?: Koota | null;
+  vashya?: Koota | null;
+  tara?: Koota | null;
+  yoni?: Koota | null;
+  maitri?: Koota | null;
+  gan?: Koota | null;
+  bhakut?: Koota | null;
+  nadi?: Koota | null;
+  total?: {
+    total_points?: number | null;
+    received_points?: number | null;
+    minimum_required?: number | null;
+  } | null;
+  conclusion?: {
+    status?: MatchStatusFlag;
+    report?: string | null;
+  } | null;
+}

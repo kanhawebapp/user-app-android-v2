@@ -6,10 +6,20 @@ import {
   getBirthDetails,
   getHoroscopeChart,
   getMajorVdasha,
+  getMatchAshtakootPoints,
+  getMatchAstroDetails,
+  getMatchMakingReport,
+  getMatchManglikReport,
+  getMatchObstructions,
   getPlanets,
   normalizeHoroscopeChartResponse,
+  resolveBirthPlace,
 } from '../src/services/api/astrologyApi/astrology.api';
-import type {AstrologyMuhurtaPayload, HoroscopeChartPayload} from '../src/services/api/astrologyApi/astrology.types';
+import type {
+  AstrologyMuhurtaPayload,
+  HoroscopeChartPayload,
+  MatchMakingPayload,
+} from '../src/services/api/astrologyApi/astrology.types';
 
 jest.mock('axios', () => ({
   create: jest.fn(() => ({
@@ -184,6 +194,198 @@ describe('Kundli (Birth Chart) endpoints', () => {
 
     await expect(getPlanets(BASIC_PAYLOAD)).rejects.toThrow(
       'Astrology API request failed',
+    );
+  });
+});
+
+describe('Match Making (Kundli Milan) endpoints', () => {
+  const MATCH_PAYLOAD: MatchMakingPayload = {
+    m_day: 10,
+    m_month: 5,
+    m_year: 1990,
+    m_hour: 21,
+    m_min: 30,
+    m_lat: 28.6139,
+    m_lon: 77.209,
+    m_tzone: 5.5,
+    f_day: 22,
+    f_month: 11,
+    f_year: 1992,
+    f_hour: 6,
+    f_min: 15,
+    f_lat: 19.076,
+    f_lon: 72.8777,
+    f_tzone: 5.5,
+  };
+
+  const callExpectations: {
+    name: string;
+    run: () => Promise<unknown>;
+    url: string;
+  }[] = [
+    {
+      name: 'getMatchMakingReport',
+      run: () => getMatchMakingReport(MATCH_PAYLOAD),
+      url: '/v1/match_making_report',
+    },
+    {
+      name: 'getMatchManglikReport',
+      run: () => getMatchManglikReport(MATCH_PAYLOAD),
+      url: '/v1/match_manglik_report',
+    },
+    {
+      name: 'getMatchAstroDetails',
+      run: () => getMatchAstroDetails(MATCH_PAYLOAD),
+      url: '/v1/match_astro_details',
+    },
+    {
+      name: 'getMatchObstructions',
+      run: () => getMatchObstructions(MATCH_PAYLOAD),
+      url: '/v1/match_obstructions',
+    },
+    {
+      name: 'getMatchAshtakootPoints',
+      run: () => getMatchAshtakootPoints(MATCH_PAYLOAD),
+      url: '/v1/match_ashtakoot_points',
+    },
+  ];
+
+  it.each(callExpectations)(
+    '$name posts the shared payload to $url and returns the response',
+    async ({run, url}) => {
+      getRequestMock().mockResolvedValueOnce({data: {ok: true}});
+
+      const result = await run();
+
+      expect(getRequestMock()).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'POST',
+          url,
+          data: expect.stringContaining('m_day=10'),
+        }),
+      );
+      expect(result).toEqual({ok: true});
+    },
+  );
+
+  it.each(callExpectations)(
+    '$name requests the report in English',
+    async ({run}) => {
+      getRequestMock().mockResolvedValueOnce({data: {}});
+
+      await run();
+
+      expect(getRequestMock()).toHaveBeenCalledWith(
+        expect.objectContaining({
+          headers: expect.objectContaining({'Accept-Language': 'en'}),
+        }),
+      );
+    },
+  );
+
+  it('throws a formatted error when a match request fails', async () => {
+    getRequestMock().mockRejectedValueOnce({
+      response: {status: 500, data: 'Server exploded'},
+    });
+
+    await expect(getMatchMakingReport(MATCH_PAYLOAD)).rejects.toThrow(
+      'Astrology API request failed',
+    );
+  });
+});
+
+describe('resolveBirthPlace', () => {
+  const mockGeocode = (response: unknown) => {
+    (axios.get as jest.Mock).mockResolvedValueOnce({data: response});
+  };
+
+  beforeEach(() => {
+    (axios.get as jest.Mock).mockReset();
+  });
+
+  it('geocodes the place and derives the offset for the birth moment', async () => {
+    // Asia/Kolkata has been UTC+5:30 with no daylight saving since 1945.
+    mockGeocode([
+      {
+        lat: '28.6139',
+        lon: '77.209',
+        display_name: 'Delhi, India',
+      },
+    ]);
+    mockGeocode({timezone: 'Asia/Kolkata', utc_offset_seconds: 19800});
+
+    const place = await resolveBirthPlace(
+      'Delhi',
+      new Date(1990, 4, 10, 21, 30),
+    );
+
+    expect(place).toEqual({
+      place: 'Delhi, India',
+      lat: 28.6139,
+      lon: 77.209,
+      timezone: 5.5,
+      timezoneName: 'Asia/Kolkata',
+    });
+  });
+
+  it('queries the timezone of the resolved coordinates', async () => {
+    mockGeocode([{lat: '19.076', lon: '72.8777', display_name: 'Mumbai'}]);
+    mockGeocode({timezone: 'Asia/Kolkata'});
+
+    await resolveBirthPlace('Mumbai', new Date(1992, 10, 22, 6, 15));
+
+    expect(axios.get).toHaveBeenLastCalledWith(
+      expect.stringContaining('latitude=19.076'),
+      expect.anything(),
+    );
+  });
+
+  it('rejects when the place has no coordinates', async () => {
+    mockGeocode([{lat: 'not-a-number', lon: 'nope', display_name: 'Nowhere'}]);
+
+    await expect(resolveBirthPlace('Nowhere')).rejects.toThrow(
+      'No coordinates found for the selected address.',
+    );
+  });
+
+  it('fails instead of falling back to the device timezone', async () => {
+    mockGeocode([{lat: '28.6139', lon: '77.209', display_name: 'Delhi'}]);
+    (axios.get as jest.Mock).mockRejectedValueOnce(new Error('offline'));
+
+    await expect(resolveBirthPlace('Delhi')).rejects.toThrow(
+      'Unable to resolve the timezone of the selected birth place.',
+    );
+  });
+
+  it('uses the offset in force at the birth moment, not the current one', async () => {
+    // London was UTC+0 in January 1990 and UTC+1 (BST) in July 1990, and the
+    // device running this test is on UTC+5:30, so a device-derived offset
+    // could not produce either value.
+    mockGeocode([{lat: '51.5074', lon: '-0.1278', display_name: 'London'}]);
+
+    mockGeocode({timezone: 'Europe/London', utc_offset_seconds: 0});
+    const winter = await resolveBirthPlace(
+      'London',
+      new Date(1990, 0, 15, 12, 0),
+    );
+
+    mockGeocode([{lat: '51.5074', lon: '-0.1278', display_name: 'London'}]);
+    mockGeocode({timezone: 'Europe/London', utc_offset_seconds: 3600});
+    const summer = await resolveBirthPlace(
+      'London',
+      new Date(1990, 6, 15, 12, 0),
+    );
+
+    expect(winter.timezone).toBe(0);
+    expect(summer.timezone).toBe(1);
+  });
+
+  it('fails when the timezone lookup returns nothing usable', async () => {
+    mockGeocode([{lat: '28.6139', lon: '77.209', display_name: 'Delhi'}]);
+    mockGeocode({});
+
+    await expect(resolveBirthPlace('Delhi')).rejects.toThrow(
+      'Unable to resolve the timezone of the selected birth place.',
     );
   });
 });

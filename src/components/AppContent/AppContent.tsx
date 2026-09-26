@@ -134,6 +134,22 @@ const SadeSatiScreen = lazy(() =>
   ),
 );
 
+const MatchMakingScreen = lazy(() =>
+  import('../../features/free-services/screens/MatchMakingScreen').then(
+    module => ({
+      default: module.default,
+    }),
+  ),
+);
+
+const MatchMakingReportScreen = lazy(() =>
+  import('../../features/free-services/screens/MatchMakingReportScreen').then(
+    module => ({
+      default: module.default,
+    }),
+  ),
+);
+
 const HoroscopeScreen = lazy(() =>
   import('../../features/horoscope/screens/ZodiacSelectionScreen').then(
     module => ({
@@ -213,6 +229,11 @@ export type RootStackParamList = {
   SadeSati: {
     result?: any;
     serviceTitle?: string;
+  };
+  MatchMaking: undefined;
+  MatchMakingReport: {
+    payload?: import('../../services/api/astrologyApi/astrology.types').MatchMakingPayload;
+    bundle?: import('../../features/free-services/utils/matchMaking').MatchMakingBundle;
   };
 };
 
@@ -548,6 +569,11 @@ const AnimatedAppContent: React.FC<AnimatedAppContentProps> = ({
           <Stack.Screen name="KalsarpaDosha" component={KalsarpaDoshaScreen} />
           <Stack.Screen name="PitraDosha" component={PitraDoshaScreen} />
           <Stack.Screen name="SadeSati" component={SadeSatiScreen} />
+          <Stack.Screen name="MatchMaking" component={MatchMakingScreen} />
+          <Stack.Screen
+            name="MatchMakingReport"
+            component={MatchMakingReportScreen}
+          />
           <Stack.Screen name="Horoscope" component={HoroscopeScreen} />
           <Stack.Screen
             name="HoroscopeDetails"

@@ -9,3 +9,5 @@ export {default as ManglikDoshaScreen} from './screens/ManglikDoshaScreen';
 export {default as KalsarpaDoshaScreen} from './screens/KalsarpaDoshaScreen';
 export {default as PitraDoshaScreen} from './screens/PitraDoshaScreen';
 export {default as SadeSatiScreen} from './screens/SadeSatiScreen';
+export {default as MatchMakingScreen} from './screens/MatchMakingScreen';
+export {default as MatchMakingReportScreen} from './screens/MatchMakingReportScreen';
