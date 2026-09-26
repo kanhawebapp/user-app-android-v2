@@ -15,7 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {Icon} from '../../../components/Icon';
 import {Text} from '../../../components/Text';
@@ -27,6 +27,7 @@ import {useToast} from '../../../context/ToastContext';
 import {resolveBirthPlace} from '../../../services/api/astrologyApi/astrology.api';
 import type {MatchMakingPayload} from '../../../services/api/astrologyApi/astrology.types';
 import {useTheme} from '../../../theme';
+import {renderHeader} from './KundliDoshaView';
 import {cacheMatchMakingBundle} from '../hooks/useMatchMaking';
 import {
   MATCH_MAKING_FORM_TITLE,
@@ -78,7 +79,6 @@ const MatchMakingFormView: React.FC<MatchMakingFormViewProps> = ({
 }) => {
   const theme = useTheme();
   const colors = theme.colors;
-  const insets = useSafeAreaInsets();
   const {showError} = useToast();
 
   const [values, setValues] = useState<MatchFormValues>(
@@ -235,32 +235,12 @@ const MatchMakingFormView: React.FC<MatchMakingFormViewProps> = ({
   };
 
   return (
-    <View
+    <SafeAreaView
       style={[styles.container, {backgroundColor: colors.background.primary}]}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Icon
-            name="arrow-back"
-            size={22}
-            color={colors.text.primary}
-            library="MaterialIcons"
-          />
-        </TouchableOpacity>
-        <View style={styles.headerTitleWrap}>
-          <Text
-            variant="h6"
-            weight="bold"
-            style={{color: colors.text.primary, flex: 1}}>
-            {MATCH_MAKING_FORM_TITLE}
-          </Text>
-        </View>
-      </View>
+      {renderHeader(onBack, MATCH_MAKING_FORM_TITLE, colors, false)}
 
       <ScrollView
-        contentContainerStyle={[
-          styles.content,
-          {paddingBottom: insets.bottom + 32},
-        ]}
+        contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled">
         <Text
@@ -330,7 +310,7 @@ const MatchMakingFormView: React.FC<MatchMakingFormViewProps> = ({
           )}
         </TouchableOpacity>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -340,22 +320,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
-  },
-  backButton: {
-    padding: 8,
-    marginRight: 8,
-  },
-  headerTitleWrap: {
-    flex: 1,
-  },
   content: {
     padding: 16,
+    paddingBottom: 32,
   },
   sectionCard: {
     borderRadius: 16,

@@ -54,7 +54,7 @@ const MatchAstroDetailsCard: React.FC<MatchAstroDetailsCardProps> = ({
               ]}>
               <Text
                 variant="bodySmall"
-                style={{color: colors.text.tertiary, flex: 1}}>
+                style={{color: colors.text.tertiary,}}>
                 {item.label}
               </Text>
               <Text

@@ -264,7 +264,7 @@ const KundliDoshaView: React.FC<KundliDoshaViewProps> = ({
   );
 };
 
-const renderHeader = (
+export const renderHeader = (
   onBack: () => void,
   serviceTitle: string | undefined,
   colors: any,

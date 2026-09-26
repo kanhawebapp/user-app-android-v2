@@ -9,7 +9,7 @@
 
 import React, {useMemo} from 'react';
 import {ScrollView, StyleSheet, TouchableOpacity, View} from 'react-native';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {Card} from '../../../components/Card';
 import {Icon} from '../../../components/Icon';
@@ -29,6 +29,7 @@ import {
   type MatchMakingSection,
   type MatchPartySummary,
 } from '../utils/matchMaking';
+import {renderHeader} from './KundliDoshaView';
 import DoshaReportSection from './DoshaReportSection';
 import KootaCard from './KootaCard';
 import ManglikMatchCard from './ManglikMatchCard';
@@ -135,7 +136,6 @@ const MatchMakingReportView: React.FC<MatchMakingReportViewProps> = ({
 }) => {
   const theme = useTheme();
   const colors = theme.colors;
-  const insets = useSafeAreaInsets();
 
   const parties = useMemo(() => {
     if (bundle?.parties) {
@@ -655,33 +655,16 @@ const MatchMakingReportView: React.FC<MatchMakingReportViewProps> = ({
   };
 
   return (
-    <View
+    <SafeAreaView
       style={[styles.container, {backgroundColor: colors.background.primary}]}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Icon
-            name="arrow-back"
-            size={22}
-            color={colors.text.primary}
-            library="MaterialIcons"
-          />
-        </TouchableOpacity>
-        <View style={styles.headerTitleWrap}>
-          <Text variant="h6" weight="bold" style={{color: colors.text.primary}}>
-            {MATCH_MAKING_REPORT_TITLE}
-          </Text>
-        </View>
-      </View>
+      {renderHeader(onBack, MATCH_MAKING_REPORT_TITLE, colors, false)}
 
       <ScrollView
-        contentContainerStyle={[
-          styles.content,
-          {paddingBottom: insets.bottom + 32},
-        ]}
+        contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}>
         {renderContent()}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -691,22 +674,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
-  },
-  backButton: {
-    padding: 8,
-    marginRight: 8,
-  },
-  headerTitleWrap: {
-    flex: 1,
-  },
   content: {
     padding: 16,
+    paddingBottom: 32,
   },
   card: {
     marginBottom: 14,
