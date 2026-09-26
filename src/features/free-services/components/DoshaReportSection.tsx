@@ -72,7 +72,7 @@ const DoshaReportSection: React.FC<DoshaReportSectionProps> = ({
               <Text
                 variant="bodySmall"
                 lineHeight={22}
-                style={{color: colors.text.primary, flex: 1}}>
+                style={{color: colors.text.primary, }}>
                 {item}
               </Text>
             </View>

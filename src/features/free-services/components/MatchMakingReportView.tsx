@@ -589,10 +589,12 @@ const MatchMakingReportView: React.FC<MatchMakingReportViewProps> = ({
         />
         <MatchAstroDetailsCard
           title="Male's Astrological Details"
+          icon="person"
           items={astro.male}
         />
         <MatchAstroDetailsCard
           title="Female's Astrological Details"
+          icon="person-outline"
           items={astro.female}
         />
       </View>
