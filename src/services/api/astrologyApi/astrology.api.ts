@@ -26,6 +26,10 @@ import type {
   MatchMakingReport,
   MatchManglikReport,
   MatchObstructions,
+  NumeroPredictionResponse,
+  NumeroRequestPayload,
+  NumeroTableResponse,
+  NumeroTitleDescriptionResponse,
   BirthPlace,
   PitraDoshaResponse,
   PlanetPosition,
@@ -43,6 +47,18 @@ const getAuthorizationHeader = () => {
 
   return `Basic ${encodedCredentials}`;
 };
+
+/**
+ * All numerlogy endpoints are always requested in English, mirroring the
+ * match-making endpoints that also force `Accept-Language: en`.
+ */
+const NUMERO_HEADERS = {'Accept-Language': 'en'};
+
+/** Numerology-specific wrapper that forces the English Accept-Language header. */
+const requestNumero = <T>(
+  endpoint: string,
+  payload: NumeroRequestPayload,
+): Promise<T> => requestAstrology<T>(endpoint, payload, NUMERO_HEADERS);
 
 const buildFormBody = (payload: Record<string, unknown>) => {
   const params = new URLSearchParams();
@@ -646,6 +662,98 @@ export const getMatchAshtakootPoints = async (
 ): Promise<MatchAshtakootPoints> => {
   return requestMatchMaking<MatchAshtakootPoints>(
     '/v1/match_ashtakoot_points',
+    payload,
+  );
+};
+
+// ============================================
+// Numerology endpoints
+// https://json.astrologyapi.com/v1/numero_prediction/daily
+// https://json.astrologyapi.com/v1/numero_table
+// https://json.astrologyapi.com/v1/numero_report
+// https://json.astrologyapi.com/v1/numero_fav_time
+// https://json.astrologyapi.com/v1/numero_place_vastu
+// https://json.astrologyapi.com/v1/numero_fasts_report
+// https://json.astrologyapi.com/v1/numero_fav_lord
+// https://json.astrologyapi.com/v1/numero_fav_mantra
+//
+// All accept the same {name, day, month, year} payload and are independent, so
+// the caller fetches them in parallel.
+// ============================================
+
+/** POST /v1/numero_prediction/daily — today's prediction + lucky color/number. */
+export const getNumeroPredictionDaily = async (
+  payload: NumeroRequestPayload,
+): Promise<NumeroPredictionResponse> => {
+  return requestNumero<NumeroPredictionResponse>(
+    '/v1/numero_prediction/daily',
+    payload,
+  );
+};
+
+/** POST /v1/numero_table — core numbers and favourite attributes. */
+export const getNumeroTable = async (
+  payload: NumeroRequestPayload,
+): Promise<NumeroTableResponse> => {
+  return requestNumero<NumeroTableResponse>('/v1/numero_table', payload);
+};
+
+/** POST /v1/numero_report — "What the Number Says About You". */
+export const getNumeroReport = async (
+  payload: NumeroRequestPayload,
+): Promise<NumeroTitleDescriptionResponse> => {
+  return requestNumero<NumeroTitleDescriptionResponse>(
+    '/v1/numero_report',
+    payload,
+  );
+};
+
+/** POST /v1/numero_fav_time — favourable time for the number. */
+export const getNumeroFavTime = async (
+  payload: NumeroRequestPayload,
+): Promise<NumeroTitleDescriptionResponse> => {
+  return requestNumero<NumeroTitleDescriptionResponse>(
+    '/v1/numero_fav_time',
+    payload,
+  );
+};
+
+/** POST /v1/numero_place_vastu — favourable place / vastu direction. */
+export const getNumeroPlaceVastu = async (
+  payload: NumeroRequestPayload,
+): Promise<NumeroTitleDescriptionResponse> => {
+  return requestNumero<NumeroTitleDescriptionResponse>(
+    '/v1/numero_place_vastu',
+    payload,
+  );
+};
+
+/** POST /v1/numero_fasts_report — fast / vrata guidance. */
+export const getNumeroFastsReport = async (
+  payload: NumeroRequestPayload,
+): Promise<NumeroTitleDescriptionResponse> => {
+  return requestNumero<NumeroTitleDescriptionResponse>(
+    '/v1/numero_fasts_report',
+    payload,
+  );
+};
+
+/** POST /v1/numero_fav_lord — favourable lord / deity to worship. */
+export const getNumeroFavLord = async (
+  payload: NumeroRequestPayload,
+): Promise<NumeroTitleDescriptionResponse> => {
+  return requestNumero<NumeroTitleDescriptionResponse>(
+    '/v1/numero_fav_lord',
+    payload,
+  );
+};
+
+/** POST /v1/numero_fav_mantra — favourable Gayatri mantra. */
+export const getNumeroFavMantra = async (
+  payload: NumeroRequestPayload,
+): Promise<NumeroTitleDescriptionResponse> => {
+  return requestNumero<NumeroTitleDescriptionResponse>(
+    '/v1/numero_fav_mantra',
     payload,
   );
 };

@@ -94,6 +94,14 @@ const GeneralLifePredictionScreen = lazy(() =>
   })),
 );
 
+const NumerologyScreen = lazy(() =>
+  import('../../features/free-services/screens/NumerologyScreen').then(
+    module => ({
+      default: module.default,
+    }),
+  ),
+);
+
 const KundliDoshaScreen = lazy(() =>
   import('../../features/free-services/screens/KundliDoshaScreen').then(
     module => ({
@@ -207,6 +215,10 @@ export type RootStackParamList = {
     serviceTitle?: string;
   };
   GeneralLifePrediction: {
+    result?: any;
+    serviceTitle?: string;
+  };
+  Numerology: {
     result?: any;
     serviceTitle?: string;
   };
@@ -564,6 +576,7 @@ const AnimatedAppContent: React.FC<AnimatedAppContentProps> = ({
             name="GeneralLifePrediction"
             component={GeneralLifePredictionScreen}
           />
+          <Stack.Screen name="Numerology" component={NumerologyScreen} />
           <Stack.Screen name="KundliDosha" component={KundliDoshaScreen} />
           <Stack.Screen name="ManglikDosha" component={ManglikDoshaScreen} />
           <Stack.Screen name="KalsarpaDosha" component={KalsarpaDoshaScreen} />

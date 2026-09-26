@@ -5,6 +5,7 @@ import type {
   GeneralNakshatraReportPayload,
   HoroscopeChartPayload,
   HoroscopeChartType,
+  NumeroRequestPayload,
 } from '../../../services/api/astrologyApi/astrology.types';
 
 export interface KundliCard {
@@ -197,9 +198,9 @@ export const isBirthChartCard = (name: string): boolean =>
 export const isGeneralLifePredictionCard = (name: string): boolean =>
   (name || '').toLowerCase().includes('life prediction');
 
-/** Returns true when the tapped kundli card opens the Kundli Dosha list. */
-export const isDoshaInKundliCard = (name: string): boolean =>
-  (name || '').toLowerCase().includes('dosha');
+/** Returns true when the tapped kundli card is the "Numerology" card. */
+export const isNumerologyCard = (name: string): boolean =>
+  (name || '').toLowerCase().includes('numerology');
 
 /** Returns true when the tapped kundli card opens Match Making (Kundli Milan). */
 export const isMatchHoroscopeCard = (name: string): boolean => {
@@ -219,6 +220,78 @@ export const doshaCards: {name: string; named: string}[] = [
   {name: 'Pitra Dosha', named: 'Check Pitra Dosha in your Kundli'},
   {name: 'Sade Sati', named: 'How Sade Sati affects you?'},
 ];
+
+/**
+ * Builds the numerology request body from the birth details already collected
+ * in the Kundli form payload. Numerology only needs the name + DOB day/month/year.
+ */
+export const buildNumeroPayload = (
+  birthPayload: any,
+  name?: string,
+): NumeroRequestPayload => ({
+  name: (name || '').trim(),
+  day: toBirthNumber(birthPayload?.day),
+  month: toBirthNumber(birthPayload?.month),
+  year: toBirthNumber(birthPayload?.year),
+});
+
+/**
+ * Extracts the user's name + day/month/year from the Kundli result, falling
+ * back to the authenticated user's stored profile (user.name + dateOfBirth)
+ * when the result does not carry them. Returns null when nothing usable was
+ * found so the hook/view can render a "missing data" state.
+ */
+export const resolveNumeroInput = (
+  result: any,
+  user?: {name?: string; dateOfBirth?: string} | null,
+): NumeroRequestPayload | null => {
+  // Name: prefer the Kundli result's name, falling back to the authenticated
+  // user's stored profile name when it is absent/blank.
+  const name = (result?.name as string | undefined) || user?.name || '';
+  const payload = result?.payload;
+
+  if (payload?.day != null && payload?.month != null && payload?.year != null) {
+    return buildNumeroPayload(payload, name);
+  }
+
+  if (user?.dateOfBirth) {
+    const parsed = parseISODateParts(user.dateOfBirth);
+    if (parsed) {
+      return buildNumeroPayload(parsed, name);
+    }
+  }
+
+  return null;
+};
+
+/**
+ * Parses a `YYYY-MM-DD` (or `DD-MM-YYYY`) birth date string into day/month/year
+ * numbers. Returns null when the value can't be parsed.
+ */
+const parseISODateParts = (
+  value?: string,
+): {day: number; month: number; year: number} | null => {
+  if (!value) {
+    return null;
+  }
+  const isoMatch = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    return {
+      year: Number(isoMatch[1]),
+      month: Number(isoMatch[2]),
+      day: Number(isoMatch[3]),
+    };
+  }
+  const dmyMatch = String(value).match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  if (dmyMatch) {
+    return {
+      day: Number(dmyMatch[1]),
+      month: Number(dmyMatch[2]),
+      year: Number(dmyMatch[3]),
+    };
+  }
+  return null;
+};
 
 /**
  * Builds the general_nakshatra_report request body from the birth details

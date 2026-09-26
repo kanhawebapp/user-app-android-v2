@@ -607,3 +607,67 @@ export interface MatchAshtakootPoints {
     report?: string | null;
   } | null;
 }
+
+// ============================================
+// Numerology endpoints
+// https://json.astrologyapi.com/v1/numero_prediction/daily
+// https://json.astrologyapi.com/v1/numero_table
+// https://json.astrologyapi.com/v1/numero_report
+// https://json.astrologyapi.com/v1/numero_fav_time
+// https://json.astrologyapi.com/v1/numero_place_vastu
+// https://json.astrologyapi.com/v1/numero_fasts_report
+// https://json.astrologyapi.com/v1/numero_fav_lord
+// https://json.astrologyapi.com/v1/numero_fav_mantra
+//
+// Every endpoint accepts the same minimal birth-details payload (name + day/month/year)
+// and is independent of the others, so the caller fetches them in parallel.
+// The report-style endpoints (report, fav_time, place_vastu, fasts_report, fav_lord,
+// fav_mantra) all share the same `{title, description}` response shape.
+// ============================================
+
+/** Common request body shared by every numerlogy endpoint (name + DOB day/month/year). */
+export interface NumeroRequestPayload {
+  name: string;
+  day: number;
+  month: number;
+  year: number;
+}
+
+/** Response from POST /v1/numero_prediction/daily. */
+export interface NumeroPredictionResponse {
+  prediction?: string;
+  lucky_color?: string;
+  lucky_number?: string;
+  prediction_date?: string;
+}
+
+/** Response from POST /v1/numero_table. */
+export interface NumeroTableResponse {
+  name?: string;
+  date?: string;
+  destiny_number?: number | string;
+  radical_number?: number | string;
+  name_number?: number | string;
+  evil_num?: string;
+  fav_color?: string;
+  fav_day?: string;
+  fav_god?: string;
+  fav_mantra?: string;
+  fav_metal?: string;
+  fav_stone?: string;
+  fav_substone?: string;
+  friendly_num?: string;
+  neutral_num?: string;
+  radical_num?: string;
+  radical_ruler?: string;
+}
+
+/**
+ * Shared response shape for the six report-style numerology endpoints
+ * (numero_report, numero_fav_time, numero_place_vastu, numero_fasts_report,
+ * numero_fav_lord, numero_fav_mantra). Each returns a title + description.
+ */
+export interface NumeroTitleDescriptionResponse {
+  title?: string;
+  description?: string;
+}
