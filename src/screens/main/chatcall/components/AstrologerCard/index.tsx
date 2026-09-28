@@ -74,7 +74,6 @@ export const AstrologerCard: React.FC<AstrologerCardProps> = ({
 
   // const isOnline = availability === 'online';
   // const isBusy = availability === 'busy' || availability === 'on_call';
-  // console.log("astrologerastrologer", astrologer)
   const {
     status,
     color: indicatorColor,
@@ -88,11 +87,11 @@ export const AstrologerCard: React.FC<AstrologerCardProps> = ({
 
   // const canTakeConsultation = isOnline && !isBusy;
 
-  const profileImage = astrologer.image
+  const profileImage = astrologer.profilePic
     ? {
-      uri: astrologer.image.startsWith('http')
-        ? astrologer.image
-        : `${API_BASE_URL.DEVELOPMENT}${astrologer.image}`,
+      uri: astrologer.profilePic.startsWith('http')
+        ? astrologer.profilePic
+        : `${API_BASE_URL.DEVELOPMENT}${astrologer.profilePic}`,
     }
     : images.Logo;
 

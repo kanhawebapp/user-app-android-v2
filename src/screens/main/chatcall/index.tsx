@@ -48,6 +48,7 @@ const ChatCallScreen: React.FC<ChatCallScreenProps> = ({
         languages: item.languages || [],
         skills: item.skills || [],
         image: item.profilePic,
+        profilePic: item.profilePic,
         availability: 'online',
         // isAvailableForChat: true,
         // isAvailableForCall: true,

@@ -31,6 +31,7 @@ export interface Astrologer {
   languages: string[];
   skills: string[];
   image: string;
+  profilePic:string;
 
   availability: string;
   isAvailableForChat: boolean;

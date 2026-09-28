@@ -24,9 +24,9 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
   const [imageError, setImageError] = useState(false);
 
   const getImageSource = () => {
-    if (astrologer?.image && !imageError) {
+    if (astrologer?.profilePic && !imageError) {
       return {
-        uri: `${API_BASE_URL.DEVELOPMENT}${astrologer.image}`,
+        uri: `${API_BASE_URL.DEVELOPMENT}${astrologer.profilePic}`,
       };
     }
     return require('../../../../assets/images/Logo.png');
