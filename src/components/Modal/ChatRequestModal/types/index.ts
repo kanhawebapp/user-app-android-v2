@@ -20,6 +20,7 @@ export interface Astrologer {
   name: string;
   displayName?: string;
   profilePic?: string;
+  image:string;
   rating?: number;
   price?: number;
 }
