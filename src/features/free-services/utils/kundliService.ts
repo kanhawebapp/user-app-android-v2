@@ -198,6 +198,10 @@ export const isBirthChartCard = (name: string): boolean =>
 export const isGeneralLifePredictionCard = (name: string): boolean =>
   (name || '').toLowerCase().includes('life prediction');
 
+
+export const isDoshaInKundliCard = (name: string): boolean =>
+  (name || '').toLowerCase().includes('dosha');
+
 /** Returns true when the tapped kundli card is the "Numerology" card. */
 export const isNumerologyCard = (name: string): boolean =>
   (name || '').toLowerCase().includes('numerology');
