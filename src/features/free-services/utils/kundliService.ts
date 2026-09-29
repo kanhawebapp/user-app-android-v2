@@ -198,13 +198,16 @@ export const isBirthChartCard = (name: string): boolean =>
 export const isGeneralLifePredictionCard = (name: string): boolean =>
   (name || '').toLowerCase().includes('life prediction');
 
-
 export const isDoshaInKundliCard = (name: string): boolean =>
   (name || '').toLowerCase().includes('dosha');
 
 /** Returns true when the tapped kundli card is the "Numerology" card. */
 export const isNumerologyCard = (name: string): boolean =>
   (name || '').toLowerCase().includes('numerology');
+
+/** Returns true when the tapped kundli card is the "My Day Today" card. */
+export const isMyDayTodayCard = (name: string): boolean =>
+  (name || '').toLowerCase().includes('my day');
 
 /** Returns true when the tapped kundli card opens Match Making (Kundli Milan). */
 export const isMatchHoroscopeCard = (name: string): boolean => {

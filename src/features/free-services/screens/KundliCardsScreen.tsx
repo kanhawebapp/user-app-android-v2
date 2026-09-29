@@ -6,6 +6,7 @@ import {
   isDoshaInKundliCard,
   isGeneralLifePredictionCard,
   isMatchHoroscopeCard,
+  isMyDayTodayCard,
   isNumerologyCard,
 } from '../utils/kundliService';
 
@@ -34,6 +35,11 @@ const KundliCardsScreen = () => {
       navigation.navigate('MatchMaking');
     } else if (isNumerologyCard(card?.name)) {
       navigation.navigate('Numerology', {
+        result,
+        serviceTitle,
+      });
+    } else if (isMyDayTodayCard(card?.name)) {
+      navigation.navigate('MyDayToday', {
         result,
         serviceTitle,
       });
