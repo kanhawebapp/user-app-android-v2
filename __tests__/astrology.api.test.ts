@@ -4,6 +4,7 @@ import {
   getAstroDetails,
   getBasicPanchang,
   getBirthDetails,
+  getDailyNakshatraPrediction,
   getHoroscopeChart,
   getMajorVdasha,
   getMatchAshtakootPoints,
@@ -11,7 +12,9 @@ import {
   getMatchMakingReport,
   getMatchManglikReport,
   getMatchObstructions,
+  getNextNakshatraPrediction,
   getPlanets,
+  getPreviousNakshatraPrediction,
   normalizeHoroscopeChartResponse,
   resolveBirthPlace,
 } from '../src/services/api/astrologyApi/astrology.api';
@@ -291,6 +294,123 @@ describe('Match Making (Kundli Milan) endpoints', () => {
     await expect(getMatchMakingReport(MATCH_PAYLOAD)).rejects.toThrow(
       'Astrology API request failed',
     );
+  });
+});
+
+describe('Daily Nakshatra prediction endpoints', () => {
+  const BASIC_PAYLOAD: AstrologyMuhurtaPayload = {
+    day: 10,
+    month: 5,
+    year: 1990,
+    hour: 19,
+    min: 55,
+    lat: 19.2056,
+    lon: 25.2056,
+    tzone: 5.5,
+  };
+
+  const RESPONSE = {
+    birth_moon_sign: 'Cancer',
+    birth_moon_nakshatra: 'Punarvasu',
+    prediction: {
+      health: 'Health',
+      emotions: 'Emotions',
+      profession: 'Profession',
+      luck: 'Luck',
+      personal_life: 'Personal life',
+      travel: 'Travel',
+    },
+    prediction_date: '10 May 1990',
+  };
+
+  const getRequestMock = () => {
+    const client = mockCreate.mock.results[0]?.value;
+    return (client as {request: jest.Mock}).request;
+  };
+
+  beforeEach(() => {
+    getRequestMock().mockReset();
+  });
+
+  it('getPreviousNakshatraPrediction POSTs to the previous-day path', async () => {
+    getRequestMock().mockResolvedValueOnce({data: RESPONSE});
+
+    const result = await getPreviousNakshatraPrediction(BASIC_PAYLOAD);
+
+    expect(getRequestMock()).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'POST',
+        url: '/v1/daily_nakshatra_prediction/previous',
+        data: 'day=10&month=5&year=1990&hour=19&min=55&lat=19.2056&lon=25.2056&tzone=5.5',
+      }),
+    );
+    expect(result).toEqual(RESPONSE);
+  });
+
+  it('getDailyNakshatraPrediction POSTs to the current-day path', async () => {
+    getRequestMock().mockResolvedValueOnce({data: RESPONSE});
+
+    const result = await getDailyNakshatraPrediction(BASIC_PAYLOAD);
+
+    expect(getRequestMock()).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'POST',
+        url: '/v1/daily_nakshatra_prediction',
+        data: 'day=10&month=5&year=1990&hour=19&min=55&lat=19.2056&lon=25.2056&tzone=5.5',
+      }),
+    );
+    expect(result).toEqual(RESPONSE);
+  });
+
+  it('getNextNakshatraPrediction POSTs to the next-day path', async () => {
+    getRequestMock().mockResolvedValueOnce({data: RESPONSE});
+
+    const result = await getNextNakshatraPrediction(BASIC_PAYLOAD);
+
+    expect(getRequestMock()).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'POST',
+        url: '/v1/daily_nakshatra_prediction/next',
+        data: 'day=10&month=5&year=1990&hour=19&min=55&lat=19.2056&lon=25.2056&tzone=5.5',
+      }),
+    );
+    expect(result).toEqual(RESPONSE);
+  });
+
+  it('requests English content and shares the existing auth client', async () => {
+    getRequestMock().mockResolvedValue({data: RESPONSE});
+
+    await getPreviousNakshatraPrediction(BASIC_PAYLOAD);
+    await getDailyNakshatraPrediction(BASIC_PAYLOAD);
+    await getNextNakshatraPrediction(BASIC_PAYLOAD);
+
+    // All three calls go through the one pre-configured authenticated client,
+    // so no request adds its own credentials.
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+    getRequestMock().mock.calls.forEach(([config]) => {
+      expect(config.headers).toEqual(
+        expect.objectContaining({'Accept-Language': 'en'}),
+      );
+      expect(config.auth).toBeUndefined();
+    });
+  });
+
+  it('never sends the prediction date in the request body', async () => {
+    getRequestMock().mockResolvedValue({data: RESPONSE});
+
+    await getNextNakshatraPrediction(BASIC_PAYLOAD);
+
+    const [config] = getRequestMock().mock.calls[0];
+    expect(config.data.split('&').sort()).toEqual([
+      'day=10',
+      'hour=19',
+      'lat=19.2056',
+      'lon=25.2056',
+      'min=55',
+      'month=5',
+      'tzone=5.5',
+      'year=1990',
+    ]);
   });
 });
 

@@ -110,6 +110,14 @@ const MyDayTodayScreen = lazy(() =>
   ),
 );
 
+const NakshatraPredictionScreen = lazy(() =>
+  import('../../features/free-services/screens/NakshatraPredictionScreen').then(
+    module => ({
+      default: module.default,
+    }),
+  ),
+);
+
 const KundliDoshaScreen = lazy(() =>
   import('../../features/free-services/screens/KundliDoshaScreen').then(
     module => ({
@@ -231,6 +239,10 @@ export type RootStackParamList = {
     serviceTitle?: string;
   };
   MyDayToday: {
+    result?: any;
+    serviceTitle?: string;
+  };
+  NakshatraPrediction: {
     result?: any;
     serviceTitle?: string;
   };
@@ -590,6 +602,10 @@ const AnimatedAppContent: React.FC<AnimatedAppContentProps> = ({
           />
           <Stack.Screen name="Numerology" component={NumerologyScreen} />
           <Stack.Screen name="MyDayToday" component={MyDayTodayScreen} />
+          <Stack.Screen
+            name="NakshatraPrediction"
+            component={NakshatraPredictionScreen}
+          />
           <Stack.Screen name="KundliDosha" component={KundliDoshaScreen} />
           <Stack.Screen name="ManglikDosha" component={ManglikDoshaScreen} />
           <Stack.Screen name="KalsarpaDosha" component={KalsarpaDoshaScreen} />

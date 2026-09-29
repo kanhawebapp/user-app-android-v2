@@ -209,6 +209,13 @@ export const isNumerologyCard = (name: string): boolean =>
 export const isMyDayTodayCard = (name: string): boolean =>
   (name || '').toLowerCase().includes('my day');
 
+/**
+ * Returns true when the tapped kundli card is the "Nakshatra" card. Checked
+ * after the other card matchers so a more specific card always wins.
+ */
+export const isNakshatraCard = (name: string): boolean =>
+  (name || '').toLowerCase().includes('nakshatra');
+
 /** Returns true when the tapped kundli card opens Match Making (Kundli Milan). */
 export const isMatchHoroscopeCard = (name: string): boolean => {
   const normalized = (name || '').toLowerCase();

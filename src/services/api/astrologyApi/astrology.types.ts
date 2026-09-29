@@ -200,6 +200,38 @@ export interface HoroscopeResponse {
 }
 
 // ============================================
+// Daily Nakshatra Prediction types
+// Mapped for the astrologyapi.com /v1/daily_nakshatra_prediction,
+// /v1/daily_nakshatra_prediction/previous and
+// /v1/daily_nakshatra_prediction/next endpoints.
+//
+// All three take the same birth-details request body (day, month, year, hour,
+// min, lat, lon, tzone) and return the same shape; only the day the
+// prediction is for differs, which the endpoint decides.
+// ============================================
+
+/** Tab selector for the daily Nakshatra prediction endpoints. */
+export type NakshatraPredictionTab = 'yesterday' | 'today' | 'tomorrow';
+
+/** The six prediction paragraphs returned for the selected day. */
+export interface DailyNakshatraPrediction {
+  health?: string | null;
+  emotions?: string | null;
+  profession?: string | null;
+  luck?: string | null;
+  personal_life?: string | null;
+  travel?: string | null;
+}
+
+/** Response shared by the three daily Nakshatra prediction endpoints. */
+export interface DailyNakshatraPredictionResponse {
+  birth_moon_sign?: string | null;
+  birth_moon_nakshatra?: string | null;
+  prediction?: DailyNakshatraPrediction | null;
+  prediction_date?: string | null;
+}
+
+// ============================================
 // Horoscope Chart (horo_chart_image) types
 // Mapped for the astrologyapi.com
 // /v1/horo_chart_image/:chalit and /v1/horo_chart_image/:D9 endpoints.

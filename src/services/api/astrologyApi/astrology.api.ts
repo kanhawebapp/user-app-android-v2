@@ -9,6 +9,7 @@ import type {
   BasicPanchangResponse,
   BirthDetailsResponse,
   ChaughadiyaMuhurtaResponse,
+  DailyNakshatraPredictionResponse,
   GeocodeResult,
   GeneralNakshatraReportPayload,
   GeneralNakshatraReportResponse,
@@ -468,6 +469,56 @@ export const getSunSignPredictionNext = async (
   return requestAstrology<HoroscopeResponse>(
     `/v1/sun_sign_prediction/daily/next/${zodiacName}`,
     {timezone},
+  );
+};
+
+// ============================================
+// Daily Nakshatra Prediction endpoints
+// https://json.astrologyapi.com/v1/daily_nakshatra_prediction/previous
+// https://json.astrologyapi.com/v1/daily_nakshatra_prediction
+// https://json.astrologyapi.com/v1/daily_nakshatra_prediction/next
+//
+// All three take the same birth-details payload (day, month, year, hour, min,
+// lat, lon, tzone) and return the same response shape. The endpoint alone
+// decides which day the prediction is for, so the birth details are never
+// replaced with the prediction date.
+// ============================================
+
+/** The Nakshatra predictions are always requested in English. */
+const NAKSHATRA_HEADERS = {'Accept-Language': 'en'};
+
+const requestNakshatra = <T>(
+  endpoint: string,
+  payload: AstrologyMuhurtaPayload,
+): Promise<T> => requestAstrology<T>(endpoint, payload, NAKSHATRA_HEADERS);
+
+/** POST /v1/daily_nakshatra_prediction/previous — yesterday's prediction. */
+export const getPreviousNakshatraPrediction = async (
+  payload: AstrologyMuhurtaPayload,
+): Promise<DailyNakshatraPredictionResponse> => {
+  return requestNakshatra<DailyNakshatraPredictionResponse>(
+    '/v1/daily_nakshatra_prediction/previous',
+    payload,
+  );
+};
+
+/** POST /v1/daily_nakshatra_prediction — today's prediction. */
+export const getDailyNakshatraPrediction = async (
+  payload: AstrologyMuhurtaPayload,
+): Promise<DailyNakshatraPredictionResponse> => {
+  return requestNakshatra<DailyNakshatraPredictionResponse>(
+    '/v1/daily_nakshatra_prediction',
+    payload,
+  );
+};
+
+/** POST /v1/daily_nakshatra_prediction/next — tomorrow's prediction. */
+export const getNextNakshatraPrediction = async (
+  payload: AstrologyMuhurtaPayload,
+): Promise<DailyNakshatraPredictionResponse> => {
+  return requestNakshatra<DailyNakshatraPredictionResponse>(
+    '/v1/daily_nakshatra_prediction/next',
+    payload,
   );
 };
 

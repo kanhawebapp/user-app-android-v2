@@ -7,6 +7,7 @@ import {
   isGeneralLifePredictionCard,
   isMatchHoroscopeCard,
   isMyDayTodayCard,
+  isNakshatraCard,
   isNumerologyCard,
 } from '../utils/kundliService';
 
@@ -45,6 +46,11 @@ const KundliCardsScreen = () => {
       });
     } else if (isDoshaInKundliCard(card?.name)) {
       navigation.navigate('KundliDosha', {
+        result,
+        serviceTitle,
+      });
+    } else if (isNakshatraCard(card?.name)) {
+      navigation.navigate('NakshatraPrediction', {
         result,
         serviceTitle,
       });

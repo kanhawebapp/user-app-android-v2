@@ -6,6 +6,7 @@ export {default as BirthChartScreen} from './screens/BirthChartScreen';
 export {default as GeneralLifePredictionScreen} from './screens/GeneralLifePredictionScreen';
 export {default as NumerologyScreen} from './screens/NumerologyScreen';
 export {default as MyDayTodayScreen} from './screens/MyDayTodayScreen';
+export {default as NakshatraPredictionScreen} from './screens/NakshatraPredictionScreen';
 export {default as KundliDoshaScreen} from './screens/KundliDoshaScreen';
 export {default as ManglikDoshaScreen} from './screens/ManglikDoshaScreen';
 export {default as KalsarpaDoshaScreen} from './screens/KalsarpaDoshaScreen';
