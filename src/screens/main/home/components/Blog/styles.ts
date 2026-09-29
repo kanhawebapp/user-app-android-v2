@@ -1,4 +1,4 @@
-import {StyleSheet} from 'react-native';
+import { StyleSheet } from 'react-native';
 
 export const blogStyles = StyleSheet.create({
   container: {
@@ -110,8 +110,8 @@ export const blogStyles = StyleSheet.create({
   },
 
   loadingContainer: {
-    paddingHorizontal: 16,
-    marginTop: 8,
+    flexDirection: 'row',
+    gap: 12,
   },
 
   loadingCard: {

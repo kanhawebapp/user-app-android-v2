@@ -1,13 +1,13 @@
-import React, {useMemo, useCallback} from 'react';
-import {View, ScrollView, Image, Text as RNText} from 'react-native';
-import {useTheme} from '../../../../../theme';
-import {Text} from '../../../../../components/Text';
-import {Icon} from '../../../../../components/Icon';
-import {Button} from '../../../../../components/Button';
-import {BlogProps, BlogPost} from './types';
-import {blogStyles} from './styles';
-import {Card} from '../../../../../components';
-import {BlogDetailsModal} from './BlogDetailsModal';
+import React, { useMemo, useCallback } from 'react';
+import { View, ScrollView, Image, Text as RNText } from 'react-native';
+import { useTheme } from '../../../../../theme';
+import { Text } from '../../../../../components/Text';
+import { Icon } from '../../../../../components/Icon';
+import { Button } from '../../../../../components/Button';
+import { BlogProps, BlogPost } from './types';
+import { blogStyles } from './styles';
+import { Card } from '../../../../../components';
+import { BlogDetailsModal } from './BlogDetailsModal';
 import { API_BASE_URL } from '../../../../../constants/api.constants';
 
 const getImageUrl = (url?: string) => {
@@ -19,7 +19,7 @@ const getImageUrl = (url?: string) => {
     return url;
   }
 
-return `${API_BASE_URL.DEVELOPMENT}${url.replace(/^\/+/, '')}`;
+  return `${API_BASE_URL.DEVELOPMENT}${url.replace(/^\/+/, '')}`;
 };
 
 const formatDate = (timestamp: string) => {
@@ -31,7 +31,7 @@ const formatDate = (timestamp: string) => {
 };
 
 const BlogCard = React.memo(
-  ({post, onPress}: {post: BlogPost; onPress: () => void}) => {
+  ({ post, onPress }: { post: BlogPost; onPress: () => void }) => {
     const theme = useTheme();
     const colors = theme.colors;
     const imageUrl = useMemo(
@@ -55,7 +55,7 @@ const BlogCard = React.memo(
         onPress={onPress}>
         <View style={blogStyles.imageWrapper}>
           <Image
-            source={{uri: imageUrl}}
+            source={{ uri: imageUrl }}
             style={blogStyles.image}
             resizeMode="cover"
             onError={e => console.log('Image error:', e.nativeEvent)}
@@ -80,7 +80,7 @@ const BlogCard = React.memo(
               variant="label"
               weight="semibold"
               numberOfLines={2}
-              style={{color: '#fff'}}>
+              style={{ color: '#fff' }}>
               {post.title}
             </Text>
           </View>
@@ -98,7 +98,7 @@ const BlogCard = React.memo(
           )}
 
           <View style={blogStyles.dateContainer}>
-            <RNText style={{fontSize: 12, color: colors.text.secondary}}>
+            <RNText style={{ fontSize: 12, color: colors.text.secondary }}>
               {dateText}
             </RNText>
             <Icon name="arrow-forward" size={26} color={colors.primary.main} />
@@ -133,9 +133,18 @@ export const Blog: React.FC<BlogProps> = ({
 
   const renderLoading = useMemo(() => {
     return (
-      <View style={blogStyles.loadingContainer}>
+      <View
+        style={[
+          blogStyles.loadingContainer,
+          {
+            flexDirection: 'row',
+          },
+        ]}>
         {[1, 2, 3].map(index => (
-          <View key={`blog-skeleton-${index}`} style={blogStyles.loadingCard} />
+          <View
+            key={`blog-skeleton-${index}`}
+            style={blogStyles.loadingCard}
+          />
         ))}
       </View>
     );
