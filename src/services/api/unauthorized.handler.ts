@@ -89,6 +89,11 @@ export const handleUnauthorized = (): Promise<void> => {
     return logoutInFlight;
   }
 
+  if (useAuthStore.getState().isGuest) {
+    return Promise.resolve();
+  }
+
+
   if (!hasActiveSession()) {
     return Promise.resolve();
   }
