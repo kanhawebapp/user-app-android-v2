@@ -118,6 +118,14 @@ const NakshatraPredictionScreen = lazy(() =>
   ),
 );
 
+const AscendantReportScreen = lazy(() =>
+  import('../../features/free-services/screens/AscendantReportScreen').then(
+    module => ({
+      default: module.default,
+    }),
+  ),
+);
+
 const KundliDoshaScreen = lazy(() =>
   import('../../features/free-services/screens/KundliDoshaScreen').then(
     module => ({
@@ -243,6 +251,10 @@ export type RootStackParamList = {
     serviceTitle?: string;
   };
   NakshatraPrediction: {
+    result?: any;
+    serviceTitle?: string;
+  };
+  AscendantReport: {
     result?: any;
     serviceTitle?: string;
   };
@@ -605,6 +617,10 @@ const AnimatedAppContent: React.FC<AnimatedAppContentProps> = ({
           <Stack.Screen
             name="NakshatraPrediction"
             component={NakshatraPredictionScreen}
+          />
+          <Stack.Screen
+            name="AscendantReport"
+            component={AscendantReportScreen}
           />
           <Stack.Screen name="KundliDosha" component={KundliDoshaScreen} />
           <Stack.Screen name="ManglikDosha" component={ManglikDoshaScreen} />

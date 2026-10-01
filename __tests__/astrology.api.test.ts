@@ -5,6 +5,8 @@ import {
   getBasicPanchang,
   getBirthDetails,
   getDailyNakshatraPrediction,
+  getGeneralAscendantReport,
+  getGeneralNakshatraReport,
   getHoroscopeChart,
   getMajorVdasha,
   getMatchAshtakootPoints,
@@ -411,6 +413,106 @@ describe('Daily Nakshatra prediction endpoints', () => {
       'tzone=5.5',
       'year=1990',
     ]);
+  });
+});
+
+describe('Ascendant Report endpoints', () => {
+  const BASIC_PAYLOAD: AstrologyMuhurtaPayload = {
+    day: 10,
+    month: 5,
+    year: 1990,
+    hour: 19,
+    min: 55,
+    lat: 19.2056,
+    lon: 25.2056,
+    tzone: 5.5,
+  };
+
+  const ASCENDANT_RESPONSE = {
+    asc_report: {ascendant: 'Virgo', report: 'Your Ascendant is...'},
+  };
+  const NAKSHATRA_RESPONSE = {
+    physical: ['Strong and agile.'],
+    character: ['Optimistic.'],
+  };
+
+  beforeEach(() => {
+    getRequestMock().mockReset();
+  });
+
+  it('getGeneralAscendantReport POSTs the birth details to the ascendant path', async () => {
+    getRequestMock().mockResolvedValueOnce({data: ASCENDANT_RESPONSE});
+
+    const result = await getGeneralAscendantReport(BASIC_PAYLOAD);
+
+    expect(getRequestMock()).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'POST',
+        url: '/v1/general_ascendant_report',
+        data: 'day=10&month=5&year=1990&hour=19&min=55&lat=19.2056&lon=25.2056&tzone=5.5',
+      }),
+    );
+    expect(result).toEqual(ASCENDANT_RESPONSE);
+  });
+
+  it('getGeneralNakshatraReport POSTs the birth details to the nakshatra path', async () => {
+    getRequestMock().mockResolvedValueOnce({data: NAKSHATRA_RESPONSE});
+
+    const result = await getGeneralNakshatraReport(BASIC_PAYLOAD);
+
+    expect(getRequestMock()).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'POST',
+        url: '/v1/general_nakshatra_report',
+        data: 'day=10&month=5&year=1990&hour=19&min=55&lat=19.2056&lon=25.2056&tzone=5.5',
+      }),
+    );
+    expect(result).toEqual(NAKSHATRA_RESPONSE);
+  });
+
+  it('requests both reports in English through the authenticated client', async () => {
+    getRequestMock().mockResolvedValue({data: {}});
+
+    await getGeneralAscendantReport(BASIC_PAYLOAD);
+    await getGeneralNakshatraReport(BASIC_PAYLOAD);
+
+    // Both calls go through the one pre-configured client, so no request adds
+    // its own credentials.
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+    getRequestMock().mock.calls.forEach(([config]) => {
+      expect(config.headers).toEqual(
+        expect.objectContaining({'Accept-Language': 'en'}),
+      );
+      expect(config.auth).toBeUndefined();
+    });
+  });
+
+  it('sends only the eight birth-detail values in the request body', async () => {
+    getRequestMock().mockResolvedValue({data: {}});
+
+    await getGeneralAscendantReport(BASIC_PAYLOAD);
+
+    const [config] = getRequestMock().mock.calls[0];
+    expect(config.data.split('&').sort()).toEqual([
+      'day=10',
+      'hour=19',
+      'lat=19.2056',
+      'lon=25.2056',
+      'min=55',
+      'month=5',
+      'tzone=5.5',
+      'year=1990',
+    ]);
+  });
+
+  it('throws a formatted error when a report request fails', async () => {
+    getRequestMock().mockRejectedValueOnce({
+      response: {status: 500, data: 'Server exploded'},
+    });
+
+    await expect(getGeneralAscendantReport(BASIC_PAYLOAD)).rejects.toThrow(
+      'Astrology API request failed',
+    );
   });
 });
 

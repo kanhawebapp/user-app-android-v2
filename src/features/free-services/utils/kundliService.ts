@@ -216,6 +216,14 @@ export const isMyDayTodayCard = (name: string): boolean =>
 export const isNakshatraCard = (name: string): boolean =>
   (name || '').toLowerCase().includes('nakshatra');
 
+/**
+ * Returns true when the tapped kundli card is the "Ascendant Report" card.
+ * Checked after `isNakshatraCard` so the Nakshatra card always wins for a
+ * card whose name mentions both.
+ */
+export const isAscendantReportCard = (name: string): boolean =>
+  (name || '').toLowerCase().includes('ascendant');
+
 /** Returns true when the tapped kundli card opens Match Making (Kundli Milan). */
 export const isMatchHoroscopeCard = (name: string): boolean => {
   const normalized = (name || '').toLowerCase();

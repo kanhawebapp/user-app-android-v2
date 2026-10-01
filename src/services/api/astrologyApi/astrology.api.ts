@@ -4,6 +4,7 @@ import axios from 'axios';
 import type {
   AbhijeetMuhurtaResponse,
   AdvancedPanchangResponse,
+  AscendantReportPayload,
   AstrologyMuhurtaPayload,
   AstroDetailsResponse,
   BasicPanchangResponse,
@@ -11,7 +12,7 @@ import type {
   ChaughadiyaMuhurtaResponse,
   DailyNakshatraPredictionResponse,
   GeocodeResult,
-  GeneralNakshatraReportPayload,
+  GeneralAscendantReportResponse,
   GeneralNakshatraReportResponse,
   HoraMuhurtaResponse,
   HoroscopeChartPayload,
@@ -414,18 +415,43 @@ export const getMajorVdasha = async (
 };
 
 // ============================================
-// General Nakshatra Report endpoint
+// General Ascendant / Nakshatra Report endpoints
+// https://json.astrologyapi.com/v1/general_ascendant_report
 // https://json.astrologyapi.com/v1/general_nakshatra_report
 //
-// Reuses the stored birth details and adds the gender selected in the Kundli
-// form. Returns sectioned paragraphs (physical, character, education,
-// family, health).
+// Both take the same birth-details payload (day, month, year, hour, min, lat,
+// lon, tzone) and are independent of each other, so the caller requests them
+// in parallel. The ascendant report returns the rising sign plus its
+// description, the nakshatra report returns sectioned paragraphs.
 // ============================================
 
+/** The ascendant / nakshatra report text is always requested in English. */
+const REPORT_HEADERS = {'Accept-Language': 'en'};
+
+const requestReport = <T>(endpoint: string, payload: object): Promise<T> =>
+  requestAstrology<T>(endpoint, payload, REPORT_HEADERS);
+
+/** POST /v1/general_ascendant_report — the rising sign and its description. */
+export const getGeneralAscendantReport = async (
+  payload: AscendantReportPayload,
+): Promise<GeneralAscendantReportResponse> => {
+  return requestReport<GeneralAscendantReportResponse>(
+    '/v1/general_ascendant_report',
+    payload,
+  );
+};
+
+/**
+ * POST /v1/general_nakshatra_report — sectioned personality paragraphs.
+ *
+ * Takes the plain birth-details payload. The Kundli form also sends the gender
+ * it collected (`GeneralNakshatraReportPayload`), which the API tolerates but
+ * does not require, so both callers are accepted.
+ */
 export const getGeneralNakshatraReport = async (
-  payload: GeneralNakshatraReportPayload,
+  payload: AstrologyMuhurtaPayload,
 ): Promise<GeneralNakshatraReportResponse> => {
-  return requestAstrology<GeneralNakshatraReportResponse>(
+  return requestReport<GeneralNakshatraReportResponse>(
     '/v1/general_nakshatra_report',
     payload,
   );

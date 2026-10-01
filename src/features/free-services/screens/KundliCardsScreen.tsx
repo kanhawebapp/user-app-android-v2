@@ -2,6 +2,7 @@ import React from 'react';
 import {useRoute, useNavigation} from '@react-navigation/native';
 import KundliCardsView from '../components/KundliCardsView';
 import {
+  isAscendantReportCard,
   isBirthChartCard,
   isDoshaInKundliCard,
   isGeneralLifePredictionCard,
@@ -51,6 +52,11 @@ const KundliCardsScreen = () => {
       });
     } else if (isNakshatraCard(card?.name)) {
       navigation.navigate('NakshatraPrediction', {
+        result,
+        serviceTitle,
+      });
+    } else if (isAscendantReportCard(card?.name)) {
+      navigation.navigate('AscendantReport', {
         result,
         serviceTitle,
       });

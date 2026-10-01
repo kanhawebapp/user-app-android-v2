@@ -34,6 +34,31 @@ export interface GeneralNakshatraReportResponse {
   health?: string | string[];
 }
 
+/**
+ * Request body for the general ascendant report endpoint. The API only needs
+ * the birth details, so it reuses the shared Kundli payload unchanged.
+ */
+export type AscendantReportPayload = AstrologyMuhurtaPayload;
+
+/** The `asc_report` block of the general ascendant report response. */
+export interface AscendantReportBlock {
+  /** The rising sign, e.g. 'Virgo'. */
+  ascendant?: string | null;
+  /** The long-form ascendant description. */
+  report?: string | null;
+}
+
+/**
+ * Response for POST /v1/general_ascendant_report.
+ *
+ * The API nests both values under `asc_report`. The same two fields are also
+ * accepted at the top level so a change of the wrapper shape cannot break the
+ * report.
+ */
+export interface GeneralAscendantReportResponse extends AscendantReportBlock {
+  asc_report?: AscendantReportBlock | null;
+}
+
 export interface ChaughadiyaMuhurtaResponse {
   chaughadiya?: {
     day?: {

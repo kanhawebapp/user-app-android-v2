@@ -18,7 +18,8 @@ import type {
   DailyNakshatraPredictionResponse,
   NakshatraPredictionTab,
 } from '../../../services/api/astrologyApi/astrology.types';
-import {buildBasicDetailsPayload, toDisplayValue} from './kundliService';
+import {resolveBirthDetailsPayload} from './birthDetails';
+import {toDisplayValue} from './kundliService';
 
 /** One displayed prediction card (Health, Emotions, ...). */
 export interface NakshatraPredictionSection {
@@ -177,62 +178,6 @@ const asPredictionText = (value: unknown): string | null => {
 };
 
 /**
- * True when every birth-detail value the request needs is present and numeric.
- * Guards against sending an incomplete request: the API needs all eight values
- * (day, month, year, hour, min, lat, lon, tzone).
- */
-const isCompleteBirthPayload = (payload: AstrologyMuhurtaPayload): boolean =>
-  Number.isFinite(payload.day) &&
-  Number.isFinite(payload.month) &&
-  Number.isFinite(payload.year) &&
-  Number.isFinite(payload.hour) &&
-  Number.isFinite(payload.min) &&
-  Number.isFinite(payload.lat) &&
-  Number.isFinite(payload.lon) &&
-  Number.isFinite(payload.tzone) &&
-  payload.day > 0 &&
-  payload.day <= 31 &&
-  payload.month > 0 &&
-  payload.month <= 12 &&
-  payload.year > 0 &&
-  payload.hour >= 0 &&
-  payload.hour <= 23 &&
-  payload.min >= 0 &&
-  payload.min <= 59 &&
-  payload.lat >= -90 &&
-  payload.lat <= 90 &&
-  payload.lon >= -180 &&
-  payload.lon <= 180;
-
-/** The eight values the daily Nakshatra prediction request requires. */
-const REQUIRED_BIRTH_KEYS: (keyof AstrologyMuhurtaPayload)[] = [
-  'day',
-  'month',
-  'year',
-  'hour',
-  'min',
-  'lat',
-  'lon',
-  'tzone',
-];
-
-/**
- * True when the source actually carries every requested value. Checked on the
- * raw source because `buildBasicDetailsPayload` coerces a missing number to 0,
- * which would otherwise turn a missing timezone into a silent UTC birth chart.
- */
-const hasEveryBirthValue = (source: object): boolean =>
-  REQUIRED_BIRTH_KEYS.every(key => {
-    const raw = (source as Record<string, unknown>)[key];
-    return (
-      raw !== undefined &&
-      raw !== null &&
-      raw !== '' &&
-      Number.isFinite(Number(raw))
-    );
-  });
-
-/**
  * Resolves the request body from the Kundli flow payload — the same birth
  * details (DOB, birth time, geocoded latitude/longitude and timezone) the
  * other Kundli screens use. Returns null when any value is missing, so the
@@ -240,15 +185,7 @@ const hasEveryBirthValue = (source: object): boolean =>
  */
 export const resolveNakshatraPredictionInput = (
   result: any,
-): AstrologyMuhurtaPayload | null => {
-  const source = result?.payload ?? result;
-  if (!source || typeof source !== 'object' || !hasEveryBirthValue(source)) {
-    return null;
-  }
-
-  const payload = buildBasicDetailsPayload(source);
-  return isCompleteBirthPayload(payload) ? payload : null;
-};
+): AstrologyMuhurtaPayload | null => resolveBirthDetailsPayload(result);
 
 /**
  * Normalises a raw response into a view model for the selected tab. Returns
