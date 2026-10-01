@@ -12,6 +12,7 @@ query getCategories {
     name
     slug
     image
+    __typename
   }
 }
 `;

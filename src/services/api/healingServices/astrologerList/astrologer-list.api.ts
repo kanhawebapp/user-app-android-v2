@@ -21,6 +21,7 @@ query GetAstrologerListForUser(
       id
       profilePic
       name
+      displayName
       experience
       rating
       skills

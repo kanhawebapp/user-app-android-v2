@@ -29,6 +29,8 @@ export interface Astrologer {
 
   name: string;
 
+  displayName?: string;
+
   experience: number;
 
   rating: number;

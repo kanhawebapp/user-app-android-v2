@@ -62,7 +62,6 @@ import AstrologerProfileScreen from '../../screens/main/astrologerProfile';
 
 // Healing Screens
 import ServiceDetailsScreen from '../../screens/main/healings/ServiceDetailsScreen';
-import BookingFormScreen, { BookingFormData } from '../../screens/main/healings/BookingFormScreen';
 import SelectAstrologerScreen from '../../screens/main/healings/SelectAstrologerScreen';
 import BlogListingScreen from '../../screens/main/BlogListingScreen';
 
@@ -70,7 +69,7 @@ import BlogListingScreen from '../../screens/main/BlogListingScreen';
 import SendGiftScreen from '../../screens/main/SendGiftScreen';
 import { useIsFocused } from '@react-navigation/native';
 
-type HealingScreenKey = 'serviceDetails' | 'bookingForm' | 'selectAstrologer';
+type HealingScreenKey = 'serviceDetails' | 'selectAstrologer';
 
 const MainNavigator: React.FC<MainNavigatorProps> = ({
   onNavigateToLogin,
@@ -129,7 +128,6 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
   // Healing flow state
   const [healingScreen, setHealingScreen] = useState<HealingScreenKey | null>(null);
   const [healingSelectedService, setHealingSelectedService] = useState<any>(null);
-  const [healingBookingResponse, setHealingBookingResponse] = useState<any>(null);
 
   // Blog listing visibility state
   const [isBlogListingVisible, setIsBlogListingVisible] = useState(false);
@@ -283,22 +281,17 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
   const handleHealingBack = useCallback(() => {
     setHealingScreen(null);
     setHealingSelectedService(null);
-    setHealingBookingResponse(null);
   }, []);
 
+  // BookingFormScreen is intentionally skipped: Confirm Booking goes straight
+  // to astrologer selection.
   const handleConfirmBooking = useCallback(() => {
-    setHealingScreen('bookingForm');
-  }, []);
-
-  const handleBookingSubmit = useCallback(async (response: any) => {
-    setHealingBookingResponse(response);
     setHealingScreen('selectAstrologer');
   }, []);
 
   const handleHealingComplete = useCallback(() => {
     setHealingScreen(null);
     setHealingSelectedService(null);
-    setHealingBookingResponse(null);
   }, []);
 
   const handleNavigateToBlogListing = useCallback(() => {
@@ -346,11 +339,6 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
       }
 
       if (healingScreen === 'selectAstrologer') {
-        setHealingScreen('bookingForm');
-        return true;
-      }
-
-      if (healingScreen === 'bookingForm') {
         setHealingScreen('serviceDetails');
         return true;
       }
@@ -517,23 +505,7 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
     );
   }
 
-  if (healingScreen === 'bookingForm' && healingSelectedService) {
-    return (
-      <View
-        style={[
-          styles.container,
-          { backgroundColor: colors.background.primary },
-        ]}>
-        <BookingFormScreen
-          service={healingSelectedService}
-          onBack={handleHealingBack}
-          onSubmit={handleBookingSubmit}
-        />
-      </View>
-    );
-  }
-
-  if (healingScreen === 'selectAstrologer') {
+  if (healingScreen === 'selectAstrologer' && healingSelectedService) {
     return (
       <View
         style={[
@@ -541,8 +513,8 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
           { backgroundColor: colors.background.primary },
         ]}>
         <SelectAstrologerScreen
-          bookingResponse={healingBookingResponse}
-          onBack={handleHealingBack}
+          service={healingSelectedService}
+          onBack={() => setHealingScreen('serviceDetails')}
           onComplete={handleHealingComplete}
         />
       </View>

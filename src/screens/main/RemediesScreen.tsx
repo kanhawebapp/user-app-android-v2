@@ -1,20 +1,22 @@
-import React, { useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   FlatList,
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { Text } from '../../components/Text';
 import { colors } from '../../theme';
 
 import { useMyServiceBookings } from '../../services/api/healingServices/myBooking/useMyServiceBookings';
-import { useServices } from '../../services/api/healingServices/getServices/useServices';
 import { useCategories } from '../../services/api/healingServices/serviceCategory/useCategories';
+import { useCategoryServices } from '../../services/api/healingServices/getCategory/useCategoryServices';
+import { Category } from '../../services/api/healingServices/serviceCategory/categories.types';
 
 import ServiceCard from '../../components/cards/ServiceCard';
-import CategoryChip from '../../components/cards/CategoryChip';
+import CategoryCard from '../../components/cards/CategoryCard';
 
 interface RemediesScreenProps {
   onNavigateToLogin?: () => void;
@@ -29,46 +31,53 @@ const RemediesScreen: React.FC<RemediesScreenProps> = ({
 }) => {
   const {
     bookings,
-    loading: bookingLoading,
-    refresh,
   } = useMyServiceBookings();
-
-  const {
-    services,
-    loading: servicesLoading,
-  } = useServices();
 
   const {
     categories,
     loading: categoryLoading,
+    refresh: refreshCategories,
   } = useCategories();
 
-  const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] =
+    useState<Category | null>(null);
 
-  const filteredServices = useMemo(() => {
-    if (!selectedCategory) {
-      return services;
-    }
-    return services.filter(
-      item => item?.category?.id === selectedCategory,
-    );
-  }, [services, selectedCategory]);
-  console.log("all category", categories)
+  const {
+    services,
+    loading: servicesLoading,
+    refresh: refreshServices,
+  } = useCategoryServices(selectedCategory?.slug);
+
+  const isCategoryView = !selectedCategory;
 
   const handleServicePress = (service: any) => {
-    onNavigateToServiceDetails?.(service);
+    onNavigateToServiceDetails?.({
+      ...service,
+      category: selectedCategory
+        ? {
+            id: selectedCategory.id,
+            name: selectedCategory.name,
+            slug: selectedCategory.slug,
+          }
+        : service?.category,
+    });
   };
 
-  const handleCategoryPress = (categoryId: string) => {
-    setSelectedCategory(prev => prev === categoryId ? null : categoryId);
+  const handleCategoryPress = (category: Category) => {
+    setSelectedCategory(category);
   };
 
-  const renderCategoryItem = ({ item }: { item: any }) => (
-    <CategoryChip
-      category={item}
-      isSelected={selectedCategory === item.id}
-      onPress={handleCategoryPress}
-    />
+  const handleBackToCategories = () => {
+    setSelectedCategory(null);
+  };
+
+  const renderCategoryItem = ({ item }: { item: Category }) => (
+    <View style={styles.gridItem}>
+      <CategoryCard
+        category={item}
+        onPress={() => handleCategoryPress(item)}
+      />
+    </View>
   );
 
   const renderServiceItem = ({ item }: { item: any }) => (
@@ -78,12 +87,37 @@ const RemediesScreen: React.FC<RemediesScreenProps> = ({
     />
   );
 
+  const renderLoader = () => (
+    <View style={styles.loaderContainer}>
+      <ActivityIndicator color={colors.primary.main} />
+    </View>
+  );
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.screenTitle} weight="semibold">
-          Healing & Remedies
-        </Text>
+        {isCategoryView ? (
+          <Text style={styles.screenTitle} weight="semibold">
+            Healing & Remedies
+          </Text>
+        ) : (
+          <View style={styles.categoryHeaderLeft}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={handleBackToCategories}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text style={styles.backButtonText}>{'←'}</Text>
+            </TouchableOpacity>
+
+            <Text
+              style={styles.categoryHeaderTitle}
+              weight="semibold"
+              numberOfLines={1}>
+              {selectedCategory?.name}
+            </Text>
+          </View>
+        )}
 
         <TouchableOpacity
           style={styles.bookingButton}
@@ -95,54 +129,82 @@ const RemediesScreen: React.FC<RemediesScreenProps> = ({
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={filteredServices}
-        keyExtractor={(item: any) => item.id}
-        renderItem={renderServiceItem}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContainer}
-        refreshControl={
-          <RefreshControl
-            refreshing={bookingLoading}
-            onRefresh={refresh}
-          />
-        }
-        ListHeaderComponent={
-          <>
+      {isCategoryView ? (
+        <FlatList
+          // Distinct key per view: FlatList cannot change `numColumns`
+          // in place, so the categories grid (2 columns) and the services
+          // list (1 column) must not share a mounted instance.
+          key="remedies-categories"
+          data={categories}
+          keyExtractor={(item: Category) => item.id}
+          numColumns={2}
+          renderItem={renderCategoryItem}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.categoriesContainer}
+          columnWrapperStyle={styles.columnWrapper}
+          refreshControl={
+            <RefreshControl
+              refreshing={categoryLoading}
+              onRefresh={refreshCategories}
+            />
+          }
+          ListHeaderComponent={
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle} weight="semibold">
                 Categories
               </Text>
+
+              <Text style={styles.countText}>
+                {categories.length} Found
+              </Text>
             </View>
-
-            <FlatList
-              horizontal
-              data={categories}
-              renderItem={renderCategoryItem}
-              keyExtractor={(item: any) => item.id}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.categoriesList}
+          }
+          ListEmptyComponent={
+            categoryLoading ? renderLoader() : (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>
+                  No Categories Found
+                </Text>
+              </View>
+            )
+          }
+        />
+      ) : (
+        <FlatList
+          key="remedies-services"
+          data={services}
+          keyExtractor={(item: any) => item.id}
+          renderItem={renderServiceItem}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.servicesContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={servicesLoading}
+              onRefresh={refreshServices}
             />
-
+          }
+          ListHeaderComponent={
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle} weight="semibold">
                 Services
               </Text>
 
               <Text style={styles.countText}>
-                {filteredServices.length} Found
+                {services.length} Found
               </Text>
             </View>
-          </>
-        }
-        ListEmptyComponent={
-          !bookingLoading ? (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No Services Found</Text>
-            </View>
-          ) : null
-        }
-      />
+          }
+          ListEmptyComponent={
+            servicesLoading ? renderLoader() : (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>
+                  No Services Found
+                </Text>
+              </View>
+            )
+          }
+        />
+      )}
     </View>
   );
 };
@@ -172,6 +234,28 @@ const styles = StyleSheet.create({
     fontSize: 22,
     color: '#1F1F2E',
   },
+  categoryHeaderLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  backButton: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backButtonText: {
+    fontSize: 22,
+    color: colors.primary.main,
+  },
+  categoryHeaderTitle: {
+    flex: 1,
+    fontSize: 20,
+    color: '#1F1F2E',
+    marginLeft: 8,
+  },
   bookingButton: {
     backgroundColor: colors.primary.main,
     paddingHorizontal: 14,
@@ -198,12 +282,24 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#6B6B80',
   },
-  categoriesList: {
-    paddingHorizontal: 12,
-    paddingBottom: 8,
-  },
-  listContainer: {
+  categoriesContainer: {
+    paddingHorizontal: 16,
     paddingBottom: 30,
+  },
+  columnWrapper: {
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  gridItem: {
+    width: '47.5%',
+  },
+  servicesContainer: {
+    paddingTop: 4,
+    paddingBottom: 30,
+  },
+  loaderContainer: {
+    alignItems: 'center',
+    marginTop: 60,
   },
   emptyContainer: {
     alignItems: 'center',

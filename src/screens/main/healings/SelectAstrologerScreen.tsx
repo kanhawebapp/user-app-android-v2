@@ -14,34 +14,133 @@ import { API_BASE_URL } from '../../../constants/api.constants';
 import { useAstrologerList } from '../../../services/api/healingServices/astrologerList/useAstrologerList';
 import { Astrologer } from '../../../services/api/healingServices/astrologerList/astrologer-list.types';
 import { useCreateHealingOrder } from '../../../services/api/healingServices/healingOrder/useHealingOrder';
+import { useCreateServiceBooking } from '../../../services/api/healingServices/serviceBooking/useServiceBooking';
+import { CreateServiceBookingInput } from '../../../services/api/healingServices/serviceBooking/serviceBooking.types';
+import { useBookingAstrologer } from '../../../services/api/healingServices/bookingAstrologer/useBookingAstrologer';
+import { useAuthStore } from '../../../stores/auth.store';
+import { useToast } from '../../../context/ToastContext';
+import type { User } from '../../../types/global.types';
 import RazorpayCheckout from 'react-native-razorpay';
 import { RAZORPAY_KEY } from '../../../constants/api.constants';
 
 const BASE_IMAGE_URL = API_BASE_URL.DEVELOPMENT;
 
+// Module-level constant so the hook always receives a stable reference and
+// the astrologer list is fetched exactly once per screen mount.
+const ASTROLOGER_LIST_FILTERS = {
+  page: 1,
+  limit: 10,
+};
+
 interface SelectAstrologerScreenProps {
-  bookingResponse: any;
+  service: {
+    id: string;
+    name: string;
+    price: number;
+    category?: {
+      name: string;
+    };
+  } | null;
   onBack: () => void;
   onComplete: () => void;
 }
 
-const SelectAstrologerScreen: React.FC<SelectAstrologerScreenProps> = ({
-  bookingResponse,
+/**
+ * `BookingFormScreen` is no longer part of this flow, so the booking payload
+ * is derived from the signed-in user's profile instead of a manual form.
+ */
+const buildBookingInput = (
+  service: SelectAstrologerScreenProps['service'],
+  user: User | null,
+): CreateServiceBookingInput => ({
+  serviceId: service?.id ?? '',
+
+  name: user?.name ?? '',
+
+  email: user?.email ?? '',
+
+  phone: user?.mobile || user?.phone || '',
+
+  dob: user?.dateOfBirth ?? '',
+
+  tob: user?.birthTime ?? '',
+
+  pob: user?.birthPlace || user?.placeOfBirth || '',
+
+  gender: user?.gender ?? '',
+
+  concern: '',
+});
+
+const SelectAstrologerScreen: React.FC<
+  SelectAstrologerScreenProps
+> = ({
+  service,
   onBack,
   onComplete,
 }) => {
-  const [selectedAstrologer, setSelectedAstrologer] = useState<Astrologer | null>(null);
-  const {astrologers, loading: astrologersLoading} = useAstrologerList({page: 1, limit: 20});
-  const {createOrder, loading: paymentLoading} = useCreateHealingOrder();
+  const [selectedAstrologer, setSelectedAstrologer] =
+    useState<Astrologer | null>(null);
+  const [isSubmitting, setIsSubmitting] =
+    useState(false);
+
+  const {showError} = useToast();
+
+  const user = useAuthStore(state => state.user);
+
+  const {
+    astrologers,
+    loading: astrologersLoading,
+  } = useAstrologerList(ASTROLOGER_LIST_FILTERS);
+
+  const {submitBooking} = useCreateServiceBooking();
+  const {assignAstrologer} = useBookingAstrologer();
+  const {
+    createOrder,
+    loading: paymentLoading,
+  } = useCreateHealingOrder();
 
   const handleContinue = async () => {
     if (!selectedAstrologer) {
-      Alert.alert('Selection Required', 'Please select an astrologer to continue');
+      Alert.alert(
+        'Selection Required',
+        'Please select an astrologer to continue',
+      );
+
       return;
     }
 
+    if (!service?.id) {
+      showError('Unable to continue. Please select a service again.');
+
+      return;
+    }
+
+    if (isSubmitting || paymentLoading) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
     try {
-      const bookingId = bookingResponse?.createServiceBooking?.id;
+      const booking = await submitBooking(
+        buildBookingInput(service, user),
+      );
+
+      const bookingId = booking?.id;
+
+      if (!bookingId) {
+        throw new Error(
+          'Booking was not created. Please try again.',
+        );
+      }
+
+      // Persist the selected astrologer on the booking before checkout.
+      await assignAstrologer({
+        bookingId,
+        astrologerId: selectedAstrologer.id,
+      });
+
       const order = await createOrder(bookingId);
 
       const options = {
@@ -49,12 +148,21 @@ const SelectAstrologerScreen: React.FC<SelectAstrologerScreenProps> = ({
         amount: Number(order?.payableAmount) * 100,
         currency: order?.currency || 'INR',
         name: 'Dhwani Astro LLP',
-        description: 'Healing Service Payment',
+        description: service?.name
+          ? `${service.name} Payment`
+          : 'Healing Service Payment',
         order_id: order?.orderId,
-        prefill: {},
+        prefill: {
+          name: user?.name || '',
+          contact: user?.mobile || '',
+          email: user?.email || '',
+        },
         notes: {
-          bookingId: order?.bookingId,
-          astrologerId: selectedAstrologer?.id,
+          bookingId: order?.bookingId || bookingId,
+          astrologerId: selectedAstrologer.id,
+          serviceId: service?.id,
+          serviceName: service?.name,
+          servicePrice: String(service?.price ?? ''),
           serviceType: 'SERVICE',
         },
         theme: {
@@ -62,10 +170,32 @@ const SelectAstrologerScreen: React.FC<SelectAstrologerScreenProps> = ({
         },
       };
 
-      await RazorpayCheckout.open(options);
-      onComplete();
+      try {
+        await RazorpayCheckout.open(options);
+        onComplete();
+      } catch (razorpayError: any) {
+        // A dismissed checkout rejects as well — treat it as a silent cancel.
+        console.log('PAYMENT ERROR', razorpayError);
+
+        if (razorpayError?.code === 'Payment Cancelled') {
+          return;
+        }
+
+        showError(
+          razorpayError?.description ||
+            razorpayError?.message ||
+            'Unable to complete the payment. Please try again.',
+        );
+      }
     } catch (error: any) {
       console.log('PAYMENT ERROR', error);
+
+      showError(
+        error?.message ||
+          'Unable to start the payment. Please try again.',
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -123,6 +253,8 @@ const SelectAstrologerScreen: React.FC<SelectAstrologerScreenProps> = ({
     );
   };
 
+  const isBusy = isSubmitting || paymentLoading;
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -133,6 +265,27 @@ const SelectAstrologerScreen: React.FC<SelectAstrologerScreenProps> = ({
           Select Astrologer
         </Text>
       </View>
+
+      {!!service && (
+        <View style={styles.serviceSummary}>
+          <View style={styles.serviceSummaryLeft}>
+            <Text style={styles.serviceSummaryLabel} weight="medium">
+              {service.category?.name || 'Service'}
+            </Text>
+
+            <Text
+              style={styles.serviceSummaryName}
+              weight="semibold"
+              numberOfLines={1}>
+              {service.name}
+            </Text>
+          </View>
+
+          <Text style={styles.serviceSummaryPrice} weight="semibold">
+            ₹{service.price}
+          </Text>
+        </View>
+      )}
 
       <FlatList
         data={astrologers}
@@ -147,7 +300,9 @@ const SelectAstrologerScreen: React.FC<SelectAstrologerScreenProps> = ({
             </View>
           ) : (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No astrologers available</Text>
+              <Text style={styles.emptyText}>
+                No astrologers available
+              </Text>
             </View>
           )
         )}
@@ -157,12 +312,13 @@ const SelectAstrologerScreen: React.FC<SelectAstrologerScreenProps> = ({
         <TouchableOpacity
           style={[
             styles.continueButton,
-            (!selectedAstrologer || paymentLoading) && styles.disabledButton,
+            (!selectedAstrologer || isBusy) &&
+              styles.disabledButton,
           ]}
           onPress={handleContinue}
-          disabled={!selectedAstrologer || paymentLoading}
+          disabled={!selectedAstrologer || isBusy}
         >
-          {paymentLoading ? (
+          {isBusy ? (
             <ActivityIndicator color="#fff" />
           ) : (
             <Text style={styles.continueText} weight="semibold">
@@ -202,6 +358,33 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     color: '#1F1F2E',
+  },
+  serviceSummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  serviceSummaryLeft: {
+    flex: 1,
+    marginRight: 12,
+  },
+  serviceSummaryLabel: {
+    fontSize: 12,
+    color: colors.primary.main,
+  },
+  serviceSummaryName: {
+    fontSize: 16,
+    color: '#1F1F2E',
+    marginTop: 2,
+  },
+  serviceSummaryPrice: {
+    fontSize: 18,
+    color: colors.primary.main,
   },
   listContent: {
     padding: 16,
