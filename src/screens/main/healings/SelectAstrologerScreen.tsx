@@ -22,6 +22,7 @@ import { useToast } from '../../../context/ToastContext';
 import type { User } from '../../../types/global.types';
 import RazorpayCheckout from 'react-native-razorpay';
 import { RAZORPAY_KEY } from '../../../constants/api.constants';
+import { GoBack } from '../../../components';
 
 const BASE_IMAGE_URL = API_BASE_URL.DEVELOPMENT;
 
@@ -257,14 +258,18 @@ const SelectAstrologerScreen: React.FC<
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      {/* <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backIcon}>
           <Text style={styles.backIconText}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle} weight="semibold">
           Select Astrologer
         </Text>
-      </View>
+      </View> */}
+
+         <View style={styles.backButtonWrapper}>
+                    <GoBack onBack={onBack} title='Select Astrologer' />
+                  </View>
 
       {!!service && (
         <View style={styles.serviceSummary}>
@@ -335,6 +340,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F7F8FC',
+  },
+   backButtonWrapper: {
+    position: 'absolute',
+    // top: 10,
+    left: 0,
+    right: 0,
+    zIndex: 10,
   },
   header: {
     flexDirection: 'row',
