@@ -14,7 +14,9 @@ import { useMyServiceBookings } from '../../services/api/healingServices/myBooki
 import { useCategories } from '../../services/api/healingServices/serviceCategory/useCategories';
 import { useCategoryServices } from '../../services/api/healingServices/getCategory/useCategoryServices';
 import { Category } from '../../services/api/healingServices/serviceCategory/categories.types';
+import { useAuthStore } from '../../stores/auth.store';
 
+import { LoginRequiredModal } from '../../components/Modal';
 import ServiceCard from '../../components/cards/ServiceCard';
 import CategoryCard from '../../components/cards/CategoryCard';
 
@@ -26,6 +28,8 @@ interface RemediesScreenProps {
 }
 
 const RemediesScreen: React.FC<RemediesScreenProps> = ({
+  onNavigateToLogin,
+  onNavigateToSignup,
   onNavigateToMyBookings,
   onNavigateToServiceDetails,
 }) => {
@@ -50,16 +54,40 @@ const RemediesScreen: React.FC<RemediesScreenProps> = ({
 
   const isCategoryView = !selectedCategory;
 
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState(
+    'Please login to perform this action',
+  );
+
+  // Check if user can perform action
+  const handleRestrictedAction = (
+    actionMessage: string,
+    callback?: () => void,
+  ) => {
+    if (isAuthenticated) {
+      // User is authenticated, allow the action
+      callback?.();
+      return;
+    }
+
+    // Show login modal for guest users
+    setModalMessage(actionMessage);
+    setShowLoginModal(true);
+  };
+
   const handleServicePress = (service: any) => {
-    onNavigateToServiceDetails?.({
-      ...service,
-      category: selectedCategory
-        ? {
-            id: selectedCategory.id,
-            name: selectedCategory.name,
-            slug: selectedCategory.slug,
-          }
-        : service?.category,
+    handleRestrictedAction('Please login to view service details', () => {
+      onNavigateToServiceDetails?.({
+        ...service,
+        category: selectedCategory
+          ? {
+              id: selectedCategory.id,
+              name: selectedCategory.name,
+              slug: selectedCategory.slug,
+            }
+          : service?.category,
+      });
     });
   };
 
@@ -69,6 +97,20 @@ const RemediesScreen: React.FC<RemediesScreenProps> = ({
 
   const handleBackToCategories = () => {
     setSelectedCategory(null);
+  };
+
+  const handleCloseModal = () => {
+    setShowLoginModal(false);
+  };
+
+  const handleLoginPress = () => {
+    setShowLoginModal(false);
+    onNavigateToLogin?.();
+  };
+
+  const handleSignupPress = () => {
+    setShowLoginModal(false);
+    onNavigateToSignup?.();
   };
 
   const renderCategoryItem = ({ item }: { item: Category }) => (
@@ -205,6 +247,15 @@ const RemediesScreen: React.FC<RemediesScreenProps> = ({
           }
         />
       )}
+
+      {/* Login Required Modal */}
+      <LoginRequiredModal
+        visible={showLoginModal}
+        onClose={handleCloseModal}
+        onLoginPress={handleLoginPress}
+        onSignupPress={handleSignupPress}
+        message={modalMessage}
+      />
     </View>
   );
 };
