@@ -94,7 +94,7 @@ const SelectAstrologerScreen: React.FC<
     const [isSubmitting, setIsSubmitting] =
       useState(false);
 
-    const { showError } = useToast();
+    const { showSuccess, showError } = useToast();
 
     const user = useAuthStore(state => state.user);
 
@@ -242,12 +242,13 @@ const SelectAstrologerScreen: React.FC<
 
         try {
           await RazorpayCheckout.open(options);
+          showSuccess('Payment successful! Your booking is confirmed.');
           onComplete();
         } catch (razorpayError: any) {
-          // A dismissed checkout rejects as well — treat it as a silent cancel.
-          console.log('PAYMENT ERROR', razorpayError);
+          // console.log('PAYMENT ERROR', razorpayError);
 
           if (razorpayError?.code === 'Payment Cancelled') {
+            showError('Payment cancelled.');
             return;
           }
 
