@@ -50,7 +50,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   onNavigateToBlogPost,
   onNavigateToAstrologerList,
   onNavigateToProblemBaseAstroScreen,
-  onNavigateToServiceDetails,
+  onNavigateToServiceDetails: _onNavigateToServiceDetails,
   onNavigateToBlogListing,
   onNavigateToFreeServices,
 }) => {
@@ -205,9 +205,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   //   [onNavigateToProduct],
   // );
 
-  const handleRemedyPress = (remedy: any) => {
-    onNavigateToServiceDetails?.(remedy);
-  };
+  const handleRemedyPress = useCallback(() => {
+    onNavigateToTab?.('remedies');
+  }, [onNavigateToTab]);
 
   const handleViewAllRemedies = useCallback(() => {
     onNavigateToTab?.('remedies');

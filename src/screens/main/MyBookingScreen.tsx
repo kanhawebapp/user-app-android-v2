@@ -160,8 +160,10 @@ import { useNavigation } from '@react-navigation/native';
 const MyBookingScreen: React.FC = () => {
   const { bookings, loading, error, refresh } = useMyServiceBookings();
 
-  const data = bookings
-
+  const data = bookings.filter(
+    booking => booking.bookingStatus === 'ASSIGNED',
+  );
+console.log('my booking', data);
   const navigation = useNavigation()
 
   const getStatusColor = (status: string) => {
@@ -293,7 +295,7 @@ const MyBookingScreen: React.FC = () => {
   };
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      {/* <View style={styles.header}>
         <GoBack onBack={navigation.goBack} />
         <Text style={styles.headerTitle}>
           My Bookings
@@ -343,7 +345,9 @@ const MyBookingScreen: React.FC = () => {
             </Text>
           </View>
         </View>
-      </View>
+      </View> */}
+
+
 
       {loading && (
         <View style={styles.loadingWrap}>
