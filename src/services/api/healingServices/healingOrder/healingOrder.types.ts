@@ -1,21 +1,14 @@
-// export interface CreateHealingOrderInput {
-//   bookingId: string;
-//   useWallet: boolean;
-// }
+/**
+ * Payload of the `CreateHealingOrder` mutation. `couponCode` is an empty
+ * string when no coupon is applied.
+ */
+export interface CreateHealingOrderInput {
+  bookingId: string;
 
-// export interface HealingOrder {
-//   success: boolean;
-//   orderId: string;
-//   bookingId: string;
-//   currency: string;
-//   totalAmount: number;
-//   walletAmount: number;
-//   payableAmount: number;
-// }
+  couponCode: string;
 
-// export interface CreateHealingOrderResponse {
-//   createHealingOrder: HealingOrder;
-// }
+  amount: number;
+}
 
 export interface HealingOrder {
   success: boolean;

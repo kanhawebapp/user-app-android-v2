@@ -173,7 +173,14 @@ const SelectAstrologerScreen: React.FC<
         astrologerId: selectedAstrologer.id,
       });
 
-      const order = await createOrder(bookingId);
+      // The order amount is the price configured for this astrologer on the
+      // selected service (`astrologerMappings[].price`); no coupon is applied
+      // at this step.
+      const order = await createOrder({
+        bookingId,
+        couponCode: '',
+        amount: selectedAstrologer.servicePrice,
+      });
 
       const options = {
         key: RAZORPAY_KEY.NEXT_PUBLIC_RAZORPAY_KEY_ID,
