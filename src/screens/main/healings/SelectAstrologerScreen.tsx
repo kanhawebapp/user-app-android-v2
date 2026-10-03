@@ -89,254 +89,254 @@ const SelectAstrologerScreen: React.FC<
   onBack,
   onComplete,
 }) => {
-  const [selectedAstrologer, setSelectedAstrologer] =
-    useState<SelectableAstrologer | null>(null);
-  const [isSubmitting, setIsSubmitting] =
-    useState(false);
+    const [selectedAstrologer, setSelectedAstrologer] =
+      useState<SelectableAstrologer | null>(null);
+    const [isSubmitting, setIsSubmitting] =
+      useState(false);
 
-  const {showError} = useToast();
+    const { showError } = useToast();
 
-  const user = useAuthStore(state => state.user);
+    const user = useAuthStore(state => state.user);
 
-  // Single source of service details: `GetService(slug)` via the shared
-  // GraphQL client. The slug comes from the service handed over by the
-  // healing flow (a service list/card), so the `astrologerMappings` and
-  // their service-specific prices always come from one centralized call.
-  const {
-    service: selectedService,
-    loading: serviceLoading,
-    refresh: refreshService,
-  } = useGetService(service?.slug);
+    // Single source of service details: `GetService(slug)` via the shared
+    // GraphQL client. The slug comes from the service handed over by the
+    // healing flow (a service list/card), so the `astrologerMappings` and
+    // their service-specific prices always come from one centralized call.
+    const {
+      service: selectedService,
+      loading: serviceLoading,
+      refresh: refreshService,
+    } = useGetService(service?.slug);
 
-  const astrologers = useMemo<SelectableAstrologer[]>(
-    () =>
-      selectedService?.astrologerMappings
-        ?.filter(mapping => mapping?.astrologer)
-        ?.map(mapping => ({
-          ...mapping.astrologer,
-          serviceAstrologerMappingId: mapping.id,
-          servicePrice: mapping.price,
-        })) ?? [],
-    [selectedService],
-  );
+    const astrologers = useMemo<SelectableAstrologer[]>(
+      () =>
+        selectedService?.astrologerMappings
+          ?.filter(mapping => mapping?.astrologer)
+          ?.map(mapping => ({
+            ...mapping.astrologer,
+            serviceAstrologerMappingId: mapping.id,
+            servicePrice: mapping.price,
+          })) ?? [],
+      [selectedService],
+    );
 
-  useEffect(() => {
-    if (!selectedAstrologer && astrologers.length > 0) {
-      setSelectedAstrologer(astrologers[0]);
-    }
-  }, [astrologers, selectedAstrologer]);
+    useEffect(() => {
+      if (!selectedAstrologer && astrologers.length > 0) {
+        setSelectedAstrologer(astrologers[0]);
+      }
+    }, [astrologers, selectedAstrologer]);
 
-  const {submitBooking} = useCreateServiceBooking();
-  const {assignAstrologer} = useBookingAstrologer();
-  const {
-    createOrder,
-    loading: paymentLoading,
-  } = useCreateHealingOrder();
+    const { submitBooking } = useCreateServiceBooking();
+    const { assignAstrologer } = useBookingAstrologer();
+    const {
+      createOrder,
+      loading: paymentLoading,
+    } = useCreateHealingOrder();
 
-  const baseAmount =
-    selectedAstrologer?.servicePrice ?? service?.price ?? 0;
-  const gstAmount = (baseAmount * GST_PERCENTAGE) / 100;
-  const totalAmount = baseAmount + gstAmount;
+    const baseAmount =
+      selectedAstrologer?.servicePrice ?? service?.price ?? 0;
+    const gstAmount = (baseAmount * GST_PERCENTAGE) / 100;
+    const totalAmount = baseAmount + gstAmount;
 
-  const handleContinue = async () => {
-    if (!selectedAstrologer) {
-      Alert.alert(
-        'Selection Required',
-        'Please select an astrologer to continue',
-      );
-
-      return;
-    }
-
-    if (!service?.id) {
-      showError('Unable to continue. Please select a service again.');
-
-      return;
-    }
-
-    if (isSubmitting || paymentLoading) {
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-     const booking = await submitBooking({
-  serviceId: service?.id ?? '',
-  name: 'xxxx',
-  email: 'xxxx',
-  phone: '9999999999',
-  dob: '999',
-  tob: '9999',
-  pob: '9999',
-  gender: 'male',
-  concern: 'male',
-});
-
-      const bookingId = booking?.id;
-
-      if (!bookingId) {
-        throw new Error(
-          'Booking was not created. Please try again.',
+    const handleContinue = async () => {
+      if (!selectedAstrologer) {
+        Alert.alert(
+          'Selection Required',
+          'Please select an astrologer to continue',
         );
+
+        return;
       }
 
-      // Persist the selected astrologer on the booking before checkout.
-      await assignAstrologer({
-        bookingId,
-        astrologerId: selectedAstrologer.id,
-      });
+      if (!service?.id) {
+        showError('Unable to continue. Please select a service again.');
 
-      // The order amount is the price configured for this astrologer on the
-      // selected service (`astrologerMappings[].price`) plus GST; no coupon is
-      // applied at this step.
-      const order = await createOrder({
-        bookingId,
-        couponCode: '',
-        amount: Number(totalAmount.toFixed(2)),
-      });
+        return;
+      }
 
-      // Get IP + City + State + Country
-      const ipData = await getIPLocation();
+      if (isSubmitting || paymentLoading) {
+        return;
+      }
 
-      const options = {
-        key: RAZORPAY_KEY.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: Number(order?.payableAmount) * 100,
-        currency: order?.currency || 'INR',
-        name: 'Dhwani Astro LLP',
-        description: service?.name
-          ? `${service.name} Payment`
-          : 'Healing Service Payment',
-        order_id: order?.orderId,
-        prefill: {
-          name: user?.name || '',
-          contact: user?.mobile || '',
-          email: user?.email || '',
-        },
-        notes: {
-          bookingId: order?.bookingId || bookingId,
-          astrologerId: selectedAstrologer.id,
-          serviceAstrologerMappingId:
-            selectedAstrologer.serviceAstrologerMappingId,
-          serviceId: service?.id,
-          serviceName: service?.name,
-          servicePrice: String(
-            selectedAstrologer.servicePrice ??
-              service?.price ??
-              '',
-          ),           
-          serviceType: 'SERVICE',
-          coins: String(selectedAstrologer.servicePrice ?? 0),
-
-          // Location details
-          ip: ipData.ip,
-          city: ipData.city,
-          state: ipData.state,
-          country: ipData.country,
-          platform: Platform.OS,
-        },
-        theme: {
-          color: '#5B2CA5',
-        },
-      };
+      setIsSubmitting(true);
 
       try {
-        await RazorpayCheckout.open(options);
-        onComplete();
-      } catch (razorpayError: any) {
-        // A dismissed checkout rejects as well — treat it as a silent cancel.
-        console.log('PAYMENT ERROR', razorpayError);
+        const booking = await submitBooking({
+          serviceId: service?.id ?? '',
+          name: 'xxxx',
+          email: 'xxxx',
+          phone: '9999999999',
+          dob: '999',
+          tob: '9999',
+          pob: '9999',
+          gender: 'male',
+          concern: 'male',
+        });
 
-        if (razorpayError?.code === 'Payment Cancelled') {
-          return;
+        const bookingId = booking?.id;
+
+        if (!bookingId) {
+          throw new Error(
+            'Booking was not created. Please try again.',
+          );
         }
 
-        showError(
-          razorpayError?.description ||
+        // Persist the selected astrologer on the booking before checkout.
+        await assignAstrologer({
+          bookingId,
+          astrologerId: selectedAstrologer.id,
+        });
+
+        // The order amount is the price configured for this astrologer on the
+        // selected service (`astrologerMappings[].price`) plus GST; no coupon is
+        // applied at this step.
+        const order = await createOrder({
+          bookingId,
+          couponCode: '',
+          amount: Number(totalAmount.toFixed(2)),
+        });
+
+        // Get IP + City + State + Country
+        const ipData = await getIPLocation();
+
+        const options = {
+          key: RAZORPAY_KEY.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+          amount: Number(order?.payableAmount) * 100,
+          currency: order?.currency || 'INR',
+          name: 'Dhwani Astro LLP',
+          description: service?.name
+            ? `${service.name} Payment`
+            : 'Healing Service Payment',
+          order_id: order?.orderId,
+          prefill: {
+            name: user?.name || '',
+            contact: user?.mobile || '',
+            email: user?.email || '',
+          },
+          notes: {
+            bookingId: order?.bookingId || bookingId,
+            astrologerId: selectedAstrologer.id,
+            serviceAstrologerMappingId:
+              selectedAstrologer.serviceAstrologerMappingId,
+            serviceId: service?.id,
+            serviceName: service?.name,
+            servicePrice: String(
+              selectedAstrologer.servicePrice ??
+              service?.price ??
+              '',
+            ),
+            serviceType: 'SERVICE',
+            coins: String(selectedAstrologer.servicePrice ?? 0),
+
+            // Location details
+            ip: ipData.ip,
+            city: ipData.city,
+            state: ipData.state,
+            country: ipData.country,
+            platform: Platform.OS,
+          },
+          theme: {
+            color: '#5B2CA5',
+          },
+        };
+
+        try {
+          await RazorpayCheckout.open(options);
+          onComplete();
+        } catch (razorpayError: any) {
+          // A dismissed checkout rejects as well — treat it as a silent cancel.
+          console.log('PAYMENT ERROR', razorpayError);
+
+          if (razorpayError?.code === 'Payment Cancelled') {
+            return;
+          }
+
+          showError(
+            razorpayError?.description ||
             razorpayError?.message ||
             'Unable to complete the payment. Please try again.',
-        );
-      }
-    } catch (error: any) {
-      console.log('PAYMENT ERROR', error);
+          );
+        }
+      } catch (error: any) {
+        console.log('PAYMENT ERROR', error);
 
-      showError(
-        error?.message ||
+        showError(
+          error?.message ||
           'Unable to start the payment. Please try again.',
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+        );
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
 
-  const renderAstrologer = ({
-    item,
-  }: {
-    item: SelectableAstrologer;
-  }) => {
-    const selected = selectedAstrologer?.id === item.id;
+    const renderAstrologer = ({
+      item,
+    }: {
+      item: SelectableAstrologer;
+    }) => {
+      const selected = selectedAstrologer?.id === item.id;
 
-    return (
-      <TouchableOpacity
-        style={[
-          styles.card,
-          selected && styles.selectedCard,
-        ]}
-        onPress={() => setSelectedAstrologer(item)}
-      >
-        <Image
-          source={{
-            uri: `${BASE_IMAGE_URL}${item.profilePic}`,
-          }}
-          style={styles.avatar}
-        />
+      return (
+        <TouchableOpacity
+          style={[
+            styles.card,
+            selected && styles.selectedCard,
+          ]}
+          onPress={() => setSelectedAstrologer(item)}
+        >
+          <Image
+            source={{
+              uri: `${BASE_IMAGE_URL}${item.profilePic}`,
+            }}
+            style={styles.avatar}
+          />
 
-        <View style={styles.infoContainer}>
-          <View style={styles.nameRow}>
-            <Text style={styles.name} weight="semibold">
-              {item.displayName || item.name || 'Astrologer'}
-            </Text>
-            <View style={styles.metaRow}>
-              <Text style={styles.cardPrice} weight="semibold">
-                ₹{item.servicePrice}
+          <View style={styles.infoContainer}>
+            <View style={styles.nameRow}>
+              <Text style={styles.name} weight="semibold">
+                {item.displayName || item.name || 'Astrologer'}
               </Text>
-              <View style={styles.ratingBadge}>
-                <Text style={styles.ratingText}>
-                  ⭐ {item.rating || 0}
+              <View style={styles.metaRow}>
+                <Text style={styles.cardPrice} weight="semibold">
+                  ₹{item.servicePrice}
                 </Text>
+                <View style={styles.ratingBadge}>
+                  <Text style={styles.ratingText}>
+                    ⭐ {Number(item.rating || 0).toFixed(1)}
+                  </Text>
+                </View>
               </View>
             </View>
+
+            <Text style={styles.experience}>
+              {item.experience} years experience
+            </Text>
+
+            <Text style={styles.detailLabel}>Skills:</Text>
+            <Text style={styles.detailText} numberOfLines={1}>
+              {item.skills?.join(', ') || 'Not specified'}
+            </Text>
+
+            <Text style={styles.detailLabel}>Languages:</Text>
+            <Text style={styles.detailText} numberOfLines={1}>
+              {item.languages?.join(', ') || 'Not specified'}
+            </Text>
           </View>
 
-          <Text style={styles.experience}>
-            {item.experience} years experience
-          </Text>
+          {selected && (
+            <View style={styles.checkmark}>
+              <Text style={styles.checkmarkText}>✓</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      );
+    };
 
-          <Text style={styles.detailLabel}>Skills:</Text>
-          <Text style={styles.detailText} numberOfLines={1}>
-            {item.skills?.join(', ') || 'Not specified'}
-          </Text>
+    const isBusy = isSubmitting || paymentLoading;
 
-          <Text style={styles.detailLabel}>Languages:</Text>
-          <Text style={styles.detailText} numberOfLines={1}>
-            {item.languages?.join(', ') || 'Not specified'}
-          </Text>
-        </View>
-
-        {selected && (
-          <View style={styles.checkmark}>
-            <Text style={styles.checkmarkText}>✓</Text>
-          </View>
-        )}
-      </TouchableOpacity>
-    );
-  };
-
-  const isBusy = isSubmitting || paymentLoading;
-
-  return (
-    <View style={styles.container}>
-      {/* <View style={styles.header}>
+    return (
+      <View style={styles.container}>
+        {/* <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backIcon}>
           <Text style={styles.backIconText}>←</Text>
         </TouchableOpacity>
@@ -345,114 +345,114 @@ const SelectAstrologerScreen: React.FC<
         </Text>
       </View> */}
 
-         <View style={styles.backButtonWrapper}>
-                    <GoBack onBack={onBack} title='Select Astrologer' />
-                  </View>
-
-      {!!service && (
-        <View style={styles.serviceSummary}>
-          <View style={styles.serviceSummaryLeft}>
-            <Text style={styles.serviceSummaryLabel} weight="medium">
-              {service.category?.name || 'Service'}
-            </Text>
-
-            <Text
-              style={styles.serviceSummaryName}
-              weight="semibold"
-              numberOfLines={1}>
-              {service.name}
-            </Text>
-          </View>
-
-          <Text style={styles.serviceSummaryPrice} weight="semibold">
-            ₹{service.price}
-          </Text>
+        <View style={styles.backButtonWrapper}>
+          <GoBack onBack={onBack} title='Select Astrologer' />
         </View>
-      )}
 
-      <FlatList
-        data={astrologers}
-        keyExtractor={item => item.id}
-        renderItem={renderAstrologer}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={() => (
-          serviceLoading ? (
-            <View style={styles.emptyContainer}>
-              <ActivityIndicator color={colors.primary.main} />
-            </View>
-          ) : (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>
-                No astrologers available
-              </Text>
-            </View>
-          )
-        )}
-      />
-
-      <View style={styles.footer}>
         {!!service && (
-          <View style={styles.priceBreakdown}>
-            <View style={styles.priceRow}>
-              <Text style={styles.priceLabel} weight="medium">
-                Service Price
+          <View style={styles.serviceSummary}>
+            <View style={styles.serviceSummaryLeft}>
+              <Text style={styles.serviceSummaryLabel} weight="medium">
+                {service.category?.name || 'Service'}
               </Text>
-              <Text style={styles.priceRowValue} weight="medium">
-                ₹{baseAmount}
+
+              <Text
+                style={styles.serviceSummaryName}
+                weight="semibold"
+                numberOfLines={1}>
+                {service.name}
               </Text>
             </View>
 
-            <View style={styles.priceRow}>
-              <Text style={styles.priceLabel} weight="medium">
-                GST ({GST_PERCENTAGE}%)
-              </Text>
-              <Text style={styles.priceRowValue} weight="medium">
-                ₹{gstAmount.toFixed(2)}
-              </Text>
-            </View>
-
-            <View style={styles.priceDivider} />
-
-            <View style={styles.priceRow}>
-              <Text style={styles.priceTotalLabel} weight="semibold">
-                Total Price
-              </Text>
-              <Text style={styles.priceTotalValue} weight="semibold">
-                ₹{totalAmount.toFixed(2)}
-              </Text>
-            </View>
+            <Text style={styles.serviceSummaryPrice} weight="semibold">
+              ₹{service.price}
+            </Text>
           </View>
         )}
 
-        <TouchableOpacity
-          style={[
-            styles.continueButton,
-            (!selectedAstrologer || isBusy) &&
-              styles.disabledButton,
-          ]}
-          onPress={handleContinue}
-          disabled={!selectedAstrologer || isBusy}
-        >
-          {isBusy ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.continueText} weight="semibold">
-              Continue to Payment
-            </Text>
+        <FlatList
+          data={astrologers}
+          keyExtractor={item => item.id}
+          renderItem={renderAstrologer}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={() => (
+            serviceLoading ? (
+              <View style={styles.emptyContainer}>
+                <ActivityIndicator color={colors.primary.main} />
+              </View>
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>
+                  No astrologers available
+                </Text>
+              </View>
+            )
           )}
-        </TouchableOpacity>
+        />
+
+        <View style={styles.footer}>
+          {!!service && (
+            <View style={styles.priceBreakdown}>
+              <View style={styles.priceRow}>
+                <Text style={styles.priceLabel} weight="medium">
+                  Service Price
+                </Text>
+                <Text style={styles.priceRowValue} weight="medium">
+                  ₹{baseAmount}
+                </Text>
+              </View>
+
+              <View style={styles.priceRow}>
+                <Text style={styles.priceLabel} weight="medium">
+                  GST ({GST_PERCENTAGE}%)
+                </Text>
+                <Text style={styles.priceRowValue} weight="medium">
+                  ₹{gstAmount.toFixed(2)}
+                </Text>
+              </View>
+
+              <View style={styles.priceDivider} />
+
+              <View style={styles.priceRow}>
+                <Text style={styles.priceTotalLabel} weight="semibold">
+                  Total Price
+                </Text>
+                <Text style={styles.priceTotalValue} weight="semibold">
+                  ₹{totalAmount.toFixed(2)}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          <TouchableOpacity
+            style={[
+              styles.continueButton,
+              (!selectedAstrologer || isBusy) &&
+              styles.disabledButton,
+            ]}
+            onPress={handleContinue}
+            disabled={!selectedAstrologer || isBusy}
+          >
+            {isBusy ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.continueText} weight="semibold">
+                Continue to Payment
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
-  );
-};
+    );
+  };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F7F8FC',
   },
-   backButtonWrapper: {
+  backButtonWrapper: {
     position: 'absolute',
     // top: 10,
     left: 0,
