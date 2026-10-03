@@ -15,6 +15,7 @@ import { API_BASE_URL } from '../../../constants/api.constants';
 import { GoBack } from '../../../components';
 
 const BASE_IMAGE_URL = API_BASE_URL.DEVELOPMENT;
+const GST_PERCENTAGE = 18;
 
 interface Service {
   id: string;
@@ -44,6 +45,9 @@ const ServiceDetailsScreen: React.FC<
     if (!service) {
       return null;
     }
+
+    const gstAmount = (service.price * GST_PERCENTAGE) / 100;
+    const totalPrice = service.price + gstAmount;
 
     return (
       <View style={styles.container}>
@@ -170,18 +174,51 @@ const ServiceDetailsScreen: React.FC<
             {/* Pricing Card */}
 
             <View style={styles.priceCard}>
-              <Text
-                style={styles.priceLabel}
-                weight="medium">
-                Service Price
-              </Text>
+              <View style={styles.priceRow}>
+                <Text
+                  style={styles.priceLabel}
+                  weight="medium">
+                  Service Price
+                </Text>
 
-              <Text
-                style={styles.priceValue}
-                weight="semibold"
-              >
-                ₹{service.price}
-              </Text>
+                <Text
+                  style={styles.priceRowValue}
+                  weight="medium">
+                  ₹{service.price}
+                </Text>
+              </View>
+
+              <View style={styles.priceDivider} />
+
+              <View style={styles.priceRow}>
+                <Text
+                  style={styles.priceLabel}
+                  weight="medium">
+                  GST ({GST_PERCENTAGE}%)
+                </Text>
+
+                <Text
+                  style={styles.priceRowValue}
+                  weight="medium">
+                  ₹{gstAmount.toFixed(2)}
+                </Text>
+              </View>
+
+              <View style={styles.priceDivider} />
+
+              <View style={styles.priceRow}>
+                <Text
+                  style={styles.priceTotalLabel}
+                  weight="semibold">
+                  Total Price
+                </Text>
+
+                <Text
+                  style={styles.priceValue}
+                  weight="semibold">
+                  ₹{totalPrice.toFixed(2)}
+                </Text>
+              </View>
 
               <Text style={styles.priceNote}>
                 One-time service booking fee
@@ -201,7 +238,7 @@ const ServiceDetailsScreen: React.FC<
             <Text
               style={styles.footerPrice}
               weight="semibold">
-              ₹{service.price}
+              ₹{totalPrice.toFixed(2)}
             </Text>
           </View>
 
@@ -335,10 +372,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 22,
-    alignItems: 'center',
     marginBottom: 20,
     borderWidth: 1,
     borderColor: '#ECECEC',
+  },
+
+  priceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+
+  priceRowValue: {
+    color: '#1F1F2E',
+    fontSize: 16,
+  },
+
+  priceDivider: {
+    height: 1,
+    backgroundColor: '#EFEFEF',
+    marginVertical: 8,
   },
 
   priceLabel: {
@@ -346,16 +400,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
+  priceTotalLabel: {
+    color: '#1F1F2E',
+    fontSize: 16,
+  },
+
   priceValue: {
     fontSize: 22,
-    color:colors.primary.main,
-    marginTop: 10,
+    color: colors.primary.main,
   },
 
   priceNote: {
-    marginTop: 8,
+    marginTop: 12,
     color: '#888',
     fontSize: 13,
+    textAlign: 'center',
   },
 
   footer: {
