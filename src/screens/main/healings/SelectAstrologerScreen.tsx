@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   FlatList,
@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Text } from '../../../components/Text';
 import { colors } from '../../../theme';
@@ -23,8 +24,10 @@ import type { User } from '../../../types/global.types';
 import RazorpayCheckout from 'react-native-razorpay';
 import { RAZORPAY_KEY } from '../../../constants/api.constants';
 import { GoBack } from '../../../components';
+import { getIPLocation } from '../../../services/location/location.service';
 
 const BASE_IMAGE_URL = API_BASE_URL.DEVELOPMENT;
+const GST_PERCENTAGE = 18;
 
 interface SelectAstrologerScreenProps {
   service: {
@@ -117,12 +120,23 @@ const SelectAstrologerScreen: React.FC<
     [selectedService],
   );
 
+  useEffect(() => {
+    if (!selectedAstrologer && astrologers.length > 0) {
+      setSelectedAstrologer(astrologers[0]);
+    }
+  }, [astrologers, selectedAstrologer]);
+
   const {submitBooking} = useCreateServiceBooking();
   const {assignAstrologer} = useBookingAstrologer();
   const {
     createOrder,
     loading: paymentLoading,
   } = useCreateHealingOrder();
+
+  const baseAmount =
+    selectedAstrologer?.servicePrice ?? service?.price ?? 0;
+  const gstAmount = (baseAmount * GST_PERCENTAGE) / 100;
+  const totalAmount = baseAmount + gstAmount;
 
   const handleContinue = async () => {
     if (!selectedAstrologer) {
@@ -174,13 +188,16 @@ const SelectAstrologerScreen: React.FC<
       });
 
       // The order amount is the price configured for this astrologer on the
-      // selected service (`astrologerMappings[].price`); no coupon is applied
-      // at this step.
+      // selected service (`astrologerMappings[].price`) plus GST; no coupon is
+      // applied at this step.
       const order = await createOrder({
         bookingId,
         couponCode: '',
-        amount: selectedAstrologer.servicePrice,
+        amount: Number(totalAmount.toFixed(2)),
       });
+
+      // Get IP + City + State + Country
+      const ipData = await getIPLocation();
 
       const options = {
         key: RAZORPAY_KEY.NEXT_PUBLIC_RAZORPAY_KEY_ID,
@@ -207,8 +224,16 @@ const SelectAstrologerScreen: React.FC<
             selectedAstrologer.servicePrice ??
               service?.price ??
               '',
-          ),
+          ),           
           serviceType: 'SERVICE',
+          coins: String(selectedAstrologer.servicePrice ?? 0),
+
+          // Location details
+          ip: ipData.ip,
+          city: ipData.city,
+          state: ipData.state,
+          country: ipData.country,
+          platform: Platform.OS,
         },
         theme: {
           color: '#5B2CA5',
@@ -367,6 +392,39 @@ const SelectAstrologerScreen: React.FC<
       />
 
       <View style={styles.footer}>
+        {!!service && (
+          <View style={styles.priceBreakdown}>
+            <View style={styles.priceRow}>
+              <Text style={styles.priceLabel} weight="medium">
+                Service Price
+              </Text>
+              <Text style={styles.priceRowValue} weight="medium">
+                ₹{baseAmount}
+              </Text>
+            </View>
+
+            <View style={styles.priceRow}>
+              <Text style={styles.priceLabel} weight="medium">
+                GST ({GST_PERCENTAGE}%)
+              </Text>
+              <Text style={styles.priceRowValue} weight="medium">
+                ₹{gstAmount.toFixed(2)}
+              </Text>
+            </View>
+
+            <View style={styles.priceDivider} />
+
+            <View style={styles.priceRow}>
+              <Text style={styles.priceTotalLabel} weight="semibold">
+                Total Price
+              </Text>
+              <Text style={styles.priceTotalValue} weight="semibold">
+                ₹{totalAmount.toFixed(2)}
+              </Text>
+            </View>
+          </View>
+        )}
+
         <TouchableOpacity
           style={[
             styles.continueButton,
@@ -549,6 +607,36 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#F0F0F0',
+  },
+  priceBreakdown: {
+    marginBottom: 12,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  priceLabel: {
+    color: '#777',
+    fontSize: 14,
+  },
+  priceRowValue: {
+    color: '#1F1F2E',
+    fontSize: 14,
+  },
+  priceDivider: {
+    height: 1,
+    backgroundColor: '#EFEFEF',
+    marginVertical: 6,
+  },
+  priceTotalLabel: {
+    color: '#1F1F2E',
+    fontSize: 16,
+  },
+  priceTotalValue: {
+    color: colors.primary.main,
+    fontSize: 18,
   },
   continueButton: {
     backgroundColor: colors.primary.main,
