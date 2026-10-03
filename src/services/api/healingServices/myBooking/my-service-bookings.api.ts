@@ -74,14 +74,14 @@ export const getMyServiceBookings =
                     GET_MY_SERVICE_BOOKINGS,
                 );
 
-            console.log(
-                'MY SERVICE BOOKINGS RESPONSE:',
-                JSON.stringify(
-                    response,
-                    null,
-                    2,
-                ),
-            );
+            // console.log(
+            //     'MY SERVICE BOOKINGS RESPONSE:',
+            //     JSON.stringify(
+            //         response,
+            //         null,
+            //         2,
+            //     ),
+            // );
 
             return (
                 response?.getMyServiceBookings ||

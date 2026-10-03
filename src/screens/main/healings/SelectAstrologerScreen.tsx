@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   FlatList,
@@ -11,8 +11,8 @@ import {
 import { Text } from '../../../components/Text';
 import { colors } from '../../../theme';
 import { API_BASE_URL } from '../../../constants/api.constants';
-import { useAstrologerList } from '../../../services/api/healingServices/astrologerList/useAstrologerList';
-import { Astrologer } from '../../../services/api/healingServices/astrologerList/astrologer-list.types';
+import { useGetService } from '../../../services/api/healingServices/getService/useGetService';
+import { ServiceAstrologer } from '../../../services/api/healingServices/getServices/services.types';
 import { useCreateHealingOrder } from '../../../services/api/healingServices/healingOrder/useHealingOrder';
 import { useCreateServiceBooking } from '../../../services/api/healingServices/serviceBooking/useServiceBooking';
 import { CreateServiceBookingInput } from '../../../services/api/healingServices/serviceBooking/serviceBooking.types';
@@ -26,18 +26,13 @@ import { GoBack } from '../../../components';
 
 const BASE_IMAGE_URL = API_BASE_URL.DEVELOPMENT;
 
-// Module-level constant so the hook always receives a stable reference and
-// the astrologer list is fetched exactly once per screen mount.
-const ASTROLOGER_LIST_FILTERS = {
-  page: 1,
-  limit: 10,
-};
-
 interface SelectAstrologerScreenProps {
   service: {
     id: string;
     name: string;
     price: number;
+    /** Slug of the selected service; used for the `GetService(slug)` call. */
+    slug?: string;
     category?: {
       name: string;
     };
@@ -45,6 +40,17 @@ interface SelectAstrologerScreenProps {
   onBack: () => void;
   onComplete: () => void;
 }
+
+/**
+ * An astrologer the user can pick for the selected service. It carries the
+ * service-specific `ServiceAstrologer` join row alongside the astrologer
+ * itself, so `id` stays the real astrologer id while the mapping id and the
+ * service price remain available for the booking flow.
+ */
+type SelectableAstrologer = ServiceAstrologer & {
+  serviceAstrologerMappingId: string;
+  servicePrice: number;
+};
 
 /**
  * `BookingFormScreen` is no longer part of this flow, so the booking payload
@@ -81,7 +87,7 @@ const SelectAstrologerScreen: React.FC<
   onComplete,
 }) => {
   const [selectedAstrologer, setSelectedAstrologer] =
-    useState<Astrologer | null>(null);
+    useState<SelectableAstrologer | null>(null);
   const [isSubmitting, setIsSubmitting] =
     useState(false);
 
@@ -89,10 +95,27 @@ const SelectAstrologerScreen: React.FC<
 
   const user = useAuthStore(state => state.user);
 
+  // Single source of service details: `GetService(slug)` via the shared
+  // GraphQL client. The slug comes from the service handed over by the
+  // healing flow (a service list/card), so the `astrologerMappings` and
+  // their service-specific prices always come from one centralized call.
   const {
-    astrologers,
-    loading: astrologersLoading,
-  } = useAstrologerList(ASTROLOGER_LIST_FILTERS);
+    service: selectedService,
+    loading: serviceLoading,
+    refresh: refreshService,
+  } = useGetService(service?.slug);
+
+  const astrologers = useMemo<SelectableAstrologer[]>(
+    () =>
+      selectedService?.astrologerMappings
+        ?.filter(mapping => mapping?.astrologer)
+        ?.map(mapping => ({
+          ...mapping.astrologer,
+          serviceAstrologerMappingId: mapping.id,
+          servicePrice: mapping.price,
+        })) ?? [],
+    [selectedService],
+  );
 
   const {submitBooking} = useCreateServiceBooking();
   const {assignAstrologer} = useBookingAstrologer();
@@ -124,9 +147,17 @@ const SelectAstrologerScreen: React.FC<
     setIsSubmitting(true);
 
     try {
-      const booking = await submitBooking(
-        buildBookingInput(service, user),
-      );
+     const booking = await submitBooking({
+  serviceId: service?.id ?? '',
+  name: 'xxxx',
+  email: 'xxxx',
+  phone: '9999999999',
+  dob: '999',
+  tob: '9999',
+  pob: '9999',
+  gender: 'male',
+  concern: 'male',
+});
 
       const bookingId = booking?.id;
 
@@ -161,9 +192,15 @@ const SelectAstrologerScreen: React.FC<
         notes: {
           bookingId: order?.bookingId || bookingId,
           astrologerId: selectedAstrologer.id,
+          serviceAstrologerMappingId:
+            selectedAstrologer.serviceAstrologerMappingId,
           serviceId: service?.id,
           serviceName: service?.name,
-          servicePrice: String(service?.price ?? ''),
+          servicePrice: String(
+            selectedAstrologer.servicePrice ??
+              service?.price ??
+              '',
+          ),
           serviceType: 'SERVICE',
         },
         theme: {
@@ -200,7 +237,11 @@ const SelectAstrologerScreen: React.FC<
     }
   };
 
-  const renderAstrologer = ({ item }: { item: Astrologer }) => {
+  const renderAstrologer = ({
+    item,
+  }: {
+    item: SelectableAstrologer;
+  }) => {
     const selected = selectedAstrologer?.id === item.id;
 
     return (
@@ -223,10 +264,15 @@ const SelectAstrologerScreen: React.FC<
             <Text style={styles.name} weight="semibold">
               {item.displayName || item.name || 'Astrologer'}
             </Text>
-            <View style={styles.ratingBadge}>
-              <Text style={styles.ratingText}>
-                ⭐ {item.rating || 0}
+            <View style={styles.metaRow}>
+              <Text style={styles.cardPrice} weight="semibold">
+                ₹{item.servicePrice}
               </Text>
+              <View style={styles.ratingBadge}>
+                <Text style={styles.ratingText}>
+                  ⭐ {item.rating || 0}
+                </Text>
+              </View>
             </View>
           </View>
 
@@ -299,7 +345,7 @@ const SelectAstrologerScreen: React.FC<
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={() => (
-          astrologersLoading ? (
+          serviceLoading ? (
             <View style={styles.emptyContainer}>
               <ActivityIndicator color={colors.primary.main} />
             </View>
@@ -445,6 +491,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  cardPrice: {
+    fontSize: 14,
+    color: colors.primary.main,
+    marginRight: 8,
   },
   ratingText: {
     fontSize: 12,

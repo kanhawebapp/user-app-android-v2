@@ -80,7 +80,14 @@ export const useCreateServiceBooking =
             await createServiceBooking(
               input,
             );
-
+console.log(
+            'CREATE SERVICE BOOKING HOOK RESPONSE:',
+            JSON.stringify(
+              response,
+              null,
+              2
+            )
+          );
           setBooking(response);
 
           return response;

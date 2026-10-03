@@ -23,7 +23,7 @@ export const useBookingAstrologer = () => {
     try {
       setLoading(true);
       setError(null);
-
+console.log("input>>>",input)
       const response =
         await updateBookingAstrologer(input);
 

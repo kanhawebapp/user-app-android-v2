@@ -7,12 +7,19 @@ import {
 } from './bookingAstrologer.types';
 
 const UPDATE_BOOKING_ASTROLOGER = `
-mutation UpdateBookingAstrologer($bookingId: ID!, $astrologerId: ID!) {
-  updateBookingAstrologer(bookingId: $bookingId, astrologerId: $astrologerId) {
-    id
-    astrologerId
+  mutation UpdateBookingAstrologer(
+    $bookingId: ID!
+    $astrologerId: ID!
+  ) {
+    updateBookingAstrologer(
+      bookingId: $bookingId
+      astrologerId: $astrologerId
+    ) {
+      id
+      astrologerId
+      __typename
+    }
   }
-}
 `;
 
 export const updateBookingAstrologer = async (
@@ -31,7 +38,7 @@ export const updateBookingAstrologer = async (
       JSON.stringify(response, null, 2),
     );
 
-    return response?.updateBookingAstrologer;
+    return response.updateBookingAstrologer;
   } catch (error: any) {
     console.log(
       'UPDATE BOOKING ASTROLOGER ERROR:',
