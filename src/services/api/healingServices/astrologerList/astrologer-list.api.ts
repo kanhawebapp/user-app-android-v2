@@ -66,14 +66,14 @@ export const getAstrologerListForUser =
           },
         );
 
-      console.log(
-        'GET ASTROLOGER LIST RESPONSE:',
-        JSON.stringify(
-          response,
-          null,
-          2,
-        ),
-      );
+      // console.log(
+      //   'GET ASTROLOGER LIST RESPONSE:',
+      //   JSON.stringify(
+      //     response,
+      //     null,
+      //     2,
+      //   ),
+      // );
 
       return (
         response?.getAstrologerListForUser || {
