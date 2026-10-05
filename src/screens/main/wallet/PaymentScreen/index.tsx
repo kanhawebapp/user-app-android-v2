@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -7,31 +7,31 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import RazorpayCheckout from 'react-native-razorpay';
 
-import {useTheme} from '../../../../theme';
-import {Text} from '../../../../components/Text';
-import {Button} from '../../../../components/Button';
-import {Card} from '../../../../components/Card';
-import {GoBack, Icon} from '../../../../components';
-import {useToast} from '../../../../context/ToastContext';
-import {useProfile} from '../../../../services/api/profile/profile.hooks';
-import {useAuthStore} from '../../../../stores/auth.store';
-import {RAZORPAY_KEY} from '../../../../constants/api.constants';
+import { useTheme } from '../../../../theme';
+import { Text } from '../../../../components/Text';
+import { Button } from '../../../../components/Button';
+import { Card } from '../../../../components/Card';
+import { GoBack, Icon } from '../../../../components';
+import { useToast } from '../../../../context/ToastContext';
+import { useProfile } from '../../../../services/api/profile/profile.hooks';
+import { useAuthStore } from '../../../../stores/auth.store';
+import { RAZORPAY_KEY } from '../../../../constants/api.constants';
 
 // Recharge APIs (existing)
-import {useRechargeOrder} from '../../../../services/api/recharge/recharge.order.hooks';
-import {openRazorpayCheckout} from '../../../../services/api/recharge/razorpay.service';
-import {RechargePack} from '../../../../services/api/recharge/recharge.types';
+import { useRechargeOrder } from '../../../../services/api/recharge/recharge.order.hooks';
+import { openRazorpayCheckout } from '../../../../services/api/recharge/razorpay.service';
+import { RechargePack } from '../../../../services/api/recharge/recharge.types';
 
 // Healing / service booking APIs (existing)
-import {ServiceAstrologer} from '../../../../services/api/healingServices/getServices/services.types';
-import {useCreateServiceBooking} from '../../../../services/api/healingServices/serviceBooking/useServiceBooking';
-import {CreateServiceBookingInput} from '../../../../services/api/healingServices/serviceBooking/serviceBooking.types';
-import {useBookingAstrologer} from '../../../../services/api/healingServices/bookingAstrologer/useBookingAstrologer';
-import {useCreateHealingOrder} from '../../../../services/api/healingServices/healingOrder/useHealingOrder';
-import {getIPLocation} from '../../../../services/location/location.service';
+import { ServiceAstrologer } from '../../../../services/api/healingServices/getServices/services.types';
+import { useCreateServiceBooking } from '../../../../services/api/healingServices/serviceBooking/useServiceBooking';
+import { CreateServiceBookingInput } from '../../../../services/api/healingServices/serviceBooking/serviceBooking.types';
+import { useBookingAstrologer } from '../../../../services/api/healingServices/bookingAstrologer/useBookingAstrologer';
+import { useCreateHealingOrder } from '../../../../services/api/healingServices/healingOrder/useHealingOrder';
+import { getIPLocation } from '../../../../services/location/location.service';
 
 const GST_PERCENTAGE = 18;
 
@@ -101,9 +101,9 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
   const colors = theme.colors;
   const insets = useSafeAreaInsets();
 
-  const {showSuccess, showError} = useToast();
+  const { showSuccess, showError } = useToast();
 
-  const {profile} = useProfile();
+  const { profile } = useProfile();
   const user = useAuthStore(state => state.user);
 
   const [isProcessing, setIsProcessing] = useState(false);
@@ -111,10 +111,10 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
   const [couponApplied, setCouponApplied] = useState(false);
 
   // Existing API hooks - reused as-is, only the trigger point moved here.
-  const {createOrder: createRechargeOrder} = useRechargeOrder();
-  const {submitBooking} = useCreateServiceBooking();
-  const {assignAstrologer} = useBookingAstrologer();
-  const {createOrder: createHealingOrder} = useCreateHealingOrder();
+  const { createOrder: createRechargeOrder } = useRechargeOrder();
+  const { submitBooking } = useCreateServiceBooking();
+  const { assignAstrologer } = useBookingAstrologer();
+  const { createOrder: createHealingOrder } = useCreateHealingOrder();
 
   const isRecharge = paymentType === 'recharge';
 
@@ -193,8 +193,8 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
 
         showError(
           error?.description ||
-            error?.message ||
-            'Unable to complete the payment. Please try again.',
+          error?.message ||
+          'Unable to complete the payment. Please try again.',
         );
       } finally {
         setIsProcessing(false);
@@ -309,8 +309,8 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
 
         showError(
           razorpayError?.description ||
-            razorpayError?.message ||
-            'Unable to complete the payment. Please try again.',
+          razorpayError?.message ||
+          'Unable to complete the payment. Please try again.',
         );
       }
     } catch (error: any) {
@@ -352,14 +352,14 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
       <Text
         variant="caption"
         weight="medium"
-        style={[styles.detailLabel, {color: colors.text.tertiary}]}>
+        style={[styles.detailLabel, { color: colors.text.tertiary }]}>
         {label}
       </Text>
       <Text
         variant="h6"
         weight="semibold"
         numberOfLines={1}
-        style={[styles.detailValue, {color: colors.primary.main}]}>
+        style={[styles.detailValue, { color: colors.primary.main }]}>
         {value}
       </Text>
     </View>
@@ -367,21 +367,21 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
 
   return (
     <View
-      style={[styles.container, {backgroundColor: colors.background.primary}]}>
+      style={[styles.container, { backgroundColor: colors.background.primary }]}>
       <GoBack onBack={onBack} title={headerTitle} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.scrollContent,
-          {paddingBottom: insets.bottom + 130},
+          { paddingBottom: insets.bottom + 130 },
         ]}>
         {/* Payment Summary Card */}
         <Card variant="elevated" style={styles.summaryCard}>
           <Text
             variant="h6"
             weight="semibold"
-            style={[styles.sectionTitle, {color: colors.text.primary}]}>
+            style={[styles.sectionTitle, { color: colors.text.primary }]}>
             {summaryTitle}
           </Text>
 
@@ -394,7 +394,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
 
           {/* Amount breakdown */}
           <View
-            style={[styles.breakdown, {borderTopColor: colors.border.light}]}>
+            style={[styles.breakdown, { borderTopColor: colors.border.light }]}>
             {renderSummaryRow('Amount', `₹${(amount ?? 0).toFixed(2)}`)}
 
             {renderSummaryRow(
@@ -403,7 +403,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
             )}
 
             <View
-              style={[styles.divider, {backgroundColor: colors.border.light}]}
+              style={[styles.divider, { backgroundColor: colors.border.light }]}
             />
 
             {renderSummaryRow(
@@ -419,7 +419,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
           <Text
             variant="label"
             weight="semibold"
-            style={[styles.couponTitle, {color: colors.text.primary}]}>
+            style={[styles.couponTitle, { color: colors.text.primary }]}>
             Apply Coupon
           </Text>
 
@@ -427,7 +427,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
             <View
               style={[
                 styles.appliedCoupon,
-                {backgroundColor: colors.success.background},
+                { backgroundColor: colors.success.background },
               ]}>
               <Icon
                 name="checkmark-circle"
@@ -441,7 +441,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
                 numberOfLines={1}
                 style={[
                   styles.appliedCouponText,
-                  {color: colors.success.dark},
+                  { color: colors.success.dark },
                 ]}>
                 {couponCode.trim()}
               </Text>
@@ -469,14 +469,14 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
               <TouchableOpacity
                 style={[
                   styles.couponApplyButton,
-                  {backgroundColor: colors.primary.main},
+                  { backgroundColor: colors.primary.main },
                 ]}
                 onPress={handleApplyCoupon}
                 activeOpacity={0.7}>
                 <Text
                   variant="label"
                   weight="semibold"
-                  style={{color: colors.primary.contrastText}}>
+                  style={{ color: colors.primary.contrastText }}>
                   Apply
                 </Text>
               </TouchableOpacity>
@@ -495,7 +495,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
           <Text
             variant="caption"
             weight="medium"
-            style={{color: colors.text.tertiary}}>
+            style={{ color: colors.text.tertiary }}>
             Secure payment powered by Razorpay
           </Text>
         </View>
@@ -570,6 +570,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 8,
+    gap: 50, // increase/decrease this
+
   },
   divider: {
     height: 1,
