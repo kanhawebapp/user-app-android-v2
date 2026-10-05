@@ -7,24 +7,15 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
-  Platform,
 } from 'react-native';
 import { Text } from '../../../components/Text';
 import { colors } from '../../../theme';
 import { API_BASE_URL } from '../../../constants/api.constants';
 import { useGetService } from '../../../services/api/healingServices/getService/useGetService';
 import { ServiceAstrologer } from '../../../services/api/healingServices/getServices/services.types';
-import { useCreateHealingOrder } from '../../../services/api/healingServices/healingOrder/useHealingOrder';
-import { useCreateServiceBooking } from '../../../services/api/healingServices/serviceBooking/useServiceBooking';
-import { CreateServiceBookingInput } from '../../../services/api/healingServices/serviceBooking/serviceBooking.types';
-import { useBookingAstrologer } from '../../../services/api/healingServices/bookingAstrologer/useBookingAstrologer';
-import { useAuthStore } from '../../../stores/auth.store';
+import type { ServicePaymentData } from '../wallet/PaymentScreen';
 import { useToast } from '../../../context/ToastContext';
-import type { User } from '../../../types/global.types';
-import RazorpayCheckout from 'react-native-razorpay';
-import { RAZORPAY_KEY } from '../../../constants/api.constants';
 import { GoBack } from '../../../components';
-import { getIPLocation } from '../../../services/location/location.service';
 
 const BASE_IMAGE_URL = API_BASE_URL.DEVELOPMENT;
 const GST_PERCENTAGE = 18;
@@ -42,6 +33,8 @@ interface SelectAstrologerScreenProps {
   } | null;
   onBack: () => void;
   onComplete: () => void;
+  /** Hands the selected astrologer + service + amounts to the Payment Screen. */
+  onContinueToPayment?: (data: ServicePaymentData) => void;
 }
 
 /**
@@ -56,31 +49,10 @@ type SelectableAstrologer = ServiceAstrologer & {
 };
 
 /**
- * `BookingFormScreen` is no longer part of this flow, so the booking payload
- * is derived from the signed-in user's profile instead of a manual form.
+ * `BookingFormScreen` is no longer part of this flow, so the booking
+ * payload is prepared on the Payment Screen, which triggers the
+ * existing `CreateServiceBooking` mutation from its Payment button.
  */
-const buildBookingInput = (
-  service: SelectAstrologerScreenProps['service'],
-  user: User | null,
-): CreateServiceBookingInput => ({
-  serviceId: service?.id ?? '',
-
-  name: user?.name ?? '',
-
-  email: user?.email ?? '',
-
-  phone: user?.mobile || user?.phone || '',
-
-  dob: user?.dateOfBirth ?? '',
-
-  tob: user?.birthTime ?? '',
-
-  pob: user?.birthPlace || user?.placeOfBirth || '',
-
-  gender: user?.gender ?? '',
-
-  concern: '',
-});
 
 const SelectAstrologerScreen: React.FC<
   SelectAstrologerScreenProps
@@ -88,15 +60,12 @@ const SelectAstrologerScreen: React.FC<
   service,
   onBack,
   onComplete,
+  onContinueToPayment,
 }) => {
     const [selectedAstrologer, setSelectedAstrologer] =
       useState<SelectableAstrologer | null>(null);
-    const [isSubmitting, setIsSubmitting] =
-      useState(false);
 
-    const { showSuccess, showError } = useToast();
-
-    const user = useAuthStore(state => state.user);
+    const { showError } = useToast();
 
     // Single source of service details: `GetService(slug)` via the shared
     // GraphQL client. The slug comes from the service handed over by the
@@ -126,19 +95,17 @@ const SelectAstrologerScreen: React.FC<
       }
     }, [astrologers, selectedAstrologer]);
 
-    const { submitBooking } = useCreateServiceBooking();
-    const { assignAstrologer } = useBookingAstrologer();
-    const {
-      createOrder,
-      loading: paymentLoading,
-    } = useCreateHealingOrder();
-
     const baseAmount =
       selectedAstrologer?.servicePrice ?? service?.price ?? 0;
     const gstAmount = (baseAmount * GST_PERCENTAGE) / 100;
     const totalAmount = baseAmount + gstAmount;
 
-    const handleContinue = async () => {
+    // "Continue to Payment" only validates the selection and hands
+    // the required service/astrologer/amount data to the Payment
+    // Screen. The booking, astrologer assignment, order creation
+    // and Razorpay gateway are triggered from the Payment Screen's
+    // final "Payment" button.
+    const handleContinue = () => {
       if (!selectedAstrologer) {
         Alert.alert(
           'Selection Required',
@@ -154,120 +121,19 @@ const SelectAstrologerScreen: React.FC<
         return;
       }
 
-      if (isSubmitting || paymentLoading) {
-        return;
-      }
-
-      setIsSubmitting(true);
-
-      try {
-        const booking = await submitBooking({
-          serviceId: service?.id ?? '',
-          name: 'xxxx',
-          email: 'xxxx',
-          phone: '9999999999',
-          dob: '999',
-          tob: '9999',
-          pob: '9999',
-          gender: 'male',
-          concern: 'male',
-        });
-
-        const bookingId = booking?.id;
-
-        if (!bookingId) {
-          throw new Error(
-            'Booking was not created. Please try again.',
-          );
-        }
-
-        // Persist the selected astrologer on the booking before checkout.
-        await assignAstrologer({
-          bookingId,
-          astrologerId: selectedAstrologer.id,
-        });
-
-        // The order amount is the price configured for this astrologer on the
-        // selected service (`astrologerMappings[].price`) plus GST; no coupon is
-        // applied at this step.
-        const order = await createOrder({
-          bookingId,
-          couponCode: '',
-          amount: Number(totalAmount.toFixed(2)),
-        });
-
-        // Get IP + City + State + Country
-        const ipData = await getIPLocation();
-
-        const options = {
-          key: RAZORPAY_KEY.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-          amount: Number(order?.payableAmount) * 100,
-          currency: order?.currency || 'INR',
-          name: 'Dhwani Astro LLP',
-          description: service?.name
-            ? `${service.name} Payment`
-            : 'Healing Service Payment',
-          order_id: order?.orderId,
-          prefill: {
-            name: user?.name || '',
-            contact: user?.mobile || '',
-            email: user?.email || '',
-          },
-          notes: {
-            bookingId: order?.bookingId || bookingId,
-            astrologerId: selectedAstrologer.id,
-            serviceAstrologerMappingId:
-              selectedAstrologer.serviceAstrologerMappingId,
-            serviceId: service?.id,
-            serviceName: service?.name,
-            servicePrice: String(
-              selectedAstrologer.servicePrice ??
-              service?.price ??
-              '',
-            ),
-            serviceType: 'SERVICE',
-            coins: String(selectedAstrologer.servicePrice ?? 0),
-
-            // Location details
-            ip: ipData.ip,
-            city: ipData.city,
-            state: ipData.state,
-            country: ipData.country,
-            platform: Platform.OS,
-          },
-          theme: {
-            color: '#5B2CA5',
-          },
-        };
-
-        try {
-          await RazorpayCheckout.open(options);
-          showSuccess('Payment successful! Your booking is confirmed.');
-          onComplete();
-        } catch (razorpayError: any) {
-          // console.log('PAYMENT ERROR', razorpayError);
-
-          if (razorpayError?.code === 'Payment Cancelled') {
-            showError('Payment cancelled.');
-            return;
-          }
-
-          showError(
-            razorpayError?.description ||
-            razorpayError?.message ||
-            'Unable to complete the payment. Please try again.',
-          );
-        }
-      } catch (error: any) {
-        console.log('PAYMENT ERROR', error);
-
-        showError(
-          error?.message ||
-          'Unable to start the payment. Please try again.',
-        );
-      } finally {
-        setIsSubmitting(false);
-      }
+      onContinueToPayment?.({
+        service: {
+          id: service?.id ?? '',
+          name: service?.name ?? '',
+          price: service?.price ?? 0,
+          slug: service?.slug,
+          category: service?.category,
+        },
+        astrologer: selectedAstrologer,
+        amount: baseAmount,
+        gstAmount,
+        totalAmount,
+      });
     };
 
     const renderAstrologer = ({
@@ -333,8 +199,6 @@ const SelectAstrologerScreen: React.FC<
       );
     };
 
-    const isBusy = isSubmitting || paymentLoading;
-
     return (
       <View style={styles.container}>
         {/* <View style={styles.header}>
@@ -364,10 +228,6 @@ const SelectAstrologerScreen: React.FC<
                 {service.name}
               </Text>
             </View>
-
-            <Text style={styles.serviceSummaryPrice} weight="semibold">
-              ₹{service.price}
-            </Text>
           </View>
         )}
 
@@ -393,55 +253,18 @@ const SelectAstrologerScreen: React.FC<
         />
 
         <View style={styles.footer}>
-          {!!service && (
-            <View style={styles.priceBreakdown}>
-              <View style={styles.priceRow}>
-                <Text style={styles.priceLabel} weight="medium">
-                  Service Price
-                </Text>
-                <Text style={styles.priceRowValue} weight="medium">
-                  ₹{baseAmount}
-                </Text>
-              </View>
-
-              <View style={styles.priceRow}>
-                <Text style={styles.priceLabel} weight="medium">
-                  GST ({GST_PERCENTAGE}%)
-                </Text>
-                <Text style={styles.priceRowValue} weight="medium">
-                  ₹{gstAmount.toFixed(2)}
-                </Text>
-              </View>
-
-              <View style={styles.priceDivider} />
-
-              <View style={styles.priceRow}>
-                <Text style={styles.priceTotalLabel} weight="semibold">
-                  Total Price
-                </Text>
-                <Text style={styles.priceTotalValue} weight="semibold">
-                  ₹{totalAmount.toFixed(2)}
-                </Text>
-              </View>
-            </View>
-          )}
-
           <TouchableOpacity
             style={[
               styles.continueButton,
-              (!selectedAstrologer || isBusy) &&
+              !selectedAstrologer &&
               styles.disabledButton,
             ]}
             onPress={handleContinue}
-            disabled={!selectedAstrologer || isBusy}
+            disabled={!selectedAstrologer}
           >
-            {isBusy ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.continueText} weight="semibold">
-                Continue to Payment
-              </Text>
-            )}
+            <Text style={styles.continueText} weight="semibold">
+              Continue to Payment
+            </Text>
           </TouchableOpacity>
         </View>
       </View>

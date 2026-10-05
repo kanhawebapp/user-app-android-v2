@@ -63,13 +63,16 @@ import AstrologerProfileScreen from '../../screens/main/astrologerProfile';
 // Healing Screens
 import ServiceDetailsScreen from '../../screens/main/healings/ServiceDetailsScreen';
 import SelectAstrologerScreen from '../../screens/main/healings/SelectAstrologerScreen';
+import PaymentScreen, {
+  ServicePaymentData,
+} from '../../screens/main/wallet/PaymentScreen';
 import BlogListingScreen from '../../screens/main/BlogListingScreen';
 
 // Send Gift Screen
 import SendGiftScreen from '../../screens/main/SendGiftScreen';
 import { useIsFocused } from '@react-navigation/native';
 
-type HealingScreenKey = 'serviceDetails' | 'selectAstrologer';
+type HealingScreenKey = 'serviceDetails' | 'selectAstrologer' | 'payment';
 
 const MainNavigator: React.FC<MainNavigatorProps> = ({
   onNavigateToLogin,
@@ -128,6 +131,8 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
   // Healing flow state
   const [healingScreen, setHealingScreen] = useState<HealingScreenKey | null>(null);
   const [healingSelectedService, setHealingSelectedService] = useState<any>(null);
+  const [healingPaymentData, setHealingPaymentData] =
+    useState<ServicePaymentData | null>(null);
 
   // Blog listing visibility state
   const [isBlogListingVisible, setIsBlogListingVisible] = useState(false);
@@ -289,9 +294,21 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
     setHealingScreen('selectAstrologer');
   }, []);
 
+  // "Continue to Payment" hands the selected astrologer + service
+  // data to the Payment Screen; the booking/payment APIs run only
+  // from the Payment Screen's final "Payment" button.
+  const handleContinueToPayment = useCallback(
+    (data: ServicePaymentData) => {
+      setHealingPaymentData(data);
+      setHealingScreen('payment');
+    },
+    [],
+  );
+
   const handleHealingComplete = useCallback(() => {
     setHealingScreen(null);
     setHealingSelectedService(null);
+    setHealingPaymentData(null);
   }, []);
 
   const handleNavigateToBlogListing = useCallback(() => {
@@ -335,6 +352,12 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
       if (isProblemBaseAstroScreenVisible) {
         setIsProblemBaseAstroScreenVisible(false);
         setSelectedCategory(null);
+        return true;
+      }
+
+      if (healingScreen === 'payment') {
+        setHealingScreen('selectAstrologer');
+        setHealingPaymentData(null);
         return true;
       }
 
@@ -515,6 +538,27 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
         <SelectAstrologerScreen
           service={healingSelectedService}
           onBack={() => setHealingScreen('serviceDetails')}
+          onComplete={handleHealingComplete}
+          onContinueToPayment={handleContinueToPayment}
+        />
+      </View>
+    );
+  }
+
+  if (healingScreen === 'payment' && healingPaymentData) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { backgroundColor: colors.background.primary },
+        ]}>
+        <PaymentScreen
+          paymentType="service"
+          servicePayment={healingPaymentData}
+          onBack={() => {
+            setHealingScreen('selectAstrologer');
+            setHealingPaymentData(null);
+          }}
           onComplete={handleHealingComplete}
         />
       </View>

@@ -2,18 +2,14 @@ import React, { useState, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../../theme';
-import { Text } from '../../../../components/Text';
 import { Icon } from '../../../../components/Icon';
 import { Button } from '../../../../components/Button';
-import { Card } from '../../../../components/Card';
 import { useRechargePacks } from '../../../../services/api/recharge/recharge.hooks';
-import { useRechargeOrder } from '../../../../services/api/recharge/recharge.order.hooks';
 import { RechargePack } from '../../../../services/api/recharge/recharge.types';
 import { RechargeAmountGrid } from './components';
 import { BalanceCard } from '../WalletScreen';
-import { useProfile } from '../../../../services/api/profile/profile.hooks';
-import { openRazorpayCheckout } from '../../../../services/api/recharge/razorpay.service';
 import { GoBack } from '../../../../components';
+import type { RechargePaymentData } from '../PaymentScreen';
 
 interface PaymentSuccessData {
   razorpay_order_id: string;
@@ -30,6 +26,8 @@ interface RechargePackScreenProps {
   onWithdrawPress?: () => void;
   onRechargePress?: () => void;
   onPaymentSuccess?: (data: PaymentSuccessData) => void;
+  /** Hands the selected pack + calculated amounts to the Payment Screen. */
+  onProceedToPayment?: (data: RechargePaymentData) => void;
 }
 
 const RechargePackScreen: React.FC<RechargePackScreenProps> = ({
@@ -39,6 +37,7 @@ const RechargePackScreen: React.FC<RechargePackScreenProps> = ({
   onWithdrawPress,
   onRechargePress,
   onPaymentSuccess,
+  onProceedToPayment,
 }) => {
   const theme = useTheme();
   const colors = theme.colors;
@@ -48,9 +47,7 @@ const RechargePackScreen: React.FC<RechargePackScreenProps> = ({
   const [customAmount, setCustomAmount] = useState<string>('');
 
   const [isCustomAmount, setIsCustomAmount] = useState<boolean>(false);
-  const { profile } = useProfile();
   const { data: rechargePacks, loading } = useRechargePacks();
-  const { createOrder, loading: orderLoading } = useRechargeOrder();
 
   const handlePackSelect = useCallback((pack: RechargePack) => {
     setSelectedPack(pack);
@@ -58,47 +55,30 @@ const RechargePackScreen: React.FC<RechargePackScreenProps> = ({
     setCustomAmount('');
   }, []);
 
-  // console.log('selectedPack', selectedPack);
-
-  const handleProceedToPay = useCallback(async () => {
-    if (!selectedPack) {
-      console.log('No pack selected');
-      return;
-    }
-
-    try {
-      // Step 1: Create Order
-      const order = await createOrder(selectedPack.id);
-
-      // console.log('ORDER CREATED:', order);
-
-      // Step 2: Open Razorpay (with notes)
-      const paymentResult = await openRazorpayCheckout({
-        order,
-        user: profile,
-        selectedPack,
-        amount: totalAmount,
-
-      });
-
-      // console.log('PAYMENT SUCCESS:', paymentResult);
-
-      onPaymentSuccess?.({
-        ...paymentResult,
-        amount: totalAmount,
-        packName: selectedPack?.name,
-      });
-    } catch (error: any) {
-      console.log('PAYMENT FAILED', error);
-    }
-  }, [selectedPack, createOrder, profile, onPaymentSuccess]);
-
   const finalAmount = isCustomAmount
     ? parseInt(customAmount, 10) || 0
     : selectedPack?.price || 0;
 
   const gstAmount = finalAmount * 0.18;
   const totalAmount = finalAmount + gstAmount;
+
+  // "Proceed to Pay" only validates the selection and hands the
+  // required data to the Payment Screen. The CreateOrder API and
+  // the Razorpay gateway are triggered from the Payment Screen's
+  // final "Payment" button.
+  const handleProceedToPay = useCallback(() => {
+    if (!selectedPack) {
+      console.log('No pack selected');
+      return;
+    }
+
+    onProceedToPayment?.({
+      pack: selectedPack,
+      amount: finalAmount,
+      gstAmount,
+      totalAmount,
+    });
+  }, [selectedPack, finalAmount, gstAmount, totalAmount, onProceedToPayment]);
   return (
     <View
       style={[styles.container, { backgroundColor: colors.background.primary }]}>
@@ -130,58 +110,6 @@ const RechargePackScreen: React.FC<RechargePackScreenProps> = ({
         {/* Amount to Pay Summary */}
 
       </ScrollView>
-      <Card style={[styles.summaryCard, { marginBottom: insets.bottom + 88 }]}>
-        <Text
-          variant="body"
-          weight="semibold"
-          style={[styles.sectionTitle, { color: colors.text.primary }]}>
-          Amount to pay
-        </Text>
-
-        <View style={styles.summaryRow}>
-          <Text variant="body" style={{ color: colors.text.secondary }}>
-            Recharge Amount
-          </Text>
-          <Text variant="body" style={{ color: colors.text.primary }}>
-            ₹{finalAmount.toFixed(2)}
-          </Text>
-        </View>
-        <View style={styles.summaryRow}>
-          <Text variant="body" style={{ color: colors.text.secondary }}>
-            GST (18%)
-          </Text>
-          <Text variant="body" style={{ color: colors.text.primary }}>
-            ₹{gstAmount.toFixed(2)}
-          </Text>
-        </View>
-        <View
-          style={[styles.divider, { backgroundColor: colors.border.light }]}
-        />
-        <View style={styles.summaryRow}>
-          <Text
-            variant="h6"
-            weight="semibold"
-            style={{ color: colors.text.primary }}>
-            Total
-          </Text>
-          <Text
-            variant="h6"
-            weight="bold"
-            style={{ color: colors.primary.main }}>
-            ₹{totalAmount.toFixed(2)}
-          </Text>
-        </View>
-
-        <Text
-          variant="captionSmall"
-          style={{
-            color: colors.text.tertiary,
-            marginTop: 8,
-            textAlign: 'center',
-          }}>
-          Includes 18% GST
-        </Text>
-      </Card>
 
       {/* Proceed to Pay Button */}
       <View
@@ -197,7 +125,6 @@ const RechargePackScreen: React.FC<RechargePackScreenProps> = ({
           variant="primary"
           size="large"
           onPress={handleProceedToPay}
-          loading={orderLoading}
           disabled={!selectedPack}
           style={styles.payButton}
         // leftIcon={

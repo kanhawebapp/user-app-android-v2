@@ -20,6 +20,9 @@ import type {WalletTransaction} from '../../../../types/global.types';
 import {useWallet} from './hooks';
 import {WALLET_LABELS} from '../../../../constants/app.constants';
 import RechargePackScreen from '../RechargePackScreen';
+import PaymentScreen, {
+  RechargePaymentData,
+} from '../PaymentScreen';
 import PaymentSuccessScreen from '../PaymentSuccessScreen';
 import {useProfile} from '../../../../services/api/profile/profile.hooks';
 import { GoBack } from '../../../../components';
@@ -80,6 +83,8 @@ const WalletScreen: React.FC<WalletScreenProps> = ({
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [showRechargePack, setShowRechargePack] = useState(false);
   const [paymentSuccessData, setPaymentSuccessData] = useState<any>(null);
+  const [rechargePaymentData, setRechargePaymentData] =
+    useState<RechargePaymentData | null>(null);
 
   // Handle refresh
   const handleRefresh = useCallback(() => {
@@ -100,13 +105,28 @@ const WalletScreen: React.FC<WalletScreenProps> = ({
     setShowRechargePack(false);
   }, []);
 
-  // Handle payment success from recharge pack screen
+  // Handle payment success from recharge pack screen / payment screen
   const handlePaymentSuccess = useCallback((data: any) => {
 
     console.log('Payment Success Data:', data);
     setShowRechargePack(false);
+    setRechargePaymentData(null);
     setPaymentSuccessData(data);
   }, []);
+
+  // Handle go back from the payment screen to the recharge pack screen
+  const handlePaymentScreenBack = useCallback(() => {
+    setRechargePaymentData(null);
+  }, []);
+
+  // Handle "Proceed to Pay" from the recharge pack screen:
+  // hand the selected pack + amounts to the Payment Screen.
+  const handleRechargePackProceedToPayment = useCallback(
+    (data: RechargePaymentData) => {
+      setRechargePaymentData(data);
+    },
+    [],
+  );
 
   // Handle go back from payment success screen to wallet
   const handlePaymentSuccessToWallet = useCallback(() => {
@@ -164,6 +184,18 @@ const WalletScreen: React.FC<WalletScreenProps> = ({
     );
   }
 
+  // If showing the payment screen, render it instead
+  if (rechargePaymentData) {
+    return (
+      <PaymentScreen
+        paymentType="recharge"
+        recharge={rechargePaymentData}
+        onBack={handlePaymentScreenBack}
+        onPaymentSuccess={handlePaymentSuccess}
+      />
+    );
+  }
+
   // If showing recharge pack screen, render it instead
   if (showRechargePack) {
     return (
@@ -171,6 +203,7 @@ const WalletScreen: React.FC<WalletScreenProps> = ({
         onNavigateBack={handleRechargePackBack}
         currentBalance={balance}
         onPaymentSuccess={handlePaymentSuccess}
+        onProceedToPayment={handleRechargePackProceedToPayment}
       />
     );
   }
