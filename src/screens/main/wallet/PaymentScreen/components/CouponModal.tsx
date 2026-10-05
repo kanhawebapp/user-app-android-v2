@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 24,
+    paddingBottom: 180,
     gap: 12,
   },
   stateContainer: {
