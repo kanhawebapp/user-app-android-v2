@@ -185,7 +185,7 @@ export const CouponModal: React.FC<CouponModalProps> = ({
 }) => {
   const theme = useTheme();
   const colors = theme.colors;
-console.log('CouponModal rendered with props:', {
+  console.log('CouponModal rendered with props:', {
     visible,
     coupons,
     loading,
@@ -275,33 +275,40 @@ console.log('CouponModal rendered with props:', {
       animationType="fade"
       dismissOnBackdropPress
       avoidKeyboard
-      showCloseButton
-      title="Apply Coupon"
       contentStyle={styles.modalContent}
       accessibilityLabel="Apply coupon">
       <View style={styles.container}>
-        <FlatList
-          data={coupons}
-          keyExtractor={item => item.id}
-          style={styles.list}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          renderItem={({item}) => {
-            const isApplied =
-              (item.code || '').trim().toUpperCase() ===
-              (appliedCode || '').trim().toUpperCase();
+        {/* Local header: keeps the title centered and the close button pinned
+            to the top-right without overlapping it. */}
+        <View style={[styles.header, {borderBottomColor: colors.divider}]}>
+          <View style={styles.headerSide} />
 
-            return renderCoupon(item, isApplied, colors, () =>
-              onSelectCoupon(item),
-            );
-          }}
-          ListEmptyComponent={renderEmptyState()}
-        />
+          <Text
+            variant="h5"
+            weight="semibold"
+            align="center"
+            style={[styles.headerTitle, {color: colors.text.primary}]}>
+            Apply Coupon
+          </Text>
+
+          <TouchableOpacity
+            style={styles.headerSide}
+            onPress={onClose}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Close coupon list"
+            testID="coupon-modal-close">
+            <Icon
+              name="close"
+              library="Ionicons"
+              size={20}
+              color={colors.text.secondary}
+            />
+          </TouchableOpacity>
+        </View>
 
         {/* Manual coupon entry - always available, even with no coupons. */}
-        <View
-          style={[styles.manualEntry, {borderTopColor: colors.border.light}]}>
+        <View style={[styles.manualEntry, {borderBottomColor: colors.divider}]}>
           <Text
             variant="caption"
             weight="semibold"
@@ -352,6 +359,24 @@ console.log('CouponModal rendered with props:', {
             </TouchableOpacity>
           </View>
         </View>
+        <FlatList
+          data={coupons}
+          keyExtractor={item => item.id}
+          style={styles.list}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          renderItem={({item}) => {
+            const isApplied =
+              (item.code || '').trim().toUpperCase() ===
+              (appliedCode || '').trim().toUpperCase();
+
+            return renderCoupon(item, isApplied, colors, () =>
+              onSelectCoupon(item),
+            );
+          }}
+          ListEmptyComponent={renderEmptyState()}
+        />
       </View>
     </Modal>
   );
@@ -365,12 +390,29 @@ const styles = StyleSheet.create({
   container: {
     flexShrink: 1,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  headerSide: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    flex: 1,
+  },
   list: {
     flexGrow: 0,
   },
   listContent: {
     paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingTop: 16,
+    paddingBottom: 24,
     gap: 12,
   },
   stateContainer: {
@@ -421,9 +463,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   manualEntry: {
-    borderTopWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingTop: 16,
     paddingBottom: 4,
     gap: 8,
   },
