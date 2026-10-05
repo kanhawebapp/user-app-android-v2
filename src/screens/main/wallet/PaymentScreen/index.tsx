@@ -550,6 +550,7 @@ const styles = StyleSheet.create({
   },
   detailBlock: {
     marginBottom: 16,
+    alignItems: 'center',
   },
   detailLabel: {
     marginBottom: 4,
