@@ -3,7 +3,6 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  TextInput,
   TouchableOpacity,
   Platform,
 } from 'react-native';
@@ -32,6 +31,21 @@ import { CreateServiceBookingInput } from '../../../../services/api/healingServi
 import { useBookingAstrologer } from '../../../../services/api/healingServices/bookingAstrologer/useBookingAstrologer';
 import { useCreateHealingOrder } from '../../../../services/api/healingServices/healingOrder/useHealingOrder';
 import { getIPLocation } from '../../../../services/location/location.service';
+
+// Coupon API (GetCoupons)
+import { useCoupons } from '../../../../services/api/coupon/useCoupons';
+import {
+  Coupon,
+  CouponPaymentFlow,
+} from '../../../../services/api/coupon/coupon.types';
+import {
+  findCouponByCode,
+  formatCurrency,
+  getApplicableCoupons,
+  getCouponDiscountLabel,
+  meetsCouponMinOrder,
+} from '../../../../services/api/coupon/coupon.utils';
+import { CouponModal } from './components';
 
 const GST_PERCENTAGE = 18;
 
@@ -109,6 +123,8 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [couponCode, setCouponCode] = useState('');
   const [couponApplied, setCouponApplied] = useState(false);
+  const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
+  const [isCouponModalVisible, setIsCouponModalVisible] = useState(false);
 
   // Existing API hooks - reused as-is, only the trigger point moved here.
   const { createOrder: createRechargeOrder } = useRechargeOrder();
@@ -116,7 +132,22 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
   const { assignAstrologer } = useBookingAstrologer();
   const { createOrder: createHealingOrder } = useCreateHealingOrder();
 
+  // Coupon list is fetched from `GetCoupons` the first time the coupon sheet
+  // is opened and reused for the rest of this screen's session.
+  const {
+    coupons,
+    loading: couponsLoading,
+    error: couponsError,
+    hasFetched: hasFetchedCoupons,
+    fetchCoupons,
+  } = useCoupons();
+
   const isRecharge = paymentType === 'recharge';
+
+  /** Only coupons the backend marks as valid for this flow reach the sheet. */
+  const couponFlow: CouponPaymentFlow = isRecharge ? 'recharge' : 'service';
+
+  const availableCoupons = getApplicableCoupons(coupons, couponFlow);
 
   // Header title is always "Payment"; the flow-specific heading lives in
   // the summary card ("Recharge Summary" / "Dhwani Services Payment").
@@ -138,16 +169,96 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
     ? recharge?.totalAmount
     : servicePayment?.totalAmount;
 
-  const handleApplyCoupon = () => {
-    const code = couponCode.trim();
+  /**
+   * Opens the coupon sheet. `GetCoupons` is only requested the first time the
+   * sheet is opened during this screen's session; afterwards the already
+   * fetched coupons are reused. `useCoupons` blocks concurrent requests while
+   * the query is in flight.
+   */
+  const handleOpenCouponList = () => {
+    setIsCouponModalVisible(true);
 
-    if (!code) {
+    if (!hasFetchedCoupons) {
+      fetchCoupons();
+    }
+  };
+
+  const handleCloseCouponList = () => {
+    setIsCouponModalVisible(false);
+  };
+
+  const handleRetryCoupons = () => {
+    fetchCoupons({force: true});
+  };
+
+  /**
+   * Validates a coupon against the order and, when it passes, marks it as the
+   * selected one. No amount is recalculated here - the order mutation on the
+   * backend stays the single source of truth for the payable amount.
+   */
+  const selectCoupon = (coupon: Coupon) => {
+    if (!coupon?.code) {
+      showError('Invalid or unavailable coupon code.');
+
+      return;
+    }
+
+    if (!meetsCouponMinOrder(coupon, totalAmount ?? 0)) {
+      const minOrder = formatCurrency(coupon?.minOrderAmount);
+
+      showError(
+        minOrder
+          ? `This coupon requires a minimum order of ${minOrder}.`
+          : 'This coupon does not meet the minimum order amount.',
+      );
+
+      return;
+    }
+
+    setSelectedCoupon(coupon);
+    setCouponCode(coupon.code.trim());
+    setCouponApplied(true);
+    setIsCouponModalVisible(false);
+  };
+
+  /** Applies a coupon picked from the list. */
+  const handleSelectCoupon = (coupon: Coupon) => {
+    selectCoupon(coupon);
+  };
+
+  /**
+   * Manual entry: trims and upper-cases the typed code, then resolves it
+   * against the coupons returned by `GetCoupons`. Arbitrary codes are never
+   * accepted.
+   */
+  const handleApplyCoupon = (enteredCode: string) => {
+    const normalizedCode = (enteredCode || '').trim().toUpperCase();
+
+    if (!normalizedCode) {
       showError('Please enter a coupon code.');
 
       return;
     }
 
-    setCouponApplied(true);
+    const matchedCoupon = findCouponByCode(
+      coupons,
+      normalizedCode,
+      couponFlow,
+    );
+
+    if (!matchedCoupon) {
+      showError('Invalid or unavailable coupon code.');
+
+      return;
+    }
+
+    selectCoupon(matchedCoupon);
+  };
+
+  const handleRemoveCoupon = () => {
+    setCouponApplied(false);
+    setCouponCode('');
+    setSelectedCoupon(null);
   };
 
   /**
@@ -416,71 +527,121 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
 
         {/* Coupon Card */}
         <Card variant="outlined" style={styles.couponCard}>
-          <Text
-            variant="label"
-            weight="semibold"
-            style={[styles.couponTitle, { color: colors.text.primary }]}>
-            Apply Coupon
-          </Text>
-
-          {couponApplied ? (
-            <View
-              style={[
-                styles.appliedCoupon,
-                { backgroundColor: colors.success.background },
-              ]}>
-              <Icon
-                name="checkmark-circle"
-                library="Ionicons"
-                size={20}
-                color={colors.success.main}
-              />
+          {couponApplied && selectedCoupon ? (
+            <>
               <Text
-                variant="body"
+                variant="label"
                 weight="semibold"
-                numberOfLines={1}
-                style={[
-                  styles.appliedCouponText,
-                  { color: colors.success.dark },
-                ]}>
-                {couponCode.trim()}
+                style={[styles.couponTitle, { color: colors.text.primary }]}>
+                Coupon Applied
               </Text>
-            </View>
-          ) : (
-            <View style={styles.couponRow}>
-              <TextInput
-                style={[
-                  styles.couponInput,
-                  {
-                    color: colors.text.primary,
-                    borderColor: colors.border.light,
-                    backgroundColor: colors.common.white,
-                  },
-                ]}
-                value={couponCode}
-                onChangeText={setCouponCode}
-                placeholder="Enter coupon code"
-                placeholderTextColor={colors.text.tertiary}
-                autoCapitalize="characters"
-                autoCorrect={false}
-                maxLength={32}
-              />
 
               <TouchableOpacity
                 style={[
-                  styles.couponApplyButton,
-                  { backgroundColor: colors.primary.main },
+                  styles.appliedCoupon,
+                  { backgroundColor: colors.success.background },
                 ]}
-                onPress={handleApplyCoupon}
-                activeOpacity={0.7}>
-                <Text
-                  variant="label"
-                  weight="semibold"
-                  style={{ color: colors.primary.contrastText }}>
-                  Apply
-                </Text>
+                onPress={handleOpenCouponList}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Change applied coupon">
+                <Icon
+                  name="checkmark-circle"
+                  library="Ionicons"
+                  size={20}
+                  color={colors.success.main}
+                />
+
+                <View style={styles.appliedCouponText}>
+                  <Text
+                    variant="body"
+                    weight="semibold"
+                    numberOfLines={1}
+                    style={{ color: colors.success.dark }}>
+                    {couponCode.trim()}
+                  </Text>
+
+                  <Text
+                    variant="caption"
+                    weight="medium"
+                    numberOfLines={1}
+                    style={{ color: colors.success.dark }}>
+                    {getCouponDiscountLabel(selectedCoupon)}
+                  </Text>
+                </View>
               </TouchableOpacity>
-            </View>
+
+              <View style={styles.couponFooterRow}>
+                <TouchableOpacity
+                  onPress={handleOpenCouponList}
+                  activeOpacity={0.7}
+                  accessibilityRole="button">
+                  <Text
+                    variant="caption"
+                    weight="semibold"
+                    style={{ color: colors.primary.main }}>
+                    Change
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={handleRemoveCoupon}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  testID="remove-coupon-button">
+                  <Text
+                    variant="caption"
+                    weight="semibold"
+                    style={{ color: colors.error.main }}>
+                    Remove
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+            <>
+              <Text
+                variant="label"
+                weight="semibold"
+                style={[styles.couponTitle, { color: colors.text.primary }]}>
+                Apply Coupon
+              </Text>
+
+              <TouchableOpacity
+                style={[
+                  styles.couponRow,
+                  {
+                    backgroundColor: colors.background.secondary,
+                    borderColor: colors.border.light,
+                  },
+                ]}
+                onPress={handleOpenCouponList}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Apply coupon"
+                testID="apply-coupon-button">
+                <Icon
+                  name="ticket-outline"
+                  library="Ionicons"
+                  size={20}
+                  color={colors.primary.main}
+                />
+
+                <Text
+                  variant="body"
+                  weight="medium"
+                  style={[styles.couponRowText, { color: colors.text.secondary }]}>
+                  Apply Coupon
+                </Text>
+
+                <Icon
+                  name="chevron-forward"
+                  library="Ionicons"
+                  size={18}
+                  color={colors.text.tertiary}
+                />
+              </TouchableOpacity>
+            </>
           )}
         </Card>
 
@@ -528,6 +689,19 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
           style={styles.payButton}
         />
       </View>
+
+      {/* Coupon selection sheet - GetCoupons list + manual code entry */}
+      <CouponModal
+        visible={isCouponModalVisible}
+        onClose={handleCloseCouponList}
+        coupons={availableCoupons}
+        loading={couponsLoading}
+        hasError={!!couponsError}
+        appliedCode={couponApplied ? couponCode : undefined}
+        onSelectCoupon={handleSelectCoupon}
+        onApplyManualCode={handleApplyCoupon}
+        onRetry={handleRetryCoupons}
+      />
     </View>
   );
 };
@@ -589,22 +763,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-  },
-  couponInput: {
-    flex: 1,
     borderWidth: 1,
     borderRadius: 12,
+    borderStyle: 'dashed',
     paddingHorizontal: 14,
     paddingVertical: 12,
-    fontSize: 14,
-  },
-  couponApplyButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
     minHeight: 44,
-    justifyContent: 'center',
+  },
+  couponRowText: {
+    flex: 1,
+  },
+  couponFooterRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 20,
+    marginTop: 12,
   },
   appliedCoupon: {
     flexDirection: 'row',
