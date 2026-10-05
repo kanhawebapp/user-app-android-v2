@@ -14,7 +14,7 @@ import {useTheme} from '../../../../theme';
 import {Text} from '../../../../components/Text';
 import {Button} from '../../../../components/Button';
 import {Card} from '../../../../components/Card';
-import {GoBack} from '../../../../components';
+import {GoBack, Icon} from '../../../../components';
 import {useToast} from '../../../../context/ToastContext';
 import {useProfile} from '../../../../services/api/profile/profile.hooks';
 import {useAuthStore} from '../../../../stores/auth.store';
@@ -86,7 +86,7 @@ interface PaymentScreenProps {
 
 /**
  * Shared payment screen for both checkout flows. The order/booking APIs and
- * the Razorpay gateway are only triggered from the final "Payment" button
+ * the Razorpay gateway are only triggered from the final "Pay" button
  * below - never while navigating to this screen.
  */
 const PaymentScreen: React.FC<PaymentScreenProps> = ({
@@ -118,7 +118,12 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
 
   const isRecharge = paymentType === 'recharge';
 
-  const title = isRecharge ? 'Payment' : 'Dhwani Services Payment';
+  // Header title is always "Payment"; the flow-specific heading lives in
+  // the summary card ("Recharge Summary" / "Dhwani Services Payment").
+  const headerTitle = 'Payment';
+  const summaryTitle = isRecharge
+    ? 'Recharge Summary'
+    : 'Dhwani Services Payment';
 
   const packName = recharge?.pack?.name;
   const serviceName = servicePayment?.service?.name;
@@ -319,6 +324,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
     }
   };
 
+  /** Label + value row used for the Amount / GST / Total Payable breakdown. */
   const renderSummaryRow = (label: string, value: string, isTotal = false) => (
     <View style={styles.summaryRow} key={label}>
       <Text
@@ -331,7 +337,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
       </Text>
       <Text
         variant={isTotal ? 'h6' : 'body'}
-        weight={isTotal ? 'bold' : 'medium'}
+        weight={isTotal ? 'bold' : 'semibold'}
         style={{
           color: isTotal ? colors.primary.main : colors.text.primary,
         }}>
@@ -340,105 +346,162 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
     </View>
   );
 
+  /** Stacked label + value block used for the pack / service / astrologer. */
+  const renderDetailBlock = (label: string, value: string) => (
+    <View style={styles.detailBlock} key={label}>
+      <Text
+        variant="caption"
+        weight="medium"
+        style={[styles.detailLabel, {color: colors.text.tertiary}]}>
+        {label}
+      </Text>
+      <Text
+        variant="h6"
+        weight="semibold"
+        numberOfLines={1}
+        style={[styles.detailValue, {color: colors.primary.main}]}>
+        {value}
+      </Text>
+    </View>
+  );
+
   return (
     <View
       style={[styles.container, {backgroundColor: colors.background.primary}]}>
-      <GoBack onBack={onBack} title={title} />
+      <GoBack onBack={onBack} title={headerTitle} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          padding: 16,
-          paddingBottom: insets.bottom + 120,
-        }}>
-        <Card style={styles.summaryCard}>
-          {!isRecharge && (
-            <Text
-              variant="h6"
-              weight="semibold"
-              style={[styles.sectionTitle, {color: colors.text.primary}]}>
-              Dhwani Services Payment
-            </Text>
-          )}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {paddingBottom: insets.bottom + 130},
+        ]}>
+        {/* Payment Summary Card */}
+        <Card variant="elevated" style={styles.summaryCard}>
+          <Text
+            variant="h6"
+            weight="semibold"
+            style={[styles.sectionTitle, {color: colors.text.primary}]}>
+            {summaryTitle}
+          </Text>
 
+          {/* Selected pack / service / astrologer */}
           {isRecharge
-            ? renderSummaryRow('Selected Pack', packName ?? '')
-            : renderSummaryRow('Services', serviceName ?? '')}
+            ? renderDetailBlock('Selected Pack', packName ?? '')
+            : renderDetailBlock('Service', serviceName ?? '')}
 
-          {!isRecharge && renderSummaryRow('Astrologer', astrologerName ?? '')}
+          {!isRecharge && renderDetailBlock('Astrologer', astrologerName ?? '')}
 
-          {renderSummaryRow('Amount', `₹${(amount ?? 0).toFixed(2)}`)}
+          {/* Amount breakdown */}
+          <View
+            style={[styles.breakdown, {borderTopColor: colors.border.light}]}>
+            {renderSummaryRow('Amount', `₹${(amount ?? 0).toFixed(2)}`)}
 
-          {renderSummaryRow(
-            `GST @${GST_PERCENTAGE}%`,
-            `₹${(gstAmount ?? 0).toFixed(2)}`,
-          )}
+            {renderSummaryRow(
+              `GST @${GST_PERCENTAGE}%`,
+              `₹${(gstAmount ?? 0).toFixed(2)}`,
+            )}
 
-          {/* Apply Coupon */}
-          <View style={styles.couponRow}>
-            <Text
-              variant="body"
-              weight="medium"
-              style={{color: colors.text.secondary}}>
-              Apply Coupon
-            </Text>
+            <View
+              style={[styles.divider, {backgroundColor: colors.border.light}]}
+            />
 
-            {couponApplied ? (
+            {renderSummaryRow(
+              'Total Payable',
+              `₹${(totalAmount ?? 0).toFixed(2)}`,
+              true,
+            )}
+          </View>
+        </Card>
+
+        {/* Coupon Card */}
+        <Card variant="outlined" style={styles.couponCard}>
+          <Text
+            variant="label"
+            weight="semibold"
+            style={[styles.couponTitle, {color: colors.text.primary}]}>
+            Apply Coupon
+          </Text>
+
+          {couponApplied ? (
+            <View
+              style={[
+                styles.appliedCoupon,
+                {backgroundColor: colors.success.background},
+              ]}>
+              <Icon
+                name="checkmark-circle"
+                library="Ionicons"
+                size={20}
+                color={colors.success.main}
+              />
               <Text
                 variant="body"
                 weight="semibold"
-                style={{color: colors.primary.main}}>
+                numberOfLines={1}
+                style={[
+                  styles.appliedCouponText,
+                  {color: colors.success.dark},
+                ]}>
                 {couponCode.trim()}
               </Text>
-            ) : (
-              <View style={styles.couponInputRow}>
-                <TextInput
-                  style={[
-                    styles.couponInput,
-                    {
-                      color: colors.text.primary,
-                      borderColor: colors.border.light,
-                    },
-                  ]}
-                  value={couponCode}
-                  onChangeText={setCouponCode}
-                  placeholder="Enter coupon code"
-                  placeholderTextColor={colors.text.tertiary}
-                  autoCapitalize="characters"
-                  maxLength={32}
-                />
+            </View>
+          ) : (
+            <View style={styles.couponRow}>
+              <TextInput
+                style={[
+                  styles.couponInput,
+                  {
+                    color: colors.text.primary,
+                    borderColor: colors.border.light,
+                    backgroundColor: colors.common.white,
+                  },
+                ]}
+                value={couponCode}
+                onChangeText={setCouponCode}
+                placeholder="Enter coupon code"
+                placeholderTextColor={colors.text.tertiary}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                maxLength={32}
+              />
 
-                <TouchableOpacity
-                  style={[
-                    styles.couponApplyButton,
-                    {backgroundColor: colors.primary.main},
-                  ]}
-                  onPress={handleApplyCoupon}
-                  activeOpacity={0.7}>
-                  <Text
-                    variant="bodySmall"
-                    weight="semibold"
-                    style={{color: colors.primary.contrastText}}>
-                    Apply
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-
-          <View
-            style={[styles.divider, {backgroundColor: colors.border.light}]}
-          />
-
-          {renderSummaryRow(
-            'Total Payable',
-            `₹${(totalAmount ?? 0).toFixed(2)}`,
-            true,
+              <TouchableOpacity
+                style={[
+                  styles.couponApplyButton,
+                  {backgroundColor: colors.primary.main},
+                ]}
+                onPress={handleApplyCoupon}
+                activeOpacity={0.7}>
+                <Text
+                  variant="label"
+                  weight="semibold"
+                  style={{color: colors.primary.contrastText}}>
+                  Apply
+                </Text>
+              </TouchableOpacity>
+            </View>
           )}
         </Card>
+
+        {/* Secure payment information (existing Razorpay gateway) */}
+        <View style={styles.secureRow}>
+          <Icon
+            name="shield-checkmark"
+            library="Ionicons"
+            size={16}
+            color={colors.success.main}
+          />
+          <Text
+            variant="caption"
+            weight="medium"
+            style={{color: colors.text.tertiary}}>
+            Secure payment powered by Razorpay
+          </Text>
+        </View>
       </ScrollView>
 
-      {/* Final Payment Button */}
+      {/* Bottom Payment CTA */}
       <View
         style={[
           styles.footer,
@@ -448,12 +511,20 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
           },
         ]}>
         <Button
-          title="Payment"
+          title={`Pay ₹${(totalAmount ?? 0).toFixed(2)}`}
           variant="primary"
           size="large"
           onPress={handlePayment}
           loading={isProcessing}
           disabled={isProcessing}
+          leftIcon={
+            <Icon
+              name="lock-closed"
+              library="Ionicons"
+              size={18}
+              color={colors.primary.contrastText}
+            />
+          }
           style={styles.payButton}
         />
       </View>
@@ -465,58 +536,102 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  scrollContent: {
+    padding: 20,
+    gap: 16,
+  },
   summaryCard: {
-    paddingVertical: 8,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    borderRadius: 20,
   },
   sectionTitle: {
-    marginBottom: 12,
+    marginBottom: 18,
+  },
+  detailBlock: {
+    marginBottom: 16,
+  },
+  detailLabel: {
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  detailValue: {
+    fontSize: 18,
+  },
+  breakdown: {
+    borderTopWidth: 1,
+    paddingTop: 14,
+    marginTop: 4,
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 6,
-  },
-  couponRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 10,
-  },
-  couponInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexShrink: 1,
-    marginLeft: 12,
-  },
-  couponInput: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    minWidth: 130,
-    fontSize: 13,
-  },
-  couponApplyButton: {
-    marginLeft: 8,
-    paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 8,
   },
   divider: {
     height: 1,
     marginVertical: 10,
+  },
+  couponCard: {
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+  },
+  couponTitle: {
+    marginBottom: 12,
+  },
+  couponRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  couponInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+  },
+  couponApplyButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  appliedCoupon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  appliedCouponText: {
+    flex: 1,
+  },
+  secureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 4,
   },
   footer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingTop: 12,
   },
   payButton: {
     width: '100%',
+    borderRadius: 16,
   },
 });
 
