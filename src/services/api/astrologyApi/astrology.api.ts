@@ -20,6 +20,11 @@ import type {
   HoroscopeChartType,
   HoroscopeResponse,
   KalsarpaResponse,
+  LalKitabDebtsResponse,
+  LalKitabHousesResponse,
+  LalKitabHoroscopeResponse,
+  LalKitabPlanetsResponse,
+  LalKitabRequestPayload,
   MajorDashaPeriod,
   ManglikResponse,
   MatchAstroDetails,
@@ -831,6 +836,63 @@ export const getNumeroFavMantra = async (
 ): Promise<NumeroTitleDescriptionResponse> => {
   return requestNumero<NumeroTitleDescriptionResponse>(
     '/v1/numero_fav_mantra',
+    payload,
+  );
+};
+
+// ============================================
+// Lal Kitab endpoints
+// https://json.astrologyapi.com/v1/lalkitab_horoscope
+// https://json.astrologyapi.com/v1/lalkitab_debts
+// https://json.astrologyapi.com/v1/lalkitab_houses
+// https://json.astrologyapi.com/v1/lalkitab_planets
+//
+// All four accept the same birth-details payload (day, month, year, hour, min,
+// lat, lon, tzone) and are independent of each other, so the caller fetches
+// them in parallel.
+// ============================================
+
+/** The Lal Kitab report text is always requested in English. */
+const LAL_KITAB_HEADERS = {'Accept-Language': 'en'};
+
+const requestLalKitab = <T>(
+  endpoint: string,
+  payload: LalKitabRequestPayload,
+): Promise<T> => requestAstrology<T>(endpoint, payload, LAL_KITAB_HEADERS);
+
+/** POST /v1/lalkitab_horoscope — planets placed in each of the 12 signs. */
+export const getLalKitabHoroscope = async (
+  payload: LalKitabRequestPayload,
+): Promise<LalKitabHoroscopeResponse> => {
+  return requestLalKitab<LalKitabHoroscopeResponse>(
+    '/v1/lalkitab_horoscope',
+    payload,
+  );
+};
+
+/** POST /v1/lalkitab_debts — Lal Kitab debts with indications and events. */
+export const getLalKitabDebts = async (
+  payload: LalKitabRequestPayload,
+): Promise<LalKitabDebtsResponse> => {
+  return requestLalKitab<LalKitabDebtsResponse>('/v1/lalkitab_debts', payload);
+};
+
+/** POST /v1/lalkitab_houses — owner and planets for each of the 12 houses. */
+export const getLalKitabHouses = async (
+  payload: LalKitabRequestPayload,
+): Promise<LalKitabHousesResponse> => {
+  return requestLalKitab<LalKitabHousesResponse>(
+    '/v1/lalkitab_houses',
+    payload,
+  );
+};
+
+/** POST /v1/lalkitab_planets — rashi, nature and position of every body. */
+export const getLalKitabPlanets = async (
+  payload: LalKitabRequestPayload,
+): Promise<LalKitabPlanetsResponse> => {
+  return requestLalKitab<LalKitabPlanetsResponse>(
+    '/v1/lalkitab_planets',
     payload,
   );
 };

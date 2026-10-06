@@ -8,6 +8,10 @@ import {
   getGeneralAscendantReport,
   getGeneralNakshatraReport,
   getHoroscopeChart,
+  getLalKitabDebts,
+  getLalKitabHouses,
+  getLalKitabHoroscope,
+  getLalKitabPlanets,
   getMajorVdasha,
   getMatchAshtakootPoints,
   getMatchAstroDetails,
@@ -608,6 +612,77 @@ describe('resolveBirthPlace', () => {
 
     await expect(resolveBirthPlace('Delhi')).rejects.toThrow(
       'Unable to resolve the timezone of the selected birth place.',
+    );
+  });
+});
+
+describe('Lal Kitab endpoints', () => {
+  // The four reports share the plain Kundli birth-details payload.
+  const LAL_KITAB_PAYLOAD: AstrologyMuhurtaPayload = {
+    day: 10,
+    month: 5,
+    year: 1990,
+    hour: 19,
+    min: 55,
+    lat: 19.2056,
+    lon: 25.2056,
+    tzone: 5.5,
+  };
+  const LAL_KITAB_RESPONSE = [{name: 'entry'}];
+
+  beforeEach(() => {
+    getRequestMock().mockReset();
+  });
+
+  it.each([
+    ['Horoscope', getLalKitabHoroscope, '/v1/lalkitab_horoscope'],
+    ['Debts', getLalKitabDebts, '/v1/lalkitab_debts'],
+    ['Houses', getLalKitabHouses, '/v1/lalkitab_houses'],
+    ['Planets', getLalKitabPlanets, '/v1/lalkitab_planets'],
+  ])(
+    'getLalKitab%s POSTs the birth details to %s',
+    async (_name, request, url) => {
+      getRequestMock().mockResolvedValueOnce({data: LAL_KITAB_RESPONSE});
+
+      const result = await request(LAL_KITAB_PAYLOAD);
+
+      expect(getRequestMock()).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'POST',
+          url,
+          data: 'day=10&month=5&year=1990&hour=19&min=55&lat=19.2056&lon=25.2056&tzone=5.5',
+        }),
+      );
+      expect(result).toEqual(LAL_KITAB_RESPONSE);
+    },
+  );
+
+  it('requests English content and shares the existing auth client', async () => {
+    getRequestMock().mockResolvedValue({data: LAL_KITAB_RESPONSE});
+
+    await getLalKitabHoroscope(LAL_KITAB_PAYLOAD);
+    await getLalKitabDebts(LAL_KITAB_PAYLOAD);
+    await getLalKitabHouses(LAL_KITAB_PAYLOAD);
+    await getLalKitabPlanets(LAL_KITAB_PAYLOAD);
+
+    // All four calls go through the one pre-configured authenticated client, so
+    // no request adds its own credentials.
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+    getRequestMock().mock.calls.forEach(([config]) => {
+      expect(config.headers).toEqual(
+        expect.objectContaining({'Accept-Language': 'en'}),
+      );
+      expect(config.auth).toBeUndefined();
+    });
+  });
+
+  it('surfaces a failed request without leaking server internals', async () => {
+    getRequestMock().mockRejectedValueOnce({
+      response: {status: 401, data: {message: 'Unauthorized'}},
+    });
+
+    await expect(getLalKitabHoroscope(LAL_KITAB_PAYLOAD)).rejects.toThrow(
+      'Astrology API request failed (401)',
     );
   });
 });

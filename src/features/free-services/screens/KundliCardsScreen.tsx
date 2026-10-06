@@ -6,6 +6,7 @@ import {
   isBirthChartCard,
   isDoshaInKundliCard,
   isGeneralLifePredictionCard,
+  isLalKitabCard,
   isMatchHoroscopeCard,
   isMyDayTodayCard,
   isNakshatraCard,
@@ -57,6 +58,11 @@ const KundliCardsScreen = () => {
       });
     } else if (isAscendantReportCard(card?.name)) {
       navigation.navigate('AscendantReport', {
+        result,
+        serviceTitle,
+      });
+    } else if (isLalKitabCard(card?.name)) {
+      navigation.navigate('LalKitab', {
         result,
         serviceTitle,
       });

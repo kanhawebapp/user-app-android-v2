@@ -224,6 +224,12 @@ export const isNakshatraCard = (name: string): boolean =>
 export const isAscendantReportCard = (name: string): boolean =>
   (name || '').toLowerCase().includes('ascendant');
 
+/**
+ * Returns true when the tapped kundli card is the "Lal Kitab Horoscope" card.
+ */
+export const isLalKitabCard = (name: string): boolean =>
+  (name || '').toLowerCase().includes('lal kitab');
+
 /** Returns true when the tapped kundli card opens Match Making (Kundli Milan). */
 export const isMatchHoroscopeCard = (name: string): boolean => {
   const normalized = (name || '').toLowerCase();

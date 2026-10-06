@@ -728,3 +728,89 @@ export interface NumeroTitleDescriptionResponse {
   title?: string;
   description?: string;
 }
+
+// ============================================
+// Lal Kitab endpoints
+// https://json.astrologyapi.com/v1/lalkitab_horoscope
+// https://json.astrologyapi.com/v1/lalkitab_debts
+// https://json.astrologyapi.com/v1/lalkitab_houses
+// https://json.astrologyapi.com/v1/lalkitab_planets
+//
+// All four accept the same birth-details payload (day, month, year, hour, min,
+// lat, lon, tzone) and are independent of each other, so the caller requests
+// them in parallel. Every field is optional: the API omits values it has nothing
+// to say about, sends `"-"` for a blank slot, and returns `[]` for a list with
+// no entries, so all of those have to be tolerated by the caller.
+// ============================================
+
+/** Request body shared by the four Lal Kitab endpoints. */
+export type LalKitabRequestPayload = AstrologyMuhurtaPayload;
+
+/**
+ * One of the 12 signs returned by POST /v1/lalkitab_horoscope.
+ *
+ * `planet_degree` is only populated for signs that actually hold a planet, so
+ * it must never be assumed present. Degrees come back as strings or numbers
+ * depending on the entry, hence the loose element type.
+ */
+export interface LalKitabHoroscopeItem {
+  sign?: number | string | null;
+  sign_name?: string | null;
+  /** Full planet names placed in the sign, e.g. `['Sun', 'Mars']`. */
+  planet?: (string | number | null)[] | string | null;
+  /** Chart abbreviations of the same planets, e.g. `['Su', 'Ma']`. */
+  planet_small?: (string | number | null)[] | string | null;
+  /** Degrees per planet, parallel to `planet`. Often empty or absent. */
+  planet_degree?: (string | number | null)[] | string | number | null;
+}
+
+/** POST /v1/lalkitab_horoscope returns one entry per sign (12 in total). */
+export type LalKitabHoroscopeResponse = LalKitabHoroscopeItem[];
+
+/** One entry of POST /v1/lalkitab_debts. */
+export interface LalKitabDebt {
+  debt_name?: string | null;
+  indications?: string | null;
+  events?: string | null;
+}
+
+/** POST /v1/lalkitab_debts returns an array of debts. */
+export type LalKitabDebtsResponse = LalKitabDebt[];
+
+/**
+ * One of the 12 houses returned by POST /v1/lalkitab_houses.
+ *
+ * `exalt` / `debilitated` arrive as a list, but the API has also been observed
+ * sending a single string or `"-"`, so both shapes are accepted.
+ */
+export interface LalKitabHouse {
+  khana_number?: number | string | null;
+  maalik?: string | null;
+  pakka_ghar?: string | null;
+  kismat?: string | null;
+  /** true when the house is "soya" (asleep). */
+  soya?: boolean | string | number | null;
+  exalt?: (string | null)[] | string | null;
+  debilitated?: (string | null)[] | string | null;
+}
+
+/** POST /v1/lalkitab_houses returns one entry per house (12 in total). */
+export type LalKitabHousesResponse = LalKitabHouse[];
+
+/**
+ * One entry of POST /v1/lalkitab_planets. The API returns every body including
+ * Rahu and Ketu, so the caller must not assume only the seven classical
+ * planets are present.
+ */
+export interface LalKitabPlanet {
+  planet?: string | null;
+  rashi?: string | null;
+  soya?: boolean | string | number | null;
+  /** e.g. ' NEUTRAL SIGN ' — trimmed by the caller. */
+  position?: string | null;
+  /** e.g. 'Malefic' | 'Benefic'. */
+  nature?: string | null;
+}
+
+/** POST /v1/lalkitab_planets returns one entry per body. */
+export type LalKitabPlanetsResponse = LalKitabPlanet[];
