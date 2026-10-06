@@ -210,14 +210,14 @@ describe('normalizeMajorYoginiDasha', () => {
   it('keeps every major period and converts numeric durations to years', () => {
     expect(normalizeMajorYoginiDasha(MAJOR_YOGINI)).toEqual([
       {
-        key: 'maj-yog-1',
+        key: 'maj-yog-1-0',
         name: 'Pingla',
         duration: '2 Years',
         startDate: '09 November 2000, 05:09 AM',
         endDate: '09 November 2002, 05:09 AM',
       },
       {
-        key: 'maj-yog-2',
+        key: 'maj-yog-2-1',
         name: 'Vishakti',
         duration: '1 Year',
         startDate: '09 November 2002, 05:09 AM',
@@ -230,6 +230,26 @@ describe('normalizeMajorYoginiDasha', () => {
     const [period] = normalizeMajorYoginiDasha(MAJOR_YOGINI);
     const [item] = toDashaInfoItems(period);
     expect(item).toEqual({label: 'Duration', value: '2 Years'});
+  });
+
+  it('keeps keys unique when the Yogini cycle repeats dasha_id', () => {
+    // The Yogini cycle repeats, so `dasha_id` (and `dasha_name`) can appear
+    // more than once. Every rendered sibling must still get a unique key.
+    const repeated: MajorYoginiDashaResponse = [
+      {dasha_id: 2, dasha_name: 'Dhanya', duration: 3},
+      {dasha_id: 3, dasha_name: 'Bhramari', duration: 1},
+      {dasha_id: 2, dasha_name: 'Dhanya', duration: 3},
+    ];
+    const periods = normalizeMajorYoginiDasha(repeated);
+    const keys = periods.map(period => period.key);
+
+    expect(keys).toEqual(['maj-yog-2-0', 'maj-yog-3-1', 'maj-yog-2-2']);
+    expect(new Set(keys).size).toBe(keys.length);
+    // The repeated period is kept and rendered, not filtered out.
+    expect(periods).toHaveLength(3);
+    expect(periods[0].name).toBe('Dhanya');
+    expect(periods[0].duration).toBe('3 Years');
+    expect(periods[2].name).toBe('Dhanya');
   });
 
   it('handles missing responses safely', () => {
@@ -268,7 +288,7 @@ describe('normalizeCurrentYoginiDasha', () => {
     expect(view).not.toBeNull();
     expect(view!.dashaDate).toBeNull();
     expect(view!.major).toEqual({
-      key: 'maj-yog-4',
+      key: 'maj-yog-4-0',
       name: 'Bhadrika',
       duration: '5 Years',
       startDate: '01 March 2014, 02:30 AM',
@@ -315,8 +335,12 @@ describe('resolveDashaInput', () => {
   });
 
   it('rejects incomplete birth details instead of sending zeros', () => {
-    expect(resolveDashaInput({payload: {...PAYLOAD, lat: undefined}})).toBeNull();
-    expect(resolveDashaInput({payload: {...PAYLOAD, lon: undefined}})).toBeNull();
+    expect(
+      resolveDashaInput({payload: {...PAYLOAD, lat: undefined}}),
+    ).toBeNull();
+    expect(
+      resolveDashaInput({payload: {...PAYLOAD, lon: undefined}}),
+    ).toBeNull();
     expect(resolveDashaInput({payload: {...PAYLOAD, tzone: ''}})).toBeNull();
     expect(resolveDashaInput({payload: {...PAYLOAD, hour: null}})).toBeNull();
   });

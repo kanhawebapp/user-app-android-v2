@@ -147,8 +147,10 @@ const toYoginiPeriodView = (
     typeof period.dasha_name === 'string' && period.dasha_name.trim()
       ? period.dasha_name.trim()
       : `Dasha ${Number(period.dasha_id) || index + 1}`;
+  // `dasha_id` and `dasha_name` can repeat because the Yogini cycle repeats,
+  // so the list index is appended to keep every rendered sibling unique.
   return {
-    key: `${prefix}-${period.dasha_id ?? index}`,
+    key: `${prefix}-${period.dasha_id ?? index}-${index}`,
     name,
     duration: toDashaDurationText(period.duration),
     startDate: formatDashaDateTime(toDateValue(period.start_date)),
