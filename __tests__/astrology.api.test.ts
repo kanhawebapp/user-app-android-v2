@@ -4,6 +4,8 @@ import {
   getAstroDetails,
   getBasicPanchang,
   getBirthDetails,
+  getCurrentCharDasha,
+  getCurrentYoginiDasha,
   getDailyNakshatraPrediction,
   getGeneralAscendantReport,
   getGeneralNakshatraReport,
@@ -12,7 +14,9 @@ import {
   getLalKitabHouses,
   getLalKitabHoroscope,
   getLalKitabPlanets,
+  getMajorCharDasha,
   getMajorVdasha,
+  getMajorYoginiDasha,
   getMatchAshtakootPoints,
   getMatchAstroDetails,
   getMatchMakingReport,
@@ -684,5 +688,76 @@ describe('Lal Kitab endpoints', () => {
     await expect(getLalKitabHoroscope(LAL_KITAB_PAYLOAD)).rejects.toThrow(
       'Astrology API request failed (401)',
     );
+  });
+});
+
+describe('Char / Yogini Dasha endpoints', () => {
+  // The four Dasha reports share the plain Kundli birth-details payload.
+  const DASHA_PAYLOAD: AstrologyMuhurtaPayload = {
+    day: 10,
+    month: 5,
+    year: 1990,
+    hour: 19,
+    min: 55,
+    lat: 19.2056,
+    lon: 25.2056,
+    tzone: 5.5,
+  };
+  const DASHA_RESPONSE = [{name: 'entry'}];
+
+  beforeEach(() => {
+    getRequestMock().mockReset();
+  });
+
+  it.each([
+    ['MajorChar', getMajorCharDasha, '/v1/major_chardasha'],
+    ['CurrentChar', getCurrentCharDasha, '/v1/current_chardasha'],
+    ['MajorYogini', getMajorYoginiDasha, '/v1/major_yogini_dasha'],
+    ['CurrentYogini', getCurrentYoginiDasha, '/v1/current_yogini_dasha'],
+  ])(
+    'get%sDasha POSTs the birth details to %s',
+    async (_name, request, url) => {
+      getRequestMock().mockResolvedValueOnce({data: DASHA_RESPONSE});
+
+      const result = await request(DASHA_PAYLOAD);
+
+      expect(getRequestMock()).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'POST',
+          url,
+          data: 'day=10&month=5&year=1990&hour=19&min=55&lat=19.2056&lon=25.2056&tzone=5.5',
+        }),
+      );
+      expect(result).toEqual(DASHA_RESPONSE);
+    },
+  );
+
+  it('requests English content and shares the existing auth client', async () => {
+    getRequestMock().mockResolvedValue({data: DASHA_RESPONSE});
+
+    await getMajorCharDasha(DASHA_PAYLOAD);
+    await getCurrentCharDasha(DASHA_PAYLOAD);
+    await getMajorYoginiDasha(DASHA_PAYLOAD);
+    await getCurrentYoginiDasha(DASHA_PAYLOAD);
+
+    // All four calls go through the one pre-configured authenticated client, so
+    // no request adds its own credentials.
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+    getRequestMock().mock.calls.forEach(([config]) => {
+      expect(config.headers).toEqual(
+        expect.objectContaining({'Accept-Language': 'en'}),
+      );
+      expect(config.auth).toBeUndefined();
+    });
+  });
+
+  it('surfaces a failed request without leaking server internals', async () => {
+    getRequestMock().mockRejectedValueOnce({
+      response: {status: 500, data: {message: 'Internal Server Error'}},
+    });
+
+    await expect(
+      getMajorCharDasha(DASHA_PAYLOAD),
+    ).rejects.toThrow('Astrology API request failed (500)');
   });
 });

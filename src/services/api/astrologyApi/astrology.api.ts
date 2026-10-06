@@ -10,6 +10,8 @@ import type {
   BasicPanchangResponse,
   BirthDetailsResponse,
   ChaughadiyaMuhurtaResponse,
+  CurrentCharDashaResponse,
+  CurrentYoginiDashaResponse,
   DailyNakshatraPredictionResponse,
   GeocodeResult,
   GeneralAscendantReportResponse,
@@ -25,7 +27,9 @@ import type {
   LalKitabHoroscopeResponse,
   LalKitabPlanetsResponse,
   LalKitabRequestPayload,
+  MajorCharDashaResponse,
   MajorDashaPeriod,
+  MajorYoginiDashaResponse,
   ManglikResponse,
   MatchAstroDetails,
   MatchAshtakootPoints,
@@ -855,6 +859,8 @@ export const getNumeroFavMantra = async (
 /** The Lal Kitab report text is always requested in English. */
 const LAL_KITAB_HEADERS = {'Accept-Language': 'en'};
 
+const DASHA_HEADERS = {'Accept-Language': 'en'};
+
 const requestLalKitab = <T>(
   endpoint: string,
   payload: LalKitabRequestPayload,
@@ -894,5 +900,49 @@ export const getLalKitabPlanets = async (
   return requestLalKitab<LalKitabPlanetsResponse>(
     '/v1/lalkitab_planets',
     payload,
+  );
+};
+
+/** POST /v1/major_chardasha — every major Char Dasha period sequentially. */
+export const getMajorCharDasha = async (
+  payload: AstrologyMuhurtaPayload,
+): Promise<MajorCharDashaResponse> => {
+  return requestAstrology<MajorCharDashaResponse>(
+    '/v1/major_chardasha',
+    payload,
+    DASHA_HEADERS,
+  );
+};
+
+/** POST /v1/current_chardasha — running Char Dasha breakdown. */
+export const getCurrentCharDasha = async (
+  payload: AstrologyMuhurtaPayload,
+): Promise<CurrentCharDashaResponse> => {
+  return requestAstrology<CurrentCharDashaResponse>(
+    '/v1/current_chardasha',
+    payload,
+    DASHA_HEADERS,
+  );
+};
+
+/** POST /v1/major_yogini_dasha — every major Yogini Dasha period sequentially. */
+export const getMajorYoginiDasha = async (
+  payload: AstrologyMuhurtaPayload,
+): Promise<MajorYoginiDashaResponse> => {
+  return requestAstrology<MajorYoginiDashaResponse>(
+    '/v1/major_yogini_dasha',
+    payload,
+    DASHA_HEADERS,
+  );
+};
+
+/** POST /v1/current_yogini_dasha — running Yogini Dasha breakdown. */
+export const getCurrentYoginiDasha = async (
+  payload: AstrologyMuhurtaPayload,
+): Promise<CurrentYoginiDashaResponse> => {
+  return requestAstrology<CurrentYoginiDashaResponse>(
+    '/v1/current_yogini_dasha',
+    payload,
+    DASHA_HEADERS,
   );
 };

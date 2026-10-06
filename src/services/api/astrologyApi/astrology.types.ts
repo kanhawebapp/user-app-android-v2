@@ -814,3 +814,49 @@ export interface LalKitabPlanet {
 
 /** POST /v1/lalkitab_planets returns one entry per body. */
 export type LalKitabPlanetsResponse = LalKitabPlanet[];
+
+/** A single Char Dasha period (used by major and current responses). */
+export interface DashaCharPeriod {
+  sign_id?: number | string | null;
+  sign_name?: string | null;
+  /** Human-readable duration, e.g. '5 Years'. */
+  duration?: string | number | null;
+  start_date?: string | null;
+  end_date?: string | null;
+}
+
+/** POST /v1/major_chardasha returns every major period sequentially. */
+export type MajorCharDashaResponse = DashaCharPeriod[];
+
+/** POST /v1/current_chardasha returns the running dasha breakdown. */
+export interface CurrentCharDashaResponse {
+  dasha_date?: string | null;
+  major_dasha?: DashaCharPeriod | null;
+  sub_dasha?: DashaCharPeriod | null;
+  /** List of all active sub-sub (pratyantardasha) periods. */
+  sub_sub_dasha?: DashaCharPeriod[] | null;
+}
+
+/** A single Yogini Dasha period (used by major and current responses). */
+export interface DashaYoginiPeriod {
+  dasha_id?: number | string | null;
+  dasha_name?: string | null;
+  /** String for current dasha periods, numeric years for major periods. */
+  duration?: string | number | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  /** Milliseconds since epoch — kept for calculations/future use. */
+  start_ms?: number | null;
+  end_ms?: number | null;
+}
+
+/** POST /v1/major_yogini_dasha returns every major period sequentially. */
+export type MajorYoginiDashaResponse = DashaYoginiPeriod[];
+
+/** POST /v1/current_yogini_dasha returns the running dasha breakdown. */
+export interface CurrentYoginiDashaResponse {
+  major_dasha?: DashaYoginiPeriod | null;
+  sub_dasha?: DashaYoginiPeriod | null;
+  /** NOTE: single object for Yogini, unlike Char Dasha's array. */
+  sub_sub_dasha?: DashaYoginiPeriod | null;
+}

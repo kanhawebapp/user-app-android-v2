@@ -174,6 +174,14 @@ const LalKitabScreen = lazy(() =>
   ),
 );
 
+const DashaScreen = lazy(() =>
+  import('../../features/free-services/screens/DashaScreen').then(
+    module => ({
+      default: module.default,
+    }),
+  ),
+);
+
 const MatchMakingScreen = lazy(() =>
   import('../../features/free-services/screens/MatchMakingScreen').then(
     module => ({
@@ -287,6 +295,10 @@ export type RootStackParamList = {
     serviceTitle?: string;
   };
   LalKitab: {
+    result?: any;
+    serviceTitle?: string;
+  };
+  Dasha: {
     result?: any;
     serviceTitle?: string;
   };
@@ -640,6 +652,7 @@ const AnimatedAppContent: React.FC<AnimatedAppContentProps> = ({
           <Stack.Screen name="PitraDosha" component={PitraDoshaScreen} />
           <Stack.Screen name="SadeSati" component={SadeSatiScreen} />
           <Stack.Screen name="LalKitab" component={LalKitabScreen} />
+          <Stack.Screen name="Dasha" component={DashaScreen} />
           <Stack.Screen name="MatchMaking" component={MatchMakingScreen} />
           <Stack.Screen
             name="MatchMakingReport"

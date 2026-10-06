@@ -230,6 +230,12 @@ export const isAscendantReportCard = (name: string): boolean =>
 export const isLalKitabCard = (name: string): boolean =>
   (name || '').toLowerCase().includes('lal kitab');
 
+/**
+ * Returns true when the tapped kundli card is the "Char / Yogini Dasha" card.
+ */
+export const isDashaCard = (name: string): boolean =>
+  (name || '').toLowerCase().includes('dasha');
+
 /** Returns true when the tapped kundli card opens Match Making (Kundli Milan). */
 export const isMatchHoroscopeCard = (name: string): boolean => {
   const normalized = (name || '').toLowerCase();

@@ -4,6 +4,7 @@ import KundliCardsView from '../components/KundliCardsView';
 import {
   isAscendantReportCard,
   isBirthChartCard,
+  isDashaCard,
   isDoshaInKundliCard,
   isGeneralLifePredictionCard,
   isLalKitabCard,
@@ -63,6 +64,11 @@ const KundliCardsScreen = () => {
       });
     } else if (isLalKitabCard(card?.name)) {
       navigation.navigate('LalKitab', {
+        result,
+        serviceTitle,
+      });
+    } else if (isDashaCard(card?.name)) {
+      navigation.navigate('Dasha', {
         result,
         serviceTitle,
       });
