@@ -46,3 +46,60 @@ export interface Coupon {
 export interface GetCouponsResponse {
   getCoupons: Coupon[];
 }
+
+/** Input for the `VerifyRechargeCoupon` GraphQL mutation. */
+export interface VerifyRechargeCouponInput {
+  /** Id of the currently selected recharge pack (`RechargePack.id`). */
+  rechargePackId: string;
+  /** Coupon code exactly as the user entered it (trimmed). */
+  couponCode: string;
+}
+
+/**
+ * Pricing snapshot returned by `verifyRechargeCoupon`.
+ *
+ * On the backend every numeric field is a non-null `Float` and `coupon` is
+ * nullable, but failed verifications answer with zeroes plus a `message`, so
+ * callers must only adopt these values after checking `success === true` and
+ * still fall back to the original pack amounts when a value is missing.
+ */
+export interface VerifyRechargeCouponResult {
+  success: boolean;
+  message?: string | null;
+  originalAmount?: number | null;
+  discount?: number | null;
+  discountedPrice?: number | null;
+  cashback?: number | null;
+  payableAmount?: number | null;
+  gstAmount?: number | null;
+  coupon?: Coupon | null;
+  __typename?: string;
+}
+
+export interface VerifyRechargeCouponResponse {
+  verifyRechargeCoupon: VerifyRechargeCouponResult;
+}
+
+/** Input for the `VerifyServiceCoupon` GraphQL mutation. */
+export interface VerifyServiceCouponInput {
+  /**
+   * Id of the booking created by `CreateServiceBooking`. It does not exist
+   * while the coupon sheet is open - only the final payment run creates it -
+   * so service coupons are verified at payment time, not on "Apply".
+   */
+  bookingId: string;
+  /** Coupon code exactly as the user entered it (trimmed). */
+  couponCode: string;
+}
+
+/**
+ * `VerifyServiceCoupon` shares the exact same backend response payload as
+ * `VerifyRechargeCoupon` (both mutations return `VerifyServiceCouponResponse`
+ * on the schema), so the recharge result shape is reused rather than
+ * duplicated.
+ */
+export type VerifyServiceCouponResult = VerifyRechargeCouponResult;
+
+export interface VerifyServiceCouponResponse {
+  verifyServiceCoupon: VerifyServiceCouponResult;
+}

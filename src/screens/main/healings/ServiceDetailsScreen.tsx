@@ -1,18 +1,21 @@
-
-import React from 'react';
+import React, {useRef} from 'react';
 import {
   View,
   ScrollView,
   TouchableOpacity,
   Image,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
-import { Text } from '../../../components/Text';
-import { colors } from '../../../theme';
-import { API_BASE_URL } from '../../../constants/api.constants';
-import { GoBack } from '../../../components';
+import {Text} from '../../../components/Text';
+import {colors} from '../../../theme';
+import {API_BASE_URL} from '../../../constants/api.constants';
+import {GoBack} from '../../../components';
+import {useToast} from '../../../context/ToastContext';
+import {useCreateServiceBooking} from '../../../services/api/healingServices/serviceBooking/useServiceBooking';
+import {CreateServiceBookingInput} from '../../../services/api/healingServices/serviceBooking/serviceBooking.types';
 
 const BASE_IMAGE_URL = API_BASE_URL.DEVELOPMENT;
 const GST_PERCENTAGE = 18;
@@ -32,229 +35,278 @@ interface Service {
 interface ServiceDetailsScreenProps {
   service: Service | null;
   onBack: () => void;
-  onConfirmBooking: () => void;
+  /**
+   * Called with the id of the booking created by `submitBooking`, so the
+   * healing flow can carry it forward to the Payment Screen (coupon
+   * verification, astrologer assignment, payment order).
+   */
+  onConfirmBooking: (bookingId: string) => void;
 }
 
-const ServiceDetailsScreen: React.FC<
-  ServiceDetailsScreenProps
-> = ({
+const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
   service,
   onBack,
   onConfirmBooking,
 }) => {
-    if (!service) {
-      return null;
+  const {showError} = useToast();
+  const {submitBooking, loading} = useCreateServiceBooking();
+
+  // Synchronous in-flight guard: the hook's `loading` state only disables
+  // the button after the next render; this ref also blocks a second tap
+  // that lands before that re-render.
+  const isSubmittingRef = useRef(false);
+
+  if (!service) {
+    return null;
+  }
+
+  const gstAmount = (service.price * GST_PERCENTAGE) / 100;
+  const totalPrice = service.price + gstAmount;
+
+  /**
+   * "Confirm Booking" creates the booking through the existing
+   * `CreateServiceBooking` mutation - same payload the Payment Screen
+   * used before (placeholder contact fields, `serviceId` from this
+   * screen's service) - then hands the created booking id to the flow.
+   */
+  const handleConfirmBooking = async () => {
+    if (isSubmittingRef.current) {
+      return;
     }
 
-    const gstAmount = (service.price * GST_PERCENTAGE) / 100;
-    const totalPrice = service.price + gstAmount;
+    if (!service.id) {
+      showError('Unable to continue. Please select a service again.');
 
-    return (
-      <View style={styles.container}>
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{
-            paddingBottom: 120,
-          }}>
-          {/* Hero Section */}
+      return;
+    }
 
-          <View style={styles.heroContainer}>
-            <Image
-              source={{
-                uri: `${BASE_IMAGE_URL}${service.image}`,
-              }}
-              style={styles.heroImage}
-              resizeMode="cover"
-            />
+    const payload: CreateServiceBookingInput = {
+      serviceId: service.id,
 
-            <LinearGradient
-              colors={[
-                'transparent',
-                'rgba(0,0,0,0.2)',
-                'rgba(0,0,0,0.85)',
-              ]}
-              style={styles.gradient}
-            />
+      name: 'xxxx',
 
-            <View style={styles.backButtonWrapper}>
-              <GoBack onBack={onBack} title='Booking Details' />
+      email: 'xxxx',
+
+      phone: '9999999999',
+
+      dob: '999',
+
+      tob: '9999',
+
+      pob: '9999',
+
+      gender: 'male',
+
+      concern: 'male',
+    };
+
+    isSubmittingRef.current = true;
+
+    try {
+      console.log('SUBMIT BOOKING PAYLOAD:', JSON.stringify(payload, null, 2));
+
+      const response = await submitBooking(payload);
+
+      console.log(
+        'SUBMIT BOOKING RESPONSE:',
+        JSON.stringify(response, null, 2),
+      );
+
+      if (!response?.id) {
+        showError('Booking was not created. Please try again.');
+
+        return;
+      }
+
+      onConfirmBooking(response.id);
+    } catch (error: any) {
+      console.log('SUBMIT BOOKING ERROR:', error);
+
+      showError(
+        error?.message || 'Unable to create the booking. Please try again.',
+      );
+    } finally {
+      isSubmittingRef.current = false;
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingBottom: 120,
+        }}>
+        {/* Hero Section */}
+
+        <View style={styles.heroContainer}>
+          <Image
+            source={{
+              uri: `${BASE_IMAGE_URL}${service.image}`,
+            }}
+            style={styles.heroImage}
+            resizeMode="cover"
+          />
+
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.85)']}
+            style={styles.gradient}
+          />
+
+          <View style={styles.backButtonWrapper}>
+            <GoBack onBack={onBack} title="Booking Details" />
+          </View>
+
+          <View style={styles.heroContent}>
+            <View style={styles.categoryBadge}>
+              <Text style={styles.categoryText} weight="medium">
+                {service.category?.name}
+              </Text>
             </View>
 
-            <View style={styles.heroContent}>
-              <View style={styles.categoryBadge}>
-                <Text
-                  style={styles.categoryText}
-                  weight="medium">
-                  {service.category?.name}
-                </Text>
-              </View>
+            <Text style={styles.heroTitle} weight="semibold">
+              {service.name}
+            </Text>
 
-              <Text
-                style={styles.heroTitle}
-                weight="semibold">
-                {service.name}
+            <Text style={styles.heroPrice} weight="semibold">
+              ₹{service.price}
+            </Text>
+          </View>
+        </View>
+
+        {/* Content */}
+
+        <View style={styles.content}>
+          {/* Overview Card */}
+
+          <View style={styles.card}>
+            <Text style={styles.cardTitle} weight="semibold">
+              About Service
+            </Text>
+
+            <Text style={styles.description}>
+              {service.description || 'No description available'}
+            </Text>
+          </View>
+
+          {/* Detailed Information */}
+
+          {!!service.longText && (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle} weight="semibold">
+                Detailed Information
               </Text>
 
-              <Text
-                style={styles.heroPrice}
-                weight="semibold">
+              <Text style={styles.longText}>{service.longText}</Text>
+            </View>
+          )}
+
+          {/* Highlights */}
+
+          <View style={styles.card}>
+            <Text style={styles.cardTitle} weight="semibold">
+              Service Highlights
+            </Text>
+
+            <View style={styles.highlightItem}>
+              <Text style={styles.highlightText}>
+                <Text style={{color: colors.primary.main}}>✓</Text> Personalized
+                Guidance
+              </Text>
+            </View>
+
+            <View style={styles.highlightItem}>
+              <Text style={styles.highlightText}>
+                <Text style={{color: colors.primary.main}}>✓</Text> Trusted
+                Service
+              </Text>
+            </View>
+
+            <View style={styles.highlightItem}>
+              <Text style={styles.highlightText}>
+                <Text style={{color: colors.primary.main}}>✓</Text> Expert
+                Consultation
+              </Text>
+            </View>
+
+            <View style={styles.highlightItem}>
+              <Text style={styles.highlightText}>
+                <Text style={{color: colors.primary.main}}>✓</Text> Confidential
+                Process
+              </Text>
+            </View>
+          </View>
+
+          {/* Pricing Card */}
+
+          <View style={styles.priceCard}>
+            <View style={styles.priceRow}>
+              <Text style={styles.priceLabel} weight="medium">
+                Service Price
+              </Text>
+
+              <Text style={styles.priceRowValue} weight="medium">
                 ₹{service.price}
               </Text>
             </View>
-          </View>
 
-          {/* Content */}
+            <View style={styles.priceDivider} />
 
-          <View style={styles.content}>
-            {/* Overview Card */}
-
-            <View style={styles.card}>
-              <Text
-                style={styles.cardTitle}
-                weight="semibold">
-                About Service
+            <View style={styles.priceRow}>
+              <Text style={styles.priceLabel} weight="medium">
+                GST ({GST_PERCENTAGE}%)
               </Text>
 
-              <Text style={styles.description}>
-                {service.description ||
-                  'No description available'}
+              <Text style={styles.priceRowValue} weight="medium">
+                ₹{gstAmount.toFixed(2)}
               </Text>
             </View>
 
-            {/* Detailed Information */}
+            <View style={styles.priceDivider} />
 
-            {!!service.longText && (
-              <View style={styles.card}>
-                <Text
-                  style={styles.cardTitle}
-                  weight="semibold">
-                  Detailed Information
-                </Text> 
-
-                <Text style={styles.longText}>
-                  {service.longText}
-                </Text>
-              </View>
-            )}
-
-            {/* Highlights */}
-
-            <View style={styles.card}>
-              <Text
-                style={styles.cardTitle}
-                weight="semibold">
-                Service Highlights
+            <View style={styles.priceRow}>
+              <Text style={styles.priceTotalLabel} weight="semibold">
+                Total Price
               </Text>
 
-              <View style={styles.highlightItem}>
-                <Text style={styles.highlightText}>
-                  <Text style={{ color: colors.primary.main }}>✓</Text> Personalized Guidance
-                </Text>
-              </View>
-
-              <View style={styles.highlightItem}>
-                <Text style={styles.highlightText}>
-                  <Text style={{ color: colors.primary.main }}>✓</Text>  Trusted Service
-                </Text>
-              </View>
-
-              <View style={styles.highlightItem}>
-                <Text style={styles.highlightText}>
-                  <Text style={{ color: colors.primary.main }}>✓</Text>  Expert Consultation
-                </Text>
-              </View>
-
-              <View style={styles.highlightItem}>
-                <Text style={styles.highlightText}>
-                  <Text style={{ color: colors.primary.main }}>✓</Text>  Confidential Process
-                </Text>
-              </View>
-            </View>
-
-            {/* Pricing Card */}
-
-            <View style={styles.priceCard}>
-              <View style={styles.priceRow}>
-                <Text
-                  style={styles.priceLabel}
-                  weight="medium">
-                  Service Price
-                </Text>
-
-                <Text
-                  style={styles.priceRowValue}
-                  weight="medium">
-                  ₹{service.price}
-                </Text>
-              </View>
-
-              <View style={styles.priceDivider} />
-
-              <View style={styles.priceRow}>
-                <Text
-                  style={styles.priceLabel}
-                  weight="medium">
-                  GST ({GST_PERCENTAGE}%)
-                </Text>
-
-                <Text
-                  style={styles.priceRowValue}
-                  weight="medium">
-                  ₹{gstAmount.toFixed(2)}
-                </Text>
-              </View>
-
-              <View style={styles.priceDivider} />
-
-              <View style={styles.priceRow}>
-                <Text
-                  style={styles.priceTotalLabel}
-                  weight="semibold">
-                  Total Price
-                </Text>
-
-                <Text
-                  style={styles.priceValue}
-                  weight="semibold">
-                  ₹{totalPrice.toFixed(2)}
-                </Text>
-              </View>
-
-              <Text style={styles.priceNote}>
-                One-time service booking fee
+              <Text style={styles.priceValue} weight="semibold">
+                ₹{totalPrice.toFixed(2)}
               </Text>
             </View>
+
+            <Text style={styles.priceNote}>One-time service booking fee</Text>
           </View>
-        </ScrollView>
+        </View>
+      </ScrollView>
 
-        {/* Sticky Footer */}
+      {/* Sticky Footer */}
 
-        <View style={styles.footer}>
-          <View>
-            <Text style={styles.footerLabel}>
-              Total Price
-            </Text>
+      <View style={styles.footer}>
+        <View>
+          <Text style={styles.footerLabel}>Total Price</Text>
 
-            <Text
-              style={styles.footerPrice}
-              weight="semibold">
-              ₹{totalPrice.toFixed(2)}
-            </Text>
-          </View>
+          <Text style={styles.footerPrice} weight="semibold">
+            ₹{totalPrice.toFixed(2)}
+          </Text>
+        </View>
 
-          <TouchableOpacity
-            style={styles.confirmButton}
-            onPress={onConfirmBooking}>
-            <Text
-              style={styles.confirmButtonText}
-              weight="semibold">
+        <TouchableOpacity
+          style={styles.confirmButton}
+          onPress={handleConfirmBooking}
+          disabled={loading}
+          activeOpacity={0.7}>
+          {loading ? (
+            <ActivityIndicator size="small" color="#FFF" />
+          ) : (
+            <Text style={styles.confirmButtonText} weight="semibold">
               Confirm Booking
             </Text>
-          </TouchableOpacity>
-        </View>
+          )}
+        </TouchableOpacity>
       </View>
-    );
-  };
+    </View>
+  );
+};
 
 export default ServiceDetailsScreen;
 
@@ -461,6 +513,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
     paddingVertical: 16,
     borderRadius: 16,
+    alignItems: 'center',
+    minWidth: 160,
   },
 
   confirmButtonText: {
@@ -468,4 +522,3 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
 });
-

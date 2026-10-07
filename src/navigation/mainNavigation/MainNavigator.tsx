@@ -133,6 +133,10 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
   const [healingSelectedService, setHealingSelectedService] = useState<any>(null);
   const [healingPaymentData, setHealingPaymentData] =
     useState<ServicePaymentData | null>(null);
+  // Id of the booking created by ServiceDetailsScreen's "Confirm Booking",
+  // carried forward to the Payment Screen (coupon verification, astrologer
+  // assignment, payment order).
+  const [healingBookingId, setHealingBookingId] = useState<string | null>(null);
 
   // Blog listing visibility state
   const [isBlogListingVisible, setIsBlogListingVisible] = useState(false);
@@ -286,17 +290,21 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
   const handleHealingBack = useCallback(() => {
     setHealingScreen(null);
     setHealingSelectedService(null);
+    setHealingBookingId(null);
   }, []);
 
-  // BookingFormScreen is intentionally skipped: Confirm Booking goes straight
-  // to astrologer selection.
-  const handleConfirmBooking = useCallback(() => {
+  // BookingFormScreen is intentionally skipped: "Confirm Booking" creates
+  // the booking (CreateServiceBooking) on ServiceDetailsScreen and goes
+  // straight to astrologer selection, carrying the created booking id.
+  const handleConfirmBooking = useCallback((bookingId: string) => {
+    setHealingBookingId(bookingId);
     setHealingScreen('selectAstrologer');
   }, []);
 
   // "Continue to Payment" hands the selected astrologer + service
-  // data to the Payment Screen; the booking/payment APIs run only
-  // from the Payment Screen's final "Payment" button.
+  // data to the Payment Screen; the coupon verification, astrologer
+  // assignment, order and Razorpay run from the Payment Screen's final
+  // "Payment" button (the booking already exists).
   const handleContinueToPayment = useCallback(
     (data: ServicePaymentData) => {
       setHealingPaymentData(data);
@@ -309,6 +317,7 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
     setHealingScreen(null);
     setHealingSelectedService(null);
     setHealingPaymentData(null);
+    setHealingBookingId(null);
   }, []);
 
   const handleNavigateToBlogListing = useCallback(() => {
@@ -555,6 +564,7 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
         <PaymentScreen
           paymentType="service"
           servicePayment={healingPaymentData}
+          serviceBookingId={healingBookingId}
           onBack={() => {
             setHealingScreen('selectAstrologer');
             setHealingPaymentData(null);

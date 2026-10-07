@@ -49,9 +49,9 @@ type SelectableAstrologer = ServiceAstrologer & {
 };
 
 /**
- * `BookingFormScreen` is no longer part of this flow, so the booking
- * payload is prepared on the Payment Screen, which triggers the
- * existing `CreateServiceBooking` mutation from its Payment button.
+ * `BookingFormScreen` is no longer part of this flow: the booking is
+ * created on ServiceDetailsScreen's "Confirm Booking"; this screen only
+ * hands the selected astrologer + service data to the Payment Screen.
  */
 
 const SelectAstrologerScreen: React.FC<
@@ -102,9 +102,10 @@ const SelectAstrologerScreen: React.FC<
 
     // "Continue to Payment" only validates the selection and hands
     // the required service/astrologer/amount data to the Payment
-    // Screen. The booking, astrologer assignment, order creation
-    // and Razorpay gateway are triggered from the Payment Screen's
-    // final "Payment" button.
+    // Screen. The booking already exists (created on
+    // ServiceDetailsScreen); the coupon verification, astrologer
+    // assignment, order creation and Razorpay gateway are triggered
+    // from the Payment Screen's final "Payment" button.
     const handleContinue = () => {
       if (!selectedAstrologer) {
         Alert.alert(

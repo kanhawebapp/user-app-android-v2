@@ -28,6 +28,8 @@ interface CouponModalProps {
   coupons: Coupon[];
   loading: boolean;
   hasError: boolean;
+  /** True while a `VerifyRechargeCoupon` request is in flight. */
+  applying?: boolean;
   /** Code of the currently applied coupon, if any. */
   appliedCode?: string;
   onSelectCoupon: (coupon: Coupon) => void;
@@ -54,6 +56,7 @@ const renderCoupon = (
   isApplied: boolean,
   colors: any,
   onPress: () => void,
+  disabled = false,
 ) => {
   const discountLabel = getCouponDiscountLabel(coupon);
   const typeLabel = getCouponTypeLabel(coupon);
@@ -143,6 +146,7 @@ const renderCoupon = (
             : {backgroundColor: colors.primary.main},
         ]}
         onPress={onPress}
+        disabled={disabled}
         activeOpacity={0.7}
         accessibilityRole="button"
         accessibilityLabel={
@@ -178,6 +182,7 @@ export const CouponModal: React.FC<CouponModalProps> = ({
   coupons,
   loading,
   hasError,
+  applying = false,
   appliedCode,
   onSelectCoupon,
   onApplyManualCode,
@@ -185,14 +190,18 @@ export const CouponModal: React.FC<CouponModalProps> = ({
 }) => {
   const theme = useTheme();
   const colors = theme.colors;
-  console.log('CouponModal rendered with props:', {
-    visible,
-    coupons,
-    loading,
-    hasError,
-    appliedCode,
-  });
+  // console.log('CouponModal rendered with props:', {
+  //   visible,
+  //   coupons,
+  //   loading,
+  //   hasError,
+  //   applying,
+  //   appliedCode,
+  // });
   const [manualCode, setManualCode] = useState('');
+
+  /** Blocks presses while coupons load or a verification is in flight. */
+  const isBusy = loading || applying;
 
   useEffect(() => {
     if (!visible) {
@@ -201,6 +210,10 @@ export const CouponModal: React.FC<CouponModalProps> = ({
   }, [visible]);
 
   const handleApplyManualCode = () => {
+    if (isBusy) {
+      return;
+    }
+
     onApplyManualCode(manualCode.trim().toUpperCase());
   };
 
@@ -334,7 +347,7 @@ export const CouponModal: React.FC<CouponModalProps> = ({
               autoCapitalize="characters"
               autoCorrect={false}
               returnKeyType="done"
-              editable={!loading}
+              editable={!isBusy}
               maxLength={32}
               testID="coupon-manual-input"
             />
@@ -345,17 +358,24 @@ export const CouponModal: React.FC<CouponModalProps> = ({
                 {backgroundColor: colors.primary.main},
               ]}
               onPress={handleApplyManualCode}
-              disabled={loading}
+              disabled={isBusy}
               activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel="Apply entered coupon code"
               testID="coupon-manual-apply">
-              <Text
-                variant="label"
-                weight="semibold"
-                style={{color: colors.primary.contrastText}}>
-                Apply
-              </Text>
+              {applying ? (
+                <ActivityIndicator
+                  size="small"
+                  color={colors.primary.contrastText}
+                />
+              ) : (
+                <Text
+                  variant="label"
+                  weight="semibold"
+                  style={{color: colors.primary.contrastText}}>
+                  Apply
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -371,8 +391,12 @@ export const CouponModal: React.FC<CouponModalProps> = ({
               (item.code || '').trim().toUpperCase() ===
               (appliedCode || '').trim().toUpperCase();
 
-            return renderCoupon(item, isApplied, colors, () =>
-              onSelectCoupon(item),
+            return renderCoupon(
+              item,
+              isApplied,
+              colors,
+              () => onSelectCoupon(item),
+              isBusy,
             );
           }}
           ListEmptyComponent={renderEmptyState()}
