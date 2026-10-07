@@ -144,12 +144,12 @@ const SelectAstrologerScreen: React.FC<
 
       const astrologerId = selectedAstrologer.id;
 
-      console.log('UPDATE BOOKING ASTROLOGER bookingId:', bookingId);
-      console.log('UPDATE BOOKING ASTROLOGER astrologerId:', astrologerId);
-      console.log(
-        'UPDATE BOOKING ASTROLOGER REQUEST:',
-        JSON.stringify({ bookingId, astrologerId }, null, 2),
-      );
+      // console.log('UPDATE BOOKING ASTROLOGER bookingId:', bookingId);
+      // console.log('UPDATE BOOKING ASTROLOGER astrologerId:', astrologerId);
+      // console.log(
+      //   'UPDATE BOOKING ASTROLOGER REQUEST:',
+      //   JSON.stringify({ bookingId, astrologerId }, null, 2),
+      // );
 
       isAssigningRef.current = true;
 
@@ -159,10 +159,10 @@ const SelectAstrologerScreen: React.FC<
           astrologerId,
         });
 
-        console.log(
-          'UPDATE BOOKING ASTROLOGER RESULT:',
-          JSON.stringify(response, null, 2),
-        );
+        // console.log(
+        //   'UPDATE BOOKING ASTROLOGER RESULT:',
+        //   JSON.stringify(response, null, 2),
+        // );
       } catch (error: any) {
         console.log('UPDATE BOOKING ASTROLOGER FAILED:', error);
 
