@@ -39,10 +39,10 @@ export const createHealingOrder =
           {input},
         );
 
-      console.log(
-        'CREATE HEALING ORDER RESPONSE:',
-        JSON.stringify(response, null, 2),
-      );
+      // console.log(
+      //   'CREATE HEALING ORDER RESPONSE:',
+      //   JSON.stringify(response, null, 2),
+      // );
 
       return response?.createHealingOrder;
     } catch (error: any) {

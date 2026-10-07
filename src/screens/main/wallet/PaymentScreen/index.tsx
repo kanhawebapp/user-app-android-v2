@@ -311,10 +311,10 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
         return;
       }
 
-      console.log(
-        'COUPON VERIFICATION RESULT:',
-        JSON.stringify(result, null, 2),
-      );
+      // console.log(
+      //   'COUPON VERIFICATION RESULT:',
+      //   JSON.stringify(result, null, 2),
+      // );
 
       if (result.success !== true) {
         showError(result.message || 'This coupon cannot be applied.');
@@ -351,10 +351,10 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
   const applyServiceCoupon = async (normalizedCode: string) => {
     const bookingId = serviceBookingId;
 
-    console.log('SERVICE COUPON PAYLOAD:', {
-      bookingId,
-      couponCode: normalizedCode,
-    });
+    // console.log('SERVICE COUPON PAYLOAD:', {
+    //   bookingId,
+    //   couponCode: normalizedCode,
+    // });
 
     if (!bookingId) {
       showError('Booking was not created. Please try again.');
@@ -370,20 +370,20 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
     setIsVerifyingServiceCoupon(true);
 
     try {
-      console.log('CALLING verifyServiceCoupon', {
-        bookingId,
-        couponCode: normalizedCode,
-      });
+      // console.log('CALLING verifyServiceCoupon', {
+      //   bookingId,
+      //   couponCode: normalizedCode,
+      // });
 
       const result = await verifyServiceCoupon({
         bookingId,
         couponCode: normalizedCode,
       });
 
-      console.log(
-        'COUPON VERIFICATION RESULT:',
-        JSON.stringify(result, null, 2),
-      );
+      // console.log(
+      //   'COUPON VERIFICATION RESULT:',
+      //   JSON.stringify(result, null, 2),
+      // );
 
       if (result.success !== true) {
         showError(result.message || 'This coupon cannot be applied.');
@@ -421,11 +421,11 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
   const handleApplyCoupon = async (enteredCode: string) => {
     const normalizedCode = (enteredCode || '').trim();
 
-    console.log('APPLY COUPON CLICKED', {
-      isRecharge,
-      couponCode: normalizedCode,
-      bookingId: serviceBookingId,
-    });
+    // console.log('APPLY COUPON CLICKED', {
+    //   isRecharge,
+    //   couponCode: normalizedCode,
+    //   bookingId: serviceBookingId,
+    // });
 
     if (!normalizedCode) {
       showError('Please enter a coupon code.');
@@ -594,6 +594,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
 
       try {
         await RazorpayCheckout.open(options);
+        
         showSuccess('Payment successful! Your booking is confirmed.');
         onComplete?.();
       } catch (razorpayError: any) {
