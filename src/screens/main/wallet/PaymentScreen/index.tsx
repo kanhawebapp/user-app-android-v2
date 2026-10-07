@@ -26,7 +26,6 @@ import { RechargePack } from '../../../../services/api/recharge/recharge.types';
 
 // Healing / service APIs (existing)
 import { ServiceAstrologer } from '../../../../services/api/healingServices/getServices/services.types';
-import { useBookingAstrologer } from '../../../../services/api/healingServices/bookingAstrologer/useBookingAstrologer';
 import { useCreateHealingOrder } from '../../../../services/api/healingServices/healingOrder/useHealingOrder';
 import { getIPLocation } from '../../../../services/location/location.service';
 
@@ -93,8 +92,8 @@ interface PaymentScreenProps {
   servicePayment?: ServicePaymentData;
   /**
    * Id of the booking created on `ServiceDetailsScreen`'s "Confirm
-   * Booking". Required for the service flow: coupon verification,
-   * astrologer assignment and the payment order all reference it.
+   * Booking". Required for the service flow: coupon verification and the
+   * payment order reference it.
    */
   serviceBookingId?: string | null;
   onBack: () => void;
@@ -156,7 +155,6 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
 
   // Existing API hooks - reused as-is, only the trigger point moved here.
   const { createOrder: createRechargeOrder } = useRechargeOrder();
-  const { assignAstrologer } = useBookingAstrologer();
   const {createOrder: createHealingOrder} = useCreateHealingOrder();
   const {loading: isVerifyingCoupon, verify: verifyRechargeCoupon} =
     useVerifyRechargeCoupon();
@@ -530,8 +528,8 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
     }
 
     // The booking itself was created on `ServiceDetailsScreen` when the
-    // user tapped "Confirm Booking"; only its id is needed here - astrologer
-    // assignment and the payment order both reference it.
+    // user tapped "Confirm Booking"; only its id is needed here - the
+    // payment order references it.
     const bookingId = serviceBookingId;
 
     if (!bookingId) {
@@ -543,13 +541,8 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
     setIsProcessing(true);
 
     try {
-      // Step 1: Persist the selected astrologer on the booking.
-      await assignAstrologer({
-        bookingId,
-        astrologerId: astrologer.id,
-      });
-
-      // Step 2: Create the payment order (existing CreateHealingOrder mutation).
+      // Create the payment order (existing CreateHealingOrder mutation).
+      // The astrologer was already assigned on SelectAstrologerScreen.
       // Without a coupon the amount stays the service price configured for
       // this astrologer plus GST, exactly as before; with a coupon verified
       // on "Apply" it is the backend's `payableAmount` (`totalAmount`). The

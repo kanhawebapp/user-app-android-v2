@@ -301,10 +301,10 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
     setHealingScreen('selectAstrologer');
   }, []);
 
-  // "Continue to Payment" hands the selected astrologer + service
-  // data to the Payment Screen; the coupon verification, astrologer
-  // assignment, order and Razorpay run from the Payment Screen's final
-  // "Payment" button (the booking already exists).
+  // "Continue to Payment" assigns the selected astrologer to the booking
+  // on SelectAstrologerScreen, then hands the astrologer + service data to
+  // the Payment Screen; the order and Razorpay run from the Payment
+  // Screen's final "Payment" button (the booking already exists).
   const handleContinueToPayment = useCallback(
     (data: ServicePaymentData) => {
       setHealingPaymentData(data);
@@ -546,6 +546,7 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
         ]}>
         <SelectAstrologerScreen
           service={healingSelectedService}
+          bookingId={healingBookingId}
           onBack={() => setHealingScreen('serviceDetails')}
           onComplete={handleHealingComplete}
           onContinueToPayment={handleContinueToPayment}

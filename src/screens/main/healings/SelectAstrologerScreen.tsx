@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   FlatList,
@@ -13,6 +13,7 @@ import { colors } from '../../../theme';
 import { API_BASE_URL } from '../../../constants/api.constants';
 import { useGetService } from '../../../services/api/healingServices/getService/useGetService';
 import { ServiceAstrologer } from '../../../services/api/healingServices/getServices/services.types';
+import { useBookingAstrologer } from '../../../services/api/healingServices/bookingAstrologer/useBookingAstrologer';
 import type { ServicePaymentData } from '../wallet/PaymentScreen';
 import { useToast } from '../../../context/ToastContext';
 import { GoBack } from '../../../components';
@@ -31,6 +32,8 @@ interface SelectAstrologerScreenProps {
       name: string;
     };
   } | null;
+  /** Id of the booking created on ServiceDetailsScreen's "Confirm Booking". */
+  bookingId?: string | null;
   onBack: () => void;
   onComplete: () => void;
   /** Hands the selected astrologer + service + amounts to the Payment Screen. */
@@ -50,14 +53,16 @@ type SelectableAstrologer = ServiceAstrologer & {
 
 /**
  * `BookingFormScreen` is no longer part of this flow: the booking is
- * created on ServiceDetailsScreen's "Confirm Booking"; this screen only
- * hands the selected astrologer + service data to the Payment Screen.
+ * created on ServiceDetailsScreen's "Confirm Booking"; this screen assigns
+ * the selected astrologer to it (`UpdateBookingAstrologer`) and hands the
+ * selected astrologer + service data to the Payment Screen.
  */
 
 const SelectAstrologerScreen: React.FC<
   SelectAstrologerScreenProps
 > = ({
   service,
+  bookingId,
   onBack,
   onComplete,
   onContinueToPayment,
@@ -66,6 +71,13 @@ const SelectAstrologerScreen: React.FC<
       useState<SelectableAstrologer | null>(null);
 
     const { showError } = useToast();
+
+    const { assignAstrologer, loading: isAssigningAstrologer } =
+      useBookingAstrologer();
+
+    // Synchronous in-flight guard: `loading` only disables the button after
+    // the next render; this ref also blocks a second tap before that.
+    const isAssigningRef = useRef(false);
 
     // Single source of service details: `GetService(slug)` via the shared
     // GraphQL client. The slug comes from the service handed over by the
@@ -100,13 +112,15 @@ const SelectAstrologerScreen: React.FC<
     const gstAmount = (baseAmount * GST_PERCENTAGE) / 100;
     const totalAmount = baseAmount + gstAmount;
 
-    // "Continue to Payment" only validates the selection and hands
-    // the required service/astrologer/amount data to the Payment
-    // Screen. The booking already exists (created on
-    // ServiceDetailsScreen); the coupon verification, astrologer
-    // assignment, order creation and Razorpay gateway are triggered
-    // from the Payment Screen's final "Payment" button.
-    const handleContinue = () => {
+    // "Continue to Payment" assigns the selected astrologer to the booking
+    // created on ServiceDetailsScreen (`UpdateBookingAstrologer`) and only
+    // then hands the service/astrologer/amount data to the Payment Screen.
+    // Order creation and the Razorpay gateway stay on the Payment Screen.
+    const handleContinue = async () => {
+      if (isAssigningRef.current) {
+        return;
+      }
+
       if (!selectedAstrologer) {
         Alert.alert(
           'Selection Required',
@@ -120,6 +134,45 @@ const SelectAstrologerScreen: React.FC<
         showError('Unable to continue. Please select a service again.');
 
         return;
+      }
+
+      if (!bookingId) {
+        showError('Booking was not created. Please try again.');
+
+        return;
+      }
+
+      const astrologerId = selectedAstrologer.id;
+
+      console.log('UPDATE BOOKING ASTROLOGER bookingId:', bookingId);
+      console.log('UPDATE BOOKING ASTROLOGER astrologerId:', astrologerId);
+      console.log(
+        'UPDATE BOOKING ASTROLOGER REQUEST:',
+        JSON.stringify({ bookingId, astrologerId }, null, 2),
+      );
+
+      isAssigningRef.current = true;
+
+      try {
+        const response = await assignAstrologer({
+          bookingId,
+          astrologerId,
+        });
+
+        console.log(
+          'UPDATE BOOKING ASTROLOGER RESULT:',
+          JSON.stringify(response, null, 2),
+        );
+      } catch (error: any) {
+        console.log('UPDATE BOOKING ASTROLOGER FAILED:', error);
+
+        showError(
+          error?.message || 'Unable to assign the astrologer. Please try again.',
+        );
+
+        return;
+      } finally {
+        isAssigningRef.current = false;
       }
 
       onContinueToPayment?.({
@@ -257,11 +310,11 @@ const SelectAstrologerScreen: React.FC<
           <TouchableOpacity
             style={[
               styles.continueButton,
-              !selectedAstrologer &&
+              (!selectedAstrologer || isAssigningAstrologer) &&
               styles.disabledButton,
             ]}
             onPress={handleContinue}
-            disabled={!selectedAstrologer}
+            disabled={!selectedAstrologer || isAssigningAstrologer}
           >
             <Text style={styles.continueText} weight="semibold">
               Continue to Payment

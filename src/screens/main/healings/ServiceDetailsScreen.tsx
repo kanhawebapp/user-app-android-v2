@@ -83,13 +83,13 @@ const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
     const payload: CreateServiceBookingInput = {
       serviceId: service.id,
 
-      name: 'xxxx',
+      name: 'rahul',
 
-      email: 'xxxx',
+      email: 'rishabh@dhwaniastro.com',
 
       phone: '9999999999',
 
-      dob: '999',
+      dob: '10-01-1999',
 
       tob: '9999',
 
@@ -117,7 +117,6 @@ const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
 
         return;
       }
-console.log('Booking created successfully with ID:', response);
       onConfirmBooking(response.id);
     } catch (error: any) {
       console.log('SUBMIT BOOKING ERROR:', error);
