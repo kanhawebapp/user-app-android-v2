@@ -103,14 +103,14 @@ const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
     isSubmittingRef.current = true;
 
     try {
-      console.log('SUBMIT BOOKING PAYLOAD:', JSON.stringify(payload, null, 2));
+      // console.log('SUBMIT BOOKING PAYLOAD:', JSON.stringify(payload, null, 2));
 
       const response = await submitBooking(payload);
 
-      console.log(
-        'SUBMIT BOOKING RESPONSE:',
-        JSON.stringify(response, null, 2),
-      );
+      // console.log(
+      //   'SUBMIT BOOKING RESPONSE:',
+      //   JSON.stringify(response, null, 2),
+      // );
 
       if (!response?.id) {
         showError('Booking was not created. Please try again.');
