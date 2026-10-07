@@ -83,9 +83,8 @@ export interface VerifyRechargeCouponResponse {
 /** Input for the `VerifyServiceCoupon` GraphQL mutation. */
 export interface VerifyServiceCouponInput {
   /**
-   * Id of the booking created by `CreateServiceBooking`. It does not exist
-   * while the coupon sheet is open - only the final payment run creates it -
-   * so service coupons are verified at payment time, not on "Apply".
+   * Id of the booking created by `CreateServiceBooking` on
+   * `ServiceDetailsScreen`, before the Payment Screen opens.
    */
   bookingId: string;
   /** Coupon code exactly as the user entered it (trimmed). */

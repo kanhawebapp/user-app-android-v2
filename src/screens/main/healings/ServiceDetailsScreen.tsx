@@ -117,7 +117,7 @@ const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
 
         return;
       }
-
+console.log('Booking created successfully with ID:', response);
       onConfirmBooking(response.id);
     } catch (error: any) {
       console.log('SUBMIT BOOKING ERROR:', error);

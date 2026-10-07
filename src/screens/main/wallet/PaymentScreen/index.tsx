@@ -42,10 +42,8 @@ import {
 } from '../../../../services/api/coupon/coupon.types';
 import {
   findCouponByCode,
-  formatCurrency,
   getApplicableCoupons,
   getCouponDiscountLabel,
-  meetsCouponMinOrder,
 } from '../../../../services/api/coupon/coupon.utils';
 import { CouponModal } from './components';
 
@@ -145,14 +143,16 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
     useState<VerifyRechargeCouponResult | null>(null);
 
   /**
-   * Pricing returned by the last successful `VerifyServiceCoupon` call,
-   * run during payment with the booking id created on
-   * `ServiceDetailsScreen` - not while the coupon sheet is open. Once set
-   * the summary shows the backend's numbers instead of the screen's base
+   * Pricing returned by the last successful `VerifyServiceCoupon` call, run
+   * on "Apply" with the booking id created on `ServiceDetailsScreen`. Once
+   * set the summary shows the backend's numbers instead of the screen's base
    * pricing.
    */
   const [verifiedServicePricing, setVerifiedServicePricing] =
     useState<VerifyServiceCouponResult | null>(null);
+  const [isVerifyingServiceCoupon, setIsVerifyingServiceCoupon] =
+    useState(false);
+  const isServiceCouponInFlightRef = useRef(false);
 
   // Existing API hooks - reused as-is, only the trigger point moved here.
   const { createOrder: createRechargeOrder } = useRechargeOrder();
@@ -194,9 +194,9 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
    * Verified pricing of the applied coupon. Which snapshot drives the
    * summary is decided by the coupon's own `applicable` value
    * (`"recharge"` / `"services"`) - never by `isRecharge`, which only keeps
-   * selecting the payment/API flow. The recharge flow verifies on "Apply"
-   * (`VerifyRechargeCoupon`), the service flow verifies during the final
-   * payment run once the booking exists (`VerifyServiceCoupon`). The backend
+   * selecting the payment/API flow. Both flows verify on "Apply" - recharge
+   * through `VerifyRechargeCoupon`, service through `VerifyServiceCoupon`
+   * with the booking created on `ServiceDetailsScreen`. The backend
    * response is the single source of truth - values are only adopted after
    * `success === true`, `payableAmount` becomes the Total Payable and
    * nothing is ever recalculated here (no `originalAmount - discount`, no
@@ -281,55 +281,13 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
   };
 
   /**
-   * Validates a coupon against the order and, when it passes, marks it as the
-   * selected one. No amount is recalculated here - the backend stays the
-   * single source of truth for the payable amount.
-   *
-   * Service flow: the code is only resolved against `GetCoupons` here;
-   * `VerifyServiceCoupon` is called later, from `handlePayment`, with the
-   * booking id created on `ServiceDetailsScreen`.
-   */
-  const selectCoupon = (coupon: Coupon) => {
-    if (!coupon?.code) {
-      showError('Invalid or unavailable coupon code.');
-
-      return;
-    }
-
-    if (!meetsCouponMinOrder(coupon, totalAmount ?? 0)) {
-      const minOrder = formatCurrency(coupon?.minOrderAmount);
-
-      showError(
-        minOrder
-          ? `This coupon requires a minimum order of ${minOrder}.`
-          : 'This coupon does not meet the minimum order amount.',
-      );
-
-      return;
-    }
-
-    setSelectedCoupon(coupon);
-    setCouponCode(coupon.code.trim());
-    setCouponApplied(true);
-    setIsCouponModalVisible(false);
-  };
-
-  /**
    * Recharge flow: verifies the entered code through `VerifyRechargeCoupon`
    * using the selected pack's id. On success the backend's pricing snapshot
    * (original amount, discount, cashback, GST, payable amount) replaces the
    * pack's base pricing in the summary; on failure the API `message` is
    * surfaced and nothing is applied.
    */
-  const applyRechargeCoupon = async (enteredCode: string) => {
-    const normalizedCode = (enteredCode || '').trim();
-
-    if (!normalizedCode) {
-      showError('Please enter a coupon code.');
-
-      return;
-    }
-
+  const applyRechargeCoupon = async (normalizedCode: string) => {
     if (!selectedRechargePackId) {
       showError('Please select a recharge pack.');
 
@@ -343,6 +301,8 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
     }
 
     try {
+      console.log('CALLING verifyRechargeCoupon');
+
       const result = await verifyRechargeCoupon({
         rechargePackId: selectedRechargePackId,
         couponCode: normalizedCode,
@@ -352,6 +312,11 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
       if (!result) {
         return;
       }
+
+      console.log(
+        'COUPON VERIFICATION RESULT:',
+        JSON.stringify(result, null, 2),
+      );
 
       if (result.success !== true) {
         showError(result.message || 'This coupon cannot be applied.');
@@ -379,36 +344,90 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
     }
   };
 
-  /** Applies a coupon picked from the list. */
-  const handleSelectCoupon = (coupon: Coupon) => {
+  /**
+   * Service flow: verifies the entered code through `VerifyServiceCoupon`
+   * against the booking created on `ServiceDetailsScreen`. On success the
+   * backend's pricing snapshot replaces the service's base pricing in the
+   * summary; on failure the API `message` is surfaced and nothing is applied.
+   */
+  const applyServiceCoupon = async (normalizedCode: string) => {
+    const bookingId = serviceBookingId;
 
-    // console.log('SELECTED COUPON:', JSON.stringify(coupon, null, 2));
-    if (isRecharge) {
-      // Recharge coupons must be verified server-side against the selected
-      // pack before they can be applied.
-      applyRechargeCoupon(coupon.code);
+    console.log('SERVICE COUPON PAYLOAD:', {
+      bookingId,
+      couponCode: normalizedCode,
+    });
+
+    if (!bookingId) {
+      showError('Booking was not created. Please try again.');
 
       return;
     }
 
-    selectCoupon(coupon);
+    if (isServiceCouponInFlightRef.current) {
+      return;
+    }
+
+    isServiceCouponInFlightRef.current = true;
+    setIsVerifyingServiceCoupon(true);
+
+    try {
+      console.log('CALLING verifyServiceCoupon', {
+        bookingId,
+        couponCode: normalizedCode,
+      });
+
+      const result = await verifyServiceCoupon({
+        bookingId,
+        couponCode: normalizedCode,
+      });
+
+      console.log(
+        'COUPON VERIFICATION RESULT:',
+        JSON.stringify(result, null, 2),
+      );
+
+      if (result.success !== true) {
+        showError(result.message || 'This coupon cannot be applied.');
+
+        return;
+      }
+
+      // Replace (never merge) the previous pricing so repeated applications
+      // cannot double-count discounts, cashback or GST.
+      setVerifiedServicePricing(result);
+      setSelectedCoupon(
+        result.coupon ??
+          findCouponByCode(coupons, normalizedCode, couponFlow) ??
+          null,
+      );
+      setCouponCode(result.coupon?.code?.trim() || normalizedCode);
+      setCouponApplied(true);
+      setIsCouponModalVisible(false);
+
+      showSuccess(result.message || 'Coupon applied successfully.');
+    } catch (error: any) {
+      showError(
+        error?.message || 'Unable to verify the coupon. Please try again.',
+      );
+    } finally {
+      isServiceCouponInFlightRef.current = false;
+      setIsVerifyingServiceCoupon(false);
+    }
   };
 
   /**
-   * Manual entry: the recharge flow delegates to `VerifyRechargeCoupon`,
-   * while the service flow keeps resolving the code against `GetCoupons`
-   * exactly as before - its server-side verification is deferred to
-   * `handlePayment`, which runs `VerifyServiceCoupon` with the booking id
-   * created on `ServiceDetailsScreen`.
+   * Single entry point for every "Apply" tap (manual code or list item).
+   * Coupon verification APIs are only ever triggered from here.
    */
-  const handleApplyCoupon = (enteredCode: string) => {
-    if (isRecharge) {
-      applyRechargeCoupon(enteredCode);
+  const handleApplyCoupon = async (enteredCode: string) => {
+    const normalizedCode = (enteredCode || '').trim();
 
-      return;
-    }
-
-    const normalizedCode = (enteredCode || '').trim().toUpperCase();
+    console.log('APPLY COUPON CLICKED', {
+      isRecharge,
+      couponCode: normalizedCode,
+      bookingId: serviceBookingId,
+    });
 
     if (!normalizedCode) {
       showError('Please enter a coupon code.');
@@ -416,19 +435,18 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
       return;
     }
 
-    const matchedCoupon = findCouponByCode(
-      coupons,
-      normalizedCode,
-      couponFlow,
-    );
-
-    if (!matchedCoupon) {
-      showError('Invalid or unavailable coupon code.');
+    if (isRecharge) {
+      await applyRechargeCoupon(normalizedCode);
 
       return;
     }
 
-    selectCoupon(matchedCoupon);
+    await applyServiceCoupon(normalizedCode);
+  };
+
+  /** Applies a coupon picked from the list. */
+  const handleSelectCoupon = (coupon: Coupon) => {
+    handleApplyCoupon(coupon?.code);
   };
 
   const handleRemoveCoupon = () => {
@@ -441,10 +459,10 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
   };
 
   /**
-   * Final payment trigger. Runs the existing order APIs plus the service
-   * flow's coupon verification (both need the booking id created on
-   * `ServiceDetailsScreen`) and opens the Razorpay gateway exactly once
-   * per tap. `isProcessing` disables the button so rapid taps cannot
+   * Final payment trigger. Runs the existing order APIs with the amount
+   * already shown in the summary and opens the Razorpay gateway exactly
+   * once per tap. Coupons are never verified here - that only happens on
+   * "Apply". `isProcessing` disables the button so rapid taps cannot
    * create duplicate orders.
    */
   const handlePayment = async () => {
@@ -512,9 +530,8 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
     }
 
     // The booking itself was created on `ServiceDetailsScreen` when the
-    // user tapped "Confirm Booking"; only its id is needed here - coupon
-    // verification, astrologer assignment and the payment order all
-    // reference it.
+    // user tapped "Confirm Booking"; only its id is needed here - astrologer
+    // assignment and the payment order both reference it.
     const bookingId = serviceBookingId;
 
     if (!bookingId) {
@@ -526,71 +543,21 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
     setIsProcessing(true);
 
     try {
-      /**
-       * Step 1: Verify the applied coupon (`VerifyServiceCoupon`) against
-       * the booking created on `ServiceDetailsScreen`. Service coupons are
-       * never verified when the user taps "Apply" - that step only resolves
-       * the code against `GetCoupons`; the check runs here, before any
-       * order is created for the coupon. On success the backend's payable
-       * amount becomes the total in the summary and the amount handed to
-       * `CreateHealingOrder`; it is never recalculated on the frontend. On
-       * failure the API message is surfaced, the coupon is dropped and the
-       * payment stops so no order is created for a rejected coupon.
-       */
-      let verifiedPayableAmount: number | null = null;
-
-      if (couponApplied && couponCode.trim()) {
-        try {
-          const verification = await verifyServiceCoupon({
-            bookingId,
-            couponCode: couponCode.trim(),
-          });
-
-          if (verification.success !== true) {
-            showError(verification.message || 'This coupon cannot be applied.');
-            setCouponApplied(false);
-            setCouponCode('');
-            setSelectedCoupon(null);
-            setVerifiedServicePricing(null);
-
-            return;
-          }
-
-          // Replace (never merge) the pricing snapshot so repeated payment
-          // attempts cannot double-count discounts, cashback or GST.
-          setVerifiedServicePricing(verification);
-
-          if (verification.coupon) {
-            setSelectedCoupon(verification.coupon);
-          }
-
-          verifiedPayableAmount = verification.payableAmount ?? null;
-
-          showSuccess(verification.message || 'Coupon verified.');
-        } catch (error: any) {
-          showError(
-            error?.message || 'Unable to verify the coupon. Please try again.',
-          );
-
-          return;
-        }
-      }
-
-      // Step 2: Persist the selected astrologer on the booking.
+      // Step 1: Persist the selected astrologer on the booking.
       await assignAstrologer({
         bookingId,
         astrologerId: astrologer.id,
       });
 
-      // Step 3: Create the payment order (existing CreateHealingOrder mutation).
+      // Step 2: Create the payment order (existing CreateHealingOrder mutation).
       // Without a coupon the amount stays the service price configured for
-      // this astrologer plus GST, exactly as before; with a verified coupon
-      // it is the backend's `payableAmount` from step 1. The coupon code is
-      // only sent when the user applied one.
+      // this astrologer plus GST, exactly as before; with a coupon verified
+      // on "Apply" it is the backend's `payableAmount` (`totalAmount`). The
+      // coupon code is only sent when the user applied one.
       const order = await createHealingOrder({
         bookingId,
         couponCode: couponApplied ? couponCode.trim() : '',
-        amount: Number((verifiedPayableAmount ?? totalAmount ?? 0).toFixed(2)),
+        amount: Number((totalAmount ?? 0).toFixed(2)),
       });
 
       // Get IP + City + State + Country
@@ -935,7 +902,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
         coupons={availableCoupons}
         loading={couponsLoading}
         hasError={!!couponsError}
-        applying={isVerifyingCoupon}
+        applying={isVerifyingCoupon || isVerifyingServiceCoupon}
         appliedCode={couponApplied ? couponCode : undefined}
         onSelectCoupon={handleSelectCoupon}
         onApplyManualCode={handleApplyCoupon}

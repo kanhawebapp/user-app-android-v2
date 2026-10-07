@@ -178,11 +178,11 @@ mutation VerifyServiceCoupon($input: VerifyServiceCouponInput!) {
 /**
  * Verifies a coupon code against a service booking.
  *
- * The booking id only exists after `CreateServiceBooking`, so this call runs
- * during the final payment run - after the booking is created and before
- * `CreateHealingOrder` - never when the user taps "Apply". The response is
- * the authoritative pricing for the verified coupon (discount, cashback, GST
- * and payable amount) and must not be recalculated on the frontend.
+ * Runs when the user taps "Apply" on the Payment Screen, using the booking
+ * id created by `CreateServiceBooking` on `ServiceDetailsScreen`. The
+ * response is the authoritative pricing for the verified coupon (discount,
+ * cashback, GST and payable amount) and must not be recalculated on the
+ * frontend.
  */
 export const verifyServiceCoupon = async (
   input: VerifyServiceCouponInput,
@@ -195,8 +195,10 @@ export const verifyServiceCoupon = async (
       },
     };
 
+    console.log('VERIFY SERVICE COUPON bookingId:', payload.input.bookingId);
+    console.log('VERIFY SERVICE COUPON couponCode:', payload.input.couponCode);
     console.log(
-      'VERIFY SERVICE COUPON PAYLOAD:',
+      'VERIFY SERVICE COUPON VARIABLES:',
       JSON.stringify(payload, null, 2),
     );
 
