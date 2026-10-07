@@ -1,4 +1,3 @@
-
 import React, {useEffect, useRef, useCallback, useState} from 'react';
 import {
   Animated,
@@ -7,10 +6,10 @@ import {
   TouchableOpacity,
   Dimensions,
   PanResponder,
-  Platform,
 } from 'react-native';
 
 import LinearGradient from 'react-native-linear-gradient';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {useTheme} from '../../theme';
 import {Icon} from '../Icon';
@@ -34,6 +33,10 @@ export const Toast: React.FC<ToastProps> = ({
   autoDismiss = true,
 }) => {
   const {colors} = useTheme();
+
+  // Get the actual safe-area/system inset.
+  // This is important for Android 15/16 edge-to-edge behavior.
+  const insets = useSafeAreaInsets();
 
   const translateY = useRef(
     new Animated.Value(position === 'top' ? -120 : 120),
@@ -246,6 +249,14 @@ export const Toast: React.FC<ToastProps> = ({
         getPositionStyle(),
         {
           opacity,
+
+          // Important:
+          // Do not use a hardcoded top/bottom value.
+          // Safe-area insets handle Android 15/16 edge-to-edge
+          // and different device status-bar sizes.
+          top: position === 'top' ? insets.top + 10 : undefined,
+          bottom: position === 'bottom' ? insets.bottom + 10 : undefined,
+
           transform: [
             {
               translateY,
@@ -335,7 +346,12 @@ export const Toast: React.FC<ToastProps> = ({
               activeOpacity={0.7}
               onPress={handleClose}
               style={styles.closeButton}>
-              <Icon name="close" size={18} color="#E2E8F0" library="Ionicons" />
+              <Icon
+                name="close"
+                size={18}
+                color="#E2E8F0"
+                library="Ionicons"
+              />
             </TouchableOpacity>
           )}
         </TouchableOpacity>
