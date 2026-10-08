@@ -1,4 +1,4 @@
-import React, {useRef} from 'react';
+import React, { useRef } from 'react';
 import {
   View,
   ScrollView,
@@ -9,14 +9,14 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
-import {Text} from '../../../components/Text';
-import {colors} from '../../../theme';
-import {API_BASE_URL} from '../../../constants/api.constants';
-import {GoBack} from '../../../components';
-import {useToast} from '../../../context/ToastContext';
-import {useCreateServiceBooking} from '../../../services/api/healingServices/serviceBooking/useServiceBooking';
-import {CreateServiceBookingInput} from '../../../services/api/healingServices/serviceBooking/serviceBooking.types';
-
+import { Text } from '../../../components/Text';
+import { colors } from '../../../theme';
+import { API_BASE_URL } from '../../../constants/api.constants';
+import { GoBack } from '../../../components';
+import { useToast } from '../../../context/ToastContext';
+import { useCreateServiceBooking } from '../../../services/api/healingServices/serviceBooking/useServiceBooking';
+import { CreateServiceBookingInput } from '../../../services/api/healingServices/serviceBooking/serviceBooking.types';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const BASE_IMAGE_URL = API_BASE_URL.DEVELOPMENT;
 const GST_PERCENTAGE = 18;
 
@@ -48,8 +48,9 @@ const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
   onBack,
   onConfirmBooking,
 }) => {
-  const {showError} = useToast();
-  const {submitBooking, loading} = useCreateServiceBooking();
+  const { showError } = useToast();
+  const { submitBooking, loading } = useCreateServiceBooking();
+  const insets = useSafeAreaInsets();
 
   // Synchronous in-flight guard: the hook's `loading` state only disables
   // the button after the next render; this ref also blocks a second tap
@@ -209,28 +210,28 @@ const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
 
             <View style={styles.highlightItem}>
               <Text style={styles.highlightText}>
-                <Text style={{color: colors.primary.main}}>✓</Text> Personalized
+                <Text style={{ color: colors.primary.main }}>✓</Text> Personalized
                 Guidance
               </Text>
             </View>
 
             <View style={styles.highlightItem}>
               <Text style={styles.highlightText}>
-                <Text style={{color: colors.primary.main}}>✓</Text> Trusted
+                <Text style={{ color: colors.primary.main }}>✓</Text> Trusted
                 Service
               </Text>
             </View>
 
             <View style={styles.highlightItem}>
               <Text style={styles.highlightText}>
-                <Text style={{color: colors.primary.main}}>✓</Text> Expert
+                <Text style={{ color: colors.primary.main }}>✓</Text> Expert
                 Consultation
               </Text>
             </View>
 
             <View style={styles.highlightItem}>
               <Text style={styles.highlightText}>
-                <Text style={{color: colors.primary.main}}>✓</Text> Confidential
+                <Text style={{ color: colors.primary.main }}>✓</Text> Confidential
                 Process
               </Text>
             </View>
@@ -280,7 +281,13 @@ const ServiceDetailsScreen: React.FC<ServiceDetailsScreenProps> = ({
 
       {/* Sticky Footer */}
 
-      <View style={styles.footer}>
+      <View
+        style={[
+          styles.footer,
+          {
+            paddingBottom: Math.max(insets.bottom, 16),
+          },
+        ]}>
         <View>
           <Text style={styles.footerLabel}>Total Price</Text>
 

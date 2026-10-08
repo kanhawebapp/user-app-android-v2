@@ -17,6 +17,8 @@ import { useBookingAstrologer } from '../../../services/api/healingServices/book
 import type { ServicePaymentData } from '../wallet/PaymentScreen';
 import { useToast } from '../../../context/ToastContext';
 import { GoBack } from '../../../components';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 
 const BASE_IMAGE_URL = API_BASE_URL.DEVELOPMENT;
 const GST_PERCENTAGE = 18;
@@ -71,6 +73,7 @@ const SelectAstrologerScreen: React.FC<
       useState<SelectableAstrologer | null>(null);
 
     const { showError } = useToast();
+    const insets = useSafeAreaInsets();
 
     const { assignAstrologer, loading: isAssigningAstrologer } =
       useBookingAstrologer();
@@ -306,7 +309,13 @@ const SelectAstrologerScreen: React.FC<
           )}
         />
 
-        <View style={styles.footer}>
+        <View
+          style={[
+            styles.footer,
+            {
+              paddingBottom: Math.max(insets.bottom, 16),
+            },
+          ]}>
           <TouchableOpacity
             style={[
               styles.continueButton,
