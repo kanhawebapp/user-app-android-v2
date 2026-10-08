@@ -24,7 +24,6 @@ const TransactionItem = ({
   downloadingId,
 }: any) => {
 
-  console.log('Transaction Item:', item.type); // Debugging line to check the structure of item
   const isCredit = item.type === 'CREDIT';
   const isCASHBACK = item.type === 'CASHBACK';
   // Generate/display 8-digit transaction ID from UUID
