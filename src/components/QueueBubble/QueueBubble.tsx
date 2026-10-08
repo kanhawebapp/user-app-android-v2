@@ -19,7 +19,7 @@ import { useCallStore } from '../../services/call/call.store';
 import { useChatActions } from '../../services/chat/chat.hooks';
 import { useCall } from '../../services/call';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
@@ -39,7 +39,7 @@ interface QueueBubbleProps {
 
 export const QueueBubble: React.FC<QueueBubbleProps> = () => {
   const { colors } = useTheme();
-
+  const insets = useSafeAreaInsets();
   const chatQueueData = useChatStore(state => state.queueData);
   const chatStatus = useChatStore(state => state.chatStatus);
   const chatQueueTimeLeft = useChatStore(state => state.queueTimeLeft);
@@ -267,21 +267,21 @@ export const QueueBubble: React.FC<QueueBubbleProps> = () => {
     } catch (e) { }
 
     if (parsedPayload?.consultationType === 'call' || isCallQueue) {
-       cancelCallRequest({
+      cancelCallRequest({
         roomId: parsedPayload?.room_id || useCallStore.getState().roomId,
         astroId: parsedPayload?.astro_id || useCallStore.getState().calleeId,
         userId: parsedPayload?.user_id || useCallStore.getState().callerId,
       });
       useCallStore.getState().stopQueueTimer();
     } else {
-        cancelChatRequest({
+      cancelChatRequest({
         roomId: parsedPayload?.room_id,
         astroId: parsedPayload?.astro_id,
         userId: parsedPayload?.user_id,
-        type:"chat"
+        type: "chat"
       });
       stopChatTimer();
-        }
+    }
 
   }, [userPayload, cancelCallRequest, cancelChatRequest, stopChatTimer, isCallQueue]);
 
@@ -343,6 +343,10 @@ export const QueueBubble: React.FC<QueueBubbleProps> = () => {
       style={[
         styles.container,
         {
+
+          top: Platform.OS === 'ios'
+            ? Math.max(insets.top, 60)
+            : Math.max(insets.top, 30),
           backgroundColor: colors.secondary?.main || '#6B46C1',
 
           width: animatedWidth,

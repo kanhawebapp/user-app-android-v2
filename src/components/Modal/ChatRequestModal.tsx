@@ -26,6 +26,7 @@ import { SkeletonLoader } from '../SkeletonLoader/ShimmerLoader';
 import { useAuthStore } from '../../stores/auth.store';
 import { useChatStore } from '../../services/chat/chat.store';
 import { useRecentIntakes } from '../../services/api/recentIntake/recentIntakes.hook';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export interface ChatRequestData {
   name: string;
@@ -64,7 +65,7 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
 }) => {
   const theme = useTheme();
   const colors = theme.colors;
-
+  const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [gender, setGender] = useState<Gender | null>(null);
   const [dateOfBirth, setDateOfBirth] = useState('');
@@ -269,7 +270,7 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
     }
   };
 
-// comment 26aug
+  // comment 26aug
   // const handleRecentIntakeSelect = useCallback(
   //   (item: any) => {
   //     if (requestInProgressRef.current) {
@@ -341,14 +342,14 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
           console.log('[ChatRequestModal] Intake failed:', result.error);
           setSubmitError(
             result.error ||
-              'Unable to connect with astrologer. Please try again.',
+            'Unable to connect with astrologer. Please try again.',
           );
         }
       } catch (error: any) {
         console.error('[ChatRequestModal] Recent intake error:', error);
         setSubmitError(
           error?.message ||
-            'Unable to connect with astrologer. Please try again.',
+          'Unable to connect with astrologer. Please try again.',
         );
       } finally {
         stopPreparationLoader();
@@ -430,14 +431,14 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
         console.log('[ChatRequestModal] Intake failed:', result.error);
         setSubmitError(
           result.error ||
-            'Unable to connect with astrologer. Please try again.',
+          'Unable to connect with astrologer. Please try again.',
         );
       }
     } catch (error: any) {
       console.error('[ChatRequestModal] Submit error:', error);
       setSubmitError(
         error?.message ||
-          'Unable to connect with astrologer. Please try again.',
+        'Unable to connect with astrologer. Please try again.',
       );
     } finally {
       stopPreparationLoader();
@@ -589,7 +590,7 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
                                 styles.intakeName,
                                 { color: colors.text.primary },
                               ]}>
-                            Name: {item.name}
+                              Name: {item.name}
                             </Text>
 
                             <View
@@ -603,7 +604,7 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
                                 },
                               ]}>
                               <Text style={styles.genderText}>
-                              Gender: {item.gender}
+                                Gender: {item.gender}
                               </Text>
                             </View>
                           </View>
@@ -614,7 +615,7 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
                               styles.intakePlace,
                               { color: colors.text.secondary },
                             ]}>
-                         Birth Place: {item.birthPlace}
+                            Birth Place: {item.birthPlace}
                           </Text>
 
                           <View style={styles.intakeBottomRow}>
@@ -631,7 +632,7 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
                                 styles.intakeMeta,
                                 { color: colors.text.secondary },
                               ]}>
-                             Birth Time: {item.birthTime}
+                              Birth Time: {item.birthTime}
                             </Text>
                           </View>
                         </>
@@ -686,7 +687,14 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
       </ScrollView>
 
       {(showNewForm || intakes.length === 0) && (
-        <View style={styles.buttonContainer}>
+        <View
+          style={[
+            styles.buttonContainer,
+            {
+              paddingBottom: Math.max(insets.bottom, 8),
+            },
+          ]}>
+
           <Button
             title="Cancel"
             variant="outline"
@@ -723,7 +731,7 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
 const styles = StyleSheet.create({
   modalContent: {
     maxHeight: '95%',
-    paddingBottom: 16,
+    paddingBottom: 2,
   },
 
   scrollView: {

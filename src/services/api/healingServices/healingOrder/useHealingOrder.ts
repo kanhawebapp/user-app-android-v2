@@ -28,6 +28,10 @@ export const useCreateHealingOrder =
           setLoading(true);
 
           setError(null);
+          console.log(
+            'CREATE HEALING ORDER INPUT:',
+            JSON.stringify(input, null, 2),
+          );
 
           const response =
             await createHealingOrder(
