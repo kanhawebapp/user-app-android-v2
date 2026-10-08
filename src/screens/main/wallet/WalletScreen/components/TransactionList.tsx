@@ -1,4 +1,4 @@
-import React, {useCallback, useState} from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -6,16 +6,16 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import {colors, useTheme} from '../../../../../theme';
-import {Text} from '../../../../../components/Text';
-import {Icon} from '../../../../../components/Icon';
-import {WALLET_LABELS, DEFAULTS} from '../../../../../constants/app.constants';
-import {Button} from '../../../../../components';
-import {useToast} from '../../../../../context/ToastContext';
-import {useWalletTransactions} from '../../../../../services/api/walletTransactions/walletTransactions.hooks';
-import {usePaymentInvoice} from '../../../../../services/api/walletTransactions/paymentInvoice.hooks';
-import {generateAndDownloadInvoice} from '../../../../../utils/invoice/invoicePdf';
-import type {WalletTransaction} from '../../../../../services/api/walletTransactions/walletTransactions.types';
+import { colors, useTheme } from '../../../../../theme';
+import { Text } from '../../../../../components/Text';
+import { Icon } from '../../../../../components/Icon';
+import { WALLET_LABELS, DEFAULTS } from '../../../../../constants/app.constants';
+import { Button } from '../../../../../components';
+import { useToast } from '../../../../../context/ToastContext';
+import { useWalletTransactions } from '../../../../../services/api/walletTransactions/walletTransactions.hooks';
+import { usePaymentInvoice } from '../../../../../services/api/walletTransactions/paymentInvoice.hooks';
+import { generateAndDownloadInvoice } from '../../../../../utils/invoice/invoicePdf';
+import type { WalletTransaction } from '../../../../../services/api/walletTransactions/walletTransactions.types';
 
 const TransactionItem = ({
   item,
@@ -23,7 +23,10 @@ const TransactionItem = ({
   onDownloadInvoice,
   downloadingId,
 }: any) => {
+
+  console.log('Transaction Item:', item.type); // Debugging line to check the structure of item
   const isCredit = item.type === 'CREDIT';
+  const isCASHBACK = item.type === 'CASHBACK';
   // Generate/display 8-digit transaction ID from UUID
   const transactionId = item.id
     ? item.id.replace(/-/g, '').slice(0, 8).toUpperCase()
@@ -31,7 +34,7 @@ const TransactionItem = ({
 
   const isRecharge = item.description === 'Recharge successful';
   const isDownloading = isRecharge && downloadingId === item.id;
-  const amountColor = isCredit ? colors.success.main : colors.error.main;
+  const amountColor = isCredit || isCASHBACK ? colors.success.main : colors.error.main;
   const showDownload = isRecharge;
 
   // console.log('Transaction Item:', item); // Debugging line to check the structure of item
@@ -44,13 +47,13 @@ const TransactionItem = ({
             styles.transactionIcon,
             {
               backgroundColor:
-                (isCredit ? colors.success.light : colors.error.light) + '20',
+                (isCredit || isCASHBACK ? colors.success.light : colors.error.light) + '20',
             },
           ]}>
           <Icon
-            name={isCredit ? 'arrow-down-left' : 'arrow-up-right'}
+            name={isCredit || isCASHBACK ? 'arrow-down-left' : 'arrow-up-right'}
             size={18}
-            color={isCredit ? colors.success.main : colors.error.main}
+            color={isCredit || isCASHBACK ? colors.success.main : colors.error.main}
             library="Feather"
           />
         </View>
@@ -59,7 +62,7 @@ const TransactionItem = ({
           <Text
             variant="body"
             weight="medium"
-            style={{color: colors.text.primary}}>
+            style={{ color: colors.text.primary }}>
             {item.description ||
               (isCredit
                 ? WALLET_LABELS.WALLET_RECHARGE
@@ -115,7 +118,7 @@ const TransactionItem = ({
           style={{
             color: amountColor,
           }}>
-          {isCredit ? '+' : '-'}
+          {isCredit || isCASHBACK ? '+' : '-'}
           {DEFAULTS.CURRENCY}
           {item.coins ?? item.amount}
         </Text>
@@ -143,12 +146,12 @@ const TransactionItem = ({
   );
 };
 
-const TransactionList = ({onRechargePress}: any) => {
-  const {colors} = useTheme();
+const TransactionList = ({ onRechargePress }: any) => {
+  const { colors } = useTheme();
   const toast = useToast();
 
-  const {data, loading, applyFilter, loadMore} = useWalletTransactions();
-  const {fetchInvoice} = usePaymentInvoice();
+  const { data, loading, applyFilter, loadMore } = useWalletTransactions();
+  const { fetchInvoice } = usePaymentInvoice();
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   // console.log("data>>>", data)
   const [activeTab, setActiveTab] = React.useState<'all' | 'credit' | 'debit'>(
@@ -194,7 +197,7 @@ const TransactionList = ({onRechargePress}: any) => {
     [downloadingId, fetchInvoice, toast],
   );
 
-  const renderItem = ({item}: {item: WalletTransaction}) => (
+  const renderItem = ({ item }: { item: WalletTransaction }) => (
     <TransactionItem
       item={item}
       colors={colors}
@@ -209,10 +212,10 @@ const TransactionList = ({onRechargePress}: any) => {
     if (!loading) {
       return null;
     }
-    return <ActivityIndicator style={{marginVertical: 16}} />;
+    return <ActivityIndicator style={{ marginVertical: 16 }} />;
   };
 
-  const TabButton = ({label, value}: any) => {
+  const TabButton = ({ label, value }: any) => {
     const isActive = activeTab === value;
 
     return (
@@ -253,7 +256,7 @@ const TransactionList = ({onRechargePress}: any) => {
         <Text
           variant="h6"
           weight="semibold"
-          style={{color: colors.text.primary}}>
+          style={{ color: colors.text.primary }}>
           {WALLET_LABELS.TRANSACTION_HISTORY}
         </Text>
       </View>
@@ -275,7 +278,7 @@ const TransactionList = ({onRechargePress}: any) => {
         ListFooterComponent={renderFooter}
         ListEmptyComponent={() => (
           <View style={styles.emptyState}>
-            <Text style={{color: colors.text.secondary}}>
+            <Text style={{ color: colors.text.secondary }}>
               {loading ? 'Loading...' : WALLET_LABELS.NO_TRANSACTIONS}
             </Text>
           </View>
@@ -283,7 +286,7 @@ const TransactionList = ({onRechargePress}: any) => {
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => (
           <View
-            style={[styles.separator, {borderBottomColor: colors.border.light}]}
+            style={[styles.separator, { borderBottomColor: colors.border.light }]}
           />
         )}
       />
