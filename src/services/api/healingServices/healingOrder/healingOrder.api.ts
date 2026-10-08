@@ -14,7 +14,7 @@ mutation CreateHealingOrder($input: CreateHealingOrderInput!) {
     bookingId
     currency
     totalAmount
-    payableAmount
+    amount
     __typename
   }
 }

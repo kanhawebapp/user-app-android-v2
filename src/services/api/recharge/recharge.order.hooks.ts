@@ -44,12 +44,12 @@ export const useRechargeOrder = () => {
   const [order, setOrder] = useState<any>(null);
   const [error, setError] = useState<any>(null);
 
-  const createOrder = async (rechargePackId: string) => {
+  const createOrder = async (rechargePackId: string, couponCode: string = '') => {
     try {
       setLoading(true);
       setError(null);
 
-      const res = await createRechargeOrder(rechargePackId);
+      const res = await createRechargeOrder(rechargePackId, couponCode);
 
       setOrder(res);
 

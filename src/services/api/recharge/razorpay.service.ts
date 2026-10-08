@@ -9,12 +9,19 @@ export const openRazorpayCheckout = async ({
   user,
   selectedPack,
   amount,
+  couponCode = '',
+  couponType = '',
+  discount = 0,
+  cashback = 0,
 }: {
   order: any;
   user: any;
   selectedPack: any;
   amount: number;
-
+  couponCode?: string;
+  couponType?: string;
+  discount?: number;
+  cashback?: number;
 }) => {
   // Get IP + City + State + Country
   const ipData = await getIPLocation();
@@ -28,8 +35,8 @@ export const openRazorpayCheckout = async ({
 
     key: RAZORPAY_KEY.NEXT_PUBLIC_RAZORPAY_KEY_ID,
 
+    // Razorpay expects paise. Chat/gift callers don't pass `amount`.
     amount: amount,
-
     order_id: order?.orderId,
 
     name: 'Dhwani Astro',
@@ -39,9 +46,15 @@ export const openRazorpayCheckout = async ({
       contact: user?.mobile || '',
     },
 
+    // Razorpay allows at most 15 note keys.
     notes: {
       userId: user?.id || '',
       rechargePackId: selectedPack?.id || '',
+      serviceType: 'RECHARGE',
+      couponCode,
+      couponType,
+      discount: String(discount),
+      cashback: String(cashback),
       coins: selectedPack?.talktime || 0,
       source: 'dhwaniastro',
 

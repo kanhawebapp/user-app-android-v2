@@ -21,7 +21,7 @@ export interface HealingOrder {
 
   totalAmount: number;
 
-  payableAmount: number;
+  amount: number;
 }
 
 export interface CreateHealingOrderResponse {

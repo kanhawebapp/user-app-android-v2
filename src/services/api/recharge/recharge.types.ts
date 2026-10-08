@@ -59,6 +59,7 @@ export interface RechargePackResponse {
 
 export interface CreateOrderInput {
   rechargePackId: string;
+  coupan_code: string;
 }
 
 export interface RechargeOrder {

@@ -40,11 +40,15 @@ mutation CreateOrder($input: CreateOrderInput!) {
 }
 `;
 
-export const createRechargeOrder = async (rechargePackId: string) => {
+export const createRechargeOrder = async (
+  rechargePackId: string,
+  couponCode: string = '',
+) => {
   try {
     const response = await graphqlRequest('CreateOrder', CREATE_ORDER, {
       input: {
         rechargePackId,
+        coupan_code: couponCode,
       },
     });
 

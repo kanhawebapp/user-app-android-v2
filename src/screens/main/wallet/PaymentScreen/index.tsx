@@ -483,11 +483,16 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
       // the backend's `payableAmount` when a verified coupon is applied, so
       // the amount shown in the summary is always the amount handed to
       // Razorpay. The backend order itself stays untouched.
-      const payableTotal = totalAmount ?? data.totalAmount;
+      const payableTotal = Number(
+        (totalAmount ?? data.totalAmount).toFixed(2),
+      );
 
       try {
         // Step 1: Create Order (existing CreateOrder mutation)
-        const order = await createRechargeOrder(data.pack.id);
+        const order = await createRechargeOrder(
+          data.pack.id,
+          couponApplied ? couponCode.trim() : '',
+        );
 
         // Step 2: Open Razorpay (existing checkout helper)
         const paymentResult = await openRazorpayCheckout({
@@ -495,7 +500,13 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
           user: profile,
           selectedPack: data.pack,
           amount: payableTotal,
+          couponCode: couponApplied ? couponCode.trim() : '',
+          couponType: couponApplied ? selectedCoupon?.type ?? '' : '',
+          discount: discountAmount,
+          cashback: cashbackAmount,
         });
+
+        console.log('PAYMENT RESULT>>>>>', order);
 
         onPaymentSuccess?.({
           ...paymentResult,
@@ -540,25 +551,26 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
 
     setIsProcessing(true);
 
+    // Same amount shown as "Total Payable": service price + GST without a
+    // coupon, the backend's `VerifyServiceCoupon.payableAmount` with one.
+    const servicePayableAmount = Number((totalAmount ?? 0).toFixed(2));
+
     try {
       // Create the payment order (existing CreateHealingOrder mutation).
       // The astrologer was already assigned on SelectAstrologerScreen.
-      // Without a coupon the amount stays the service price configured for
-      // this astrologer plus GST, exactly as before; with a coupon verified
-      // on "Apply" it is the backend's `payableAmount` (`totalAmount`). The
-      // coupon code is only sent when the user applied one.
+      // The coupon code is only sent when the user applied one.
       const order = await createHealingOrder({
         bookingId,
         couponCode: couponApplied ? couponCode.trim() : '',
-        amount: Number((totalAmount ?? 0).toFixed(2)),
+        amount: Number(astrologer.servicePrice ?? 0),
       });
-
+console.log('CREATE HEALING ORDER RESPONSE', order);
       // Get IP + City + State + Country
       const ipData = await getIPLocation();
 
       const options = {
         key: RAZORPAY_KEY.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: Number(order?.payableAmount) * 100,
+        amount: Math.round(servicePayableAmount * 100),
         currency: order?.currency || 'INR',
         name: 'Dhwani Astro LLP',
         description: service?.name
@@ -576,7 +588,6 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
           serviceAstrologerMappingId: astrologer.serviceAstrologerMappingId,
           serviceId: service?.id,
           serviceName: service?.name,
-          servicePrice: String(astrologer.servicePrice ?? service?.price ?? ''),
           serviceType: 'SERVICE',
           coins: String(astrologer.servicePrice ?? 0),
 
@@ -591,7 +602,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
           color: '#5B2CA5',
         },
       };
-
+console.log('RAZORPAY OPTIONS', options);
       try {
         await RazorpayCheckout.open(options);
         
