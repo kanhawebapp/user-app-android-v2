@@ -67,6 +67,11 @@ import PaymentScreen, {
   ServicePaymentData,
 } from '../../screens/main/wallet/PaymentScreen';
 import BlogListingScreen from '../../screens/main/BlogListingScreen';
+import LiveStreamScreen from '../../screens/main/LiveStreamScreen';
+import type {
+  LiveJoinResponse,
+  UpcomingLive,
+} from '../../services/api/liveSessions/live-sessions.types';
 
 // Send Gift Screen
 import SendGiftScreen from '../../screens/main/SendGiftScreen';
@@ -140,6 +145,12 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
 
   // Blog listing visibility state
   const [isBlogListingVisible, setIsBlogListingVisible] = useState(false);
+
+  // Live stream screen params (set only after JoinLive succeeds)
+  const [liveStreamParams, setLiveStreamParams] = useState<{
+    joinData: LiveJoinResponse;
+    session: UpcomingLive;
+  } | null>(null);
 
   // Tab navigation
   const { activeTab, handleTabPress, handleNavigateToTab } = useTabNavigation();
@@ -324,6 +335,17 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
     setIsBlogListingVisible(true);
   }, []);
 
+  const handleJoinLive = useCallback(
+    (joinData: LiveJoinResponse, session: UpcomingLive) => {
+      setLiveStreamParams({joinData, session});
+    },
+    [],
+  );
+
+  const handleCloseLiveStream = useCallback(() => {
+    setLiveStreamParams(null);
+  }, []);
+
   const isFocused = useIsFocused();
   useEffect(() => {
     if (!isFocused) {
@@ -331,6 +353,11 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
     }
 
     const onBackPress = () => {
+      if (liveStreamParams) {
+        setLiveStreamParams(null);
+        return true;
+      }
+
       if (isSidebarVisible) {
         handleSidebarClose();
         return true;
@@ -403,6 +430,7 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
     };
   }, [
     isFocused,
+    liveStreamParams,
     isSidebarVisible,
     sidebarScreen,
     isSendGiftScreenVisible,
@@ -588,6 +616,18 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
     );
   }
 
+  if (liveStreamParams) {
+    return (
+      <View style={styles.container}>
+        <LiveStreamScreen
+          joinData={liveStreamParams.joinData}
+          session={liveStreamParams.session}
+          onBack={handleCloseLiveStream}
+        />
+      </View>
+    );
+  }
+
   return (
     // <SafeAreaView
     //   edges={['left', 'right']}
@@ -629,6 +669,7 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
           onNavigateToServiceDetails: handleNavigateToServiceDetails,
           onNavigateToBlogListing: handleNavigateToBlogListing,
           onNavigateToFreeServices: () => setSidebarScreen('free_services'),
+          onJoinLive: handleJoinLive,
         })}
       </View>
 

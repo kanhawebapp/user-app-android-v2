@@ -16,6 +16,10 @@ import {
   DefaultFallback,
 } from '../../components/Shimmer';
 import {ProblemCategory} from '../../screens/main/home/types/index';
+import type {
+  LiveJoinResponse,
+  UpcomingLive,
+} from '../../services/api/liveSessions/live-sessions.types';
 
 // =============================================================================
 // Lazy-loaded Tab Screens
@@ -164,6 +168,7 @@ export interface RenderScreenProps {
   onNavigateToServiceDetails?: (service: any) => void;
   onNavigateToBlogListing?: () => void;
   onNavigateToFreeServices?: () => void;
+  onJoinLive?: (joinData: LiveJoinResponse, session: UpcomingLive) => void;
 }
 
 export const renderScreen = ({
@@ -177,6 +182,7 @@ export const renderScreen = ({
   onNavigateToServiceDetails,
   onNavigateToBlogListing,
   onNavigateToFreeServices,
+  onJoinLive,
 }: RenderScreenProps) => {
   // Get shimmer fallback for current tab
   const shimmerFallback = getTabShimmerFallback(activeTab);
@@ -216,6 +222,7 @@ export const renderScreen = ({
           <LiveScreen
             onNavigateToLogin={onNavigateToLogin}
             onNavigateToSignup={onNavigateToSignup}
+            onJoinLive={onJoinLive}
           />
         </Suspense>
       );

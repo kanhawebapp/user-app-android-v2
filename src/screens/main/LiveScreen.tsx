@@ -1,4 +1,4 @@
-import React, {useState, useCallback, useMemo} from 'react';
+import React, {useState, useCallback, useMemo, useRef} from 'react';
 import {
   View,
   StyleSheet,
@@ -22,11 +22,17 @@ import {Card} from '../../components/Card';
 import {LoginRequiredModal} from '../../components/Modal';
 import {LiveScreenShimmer} from '../../components/Shimmer';
 import {useAuthStore} from '../../stores';
+import {useToast} from '../../context/ToastContext';
 import {API_BASE_URL} from '../../constants/api.constants';
 import {DATE_FORMATS} from '../../constants/app.constants';
 import {formatDate} from '../../utils/helpers';
 import {useUpcomingLives} from '../../services/api/liveSessions/useUpcomingLives';
+import {
+  getLiveJoinRtcError,
+  joinLive,
+} from '../../services/api/liveSessions/live-sessions.api';
 import type {
+  LiveJoinResponse,
   UpcomingLive,
   UpcomingLiveStatus,
 } from '../../services/api/liveSessions/live-sessions.types';
@@ -86,11 +92,13 @@ const getAstrologerName = (session: UpcomingLive): string =>
 interface LiveScreenProps {
   onNavigateToLogin?: () => void;
   onNavigateToSignup?: () => void;
+  onJoinLive?: (joinData: LiveJoinResponse, session: UpcomingLive) => void;
 }
 
 const LiveScreen: React.FC<LiveScreenProps> = ({
   onNavigateToLogin,
   onNavigateToSignup,
+  onJoinLive,
 }) => {
   const theme = useTheme();
   const colors = theme.colors;
@@ -111,6 +119,9 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
   const [failedAvatarIds, setFailedAvatarIds] = useState<Set<string>>(
     () => new Set(),
   );
+  const [joiningSessionId, setJoiningSessionId] = useState<string | null>(null);
+  const joiningRef = useRef(false);
+  const {showError} = useToast();
 
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -168,17 +179,51 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
     [isAuthenticated],
   );
 
+  const handleJoinLive = useCallback(
+    async (session: UpcomingLive) => {
+      if (joiningRef.current) {
+        return;
+      }
+      if (!session.channelName) {
+        showError('This live session is not available right now.');
+        return;
+      }
+
+      joiningRef.current = true;
+      setJoiningSessionId(session.id);
+      try {
+        const joinData = await joinLive(session.channelName);
+        const rtcError = getLiveJoinRtcError(joinData, session.channelName);
+        if (rtcError) {
+          showError(rtcError);
+          return;
+        }
+        onJoinLive?.(joinData, session);
+      } catch (err: any) {
+        showError(
+          err?.message || 'Unable to join the live session. Please try again.',
+        );
+      } finally {
+        joiningRef.current = false;
+        setJoiningSessionId(null);
+      }
+    },
+    [onJoinLive, showError],
+  );
+
   const handleJoinOrReminderPress = useCallback(
     (session: UpcomingLive) => {
       if (session.status === 'LIVE') {
-        handleRestrictedAction('Please login to join live sessions');
+        handleRestrictedAction('Please login to join live sessions', () =>
+          handleJoinLive(session),
+        );
       } else {
         handleRestrictedAction(
           'Please login to set reminders for upcoming sessions',
         );
       }
     },
-    [handleRestrictedAction],
+    [handleRestrictedAction, handleJoinLive],
   );
 
   const handleCloseModal = useCallback(() => {
@@ -358,6 +403,8 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
             variant={isLive ? 'primary' : 'outline'}
             size="small"
             style={{marginTop: 8}}
+            loading={joiningSessionId === session.id}
+            disabled={isLive && joiningSessionId !== null}
             onPress={() => handleJoinOrReminderPress(session)}
           />
         </View>

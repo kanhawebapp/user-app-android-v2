@@ -37,6 +37,8 @@
     "pdf-lib": "^1.17.1",
     "react": "18.2.0",
     "react-native": "0.73.6",
+    "react-native-agora": "^4.6.4",
+    "react-native-agora-chat": "^1.4.1",
     "react-native-blob-util": "^0.19.8",
     "react-native-date-picker": "^5.0.13",
     "react-native-fast-image": "^8.6.3",
