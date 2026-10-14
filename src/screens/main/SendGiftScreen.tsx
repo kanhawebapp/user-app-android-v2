@@ -241,12 +241,12 @@ export const SendGiftScreen: React.FC<SendGiftScreenProps> = ({
               />
             </View>
 
-            <RechargeSection
+            {/* <RechargeSection
               packs={rechargePacks || []}
               selectedPack={selectedPack}
               onSelectPack={handlePackSelect}
               loading={rechargePackLoading}
-            />
+            /> */}
           </>
         ) : (
           <View
@@ -272,7 +272,7 @@ export const SendGiftScreen: React.FC<SendGiftScreenProps> = ({
 
       {/* Button Container - Sticky at bottom */}
       <View style={styles.buttonContainer}>
-        <Button
+        {/* <Button
           title="Recharge Wallet"
           variant="outline"
           size="large"
@@ -288,7 +288,7 @@ export const SendGiftScreen: React.FC<SendGiftScreenProps> = ({
               library="MaterialIcons"
             />
           }
-        />
+        /> */}
         <Button
           title="Send Gift"
           variant="primary"
