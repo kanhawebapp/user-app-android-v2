@@ -404,7 +404,8 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
             size="small"
             style={{marginTop: 8}}
             loading={joiningSessionId === session.id}
-            disabled={isLive && joiningSessionId !== null}
+            // disabled={isLive && joiningSessionId !== null}
+            disabled={joiningSessionId === session.id}
             onPress={() => handleJoinOrReminderPress(session)}
           />
         </View>
