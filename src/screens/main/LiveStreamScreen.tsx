@@ -117,43 +117,76 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
   const showVideo =
     rtc.status !== 'failed' && rtc.hostUid !== null && rtc.isHostVideoOn;
 
+  const formatMessageTime = (timestamp?: number | string) => {
+    if (timestamp == null) {
+      return '';
+    }
+
+    const date = new Date(Number(timestamp));
+
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
+
+    return date.toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+
 
   const renderMessage = ({ item }: { item: LiveChatMessage }) => {
-    // console.log('[LiveChat] Message rendered:', {
-    //   senderName: item.senderName,
-    //   senderId: item.senderId,
-    //   text: item.text,
-    //   isOwn: item.isOwn,
-    // });
+    console.log('[LiveChat] Message rendered:', item);
+
+    const senderName = item.isOwn
+      ? 'You'
+      : (() => {
+        const name =
+          item.senderId?.split('_')[0] || item.senderName || '';
+
+        return name.charAt(0).toUpperCase() + name.slice(1);
+      })();
+
+    const messageTime = formatMessageTime(item.timestamp);
 
     return (
       <View style={styles.messageRow}>
-        <Text
-          variant="captionSmall"
-          weight="bold"
-          style={{
-            color: item.isOwn
-              ? colors.primary.light
-              : colors.common.white,
-          }}
-          numberOfLines={1}>
-          {item.isOwn
-            ? 'You'
-            : (() => {
-              const name = item.senderId?.split('_')[0] || item.senderName || '';
-              return name.charAt(0).toUpperCase() + name.slice(1);
-            })()}
+        <View style={styles.messageHeader}>
+          <Text
+            variant="captionSmall"
+            weight="bold"
+            style={{
+              color: item.isOwn
+                ? colors.primary.light
+                : colors.common.white,
+            }}
+            numberOfLines={1}
+          >
+            {senderName}
+          </Text>
 
-        </Text>
+          {!!messageTime && (
+            <Text
+              variant="captionSmall"
+              style={styles.messageTime}
+            >
+              {messageTime}
+            </Text>
+          )}
+        </View>
 
         <Text
           variant="caption"
-          style={{ color: colors.common.white }}>
+          style={{ color: colors.common.white }}
+        >
           {item.text}
         </Text>
       </View>
     );
   };
+
 
   return (
     <View style={styles.container}>
@@ -398,6 +431,18 @@ const styles = StyleSheet.create({
   messageList: {
     maxHeight: 260,
     paddingHorizontal: 12,
+  },
+  messageHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 2,
+  },
+
+  messageTime: {
+    color: 'rgba(255, 255, 255, 0.65)',
+    fontSize: 10,
   },
   messageRow: {
     alignSelf: 'flex-start',
