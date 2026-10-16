@@ -1,4 +1,4 @@
-import React, {useState, useCallback, useMemo, useRef} from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -13,20 +13,20 @@ import {
   NativeScrollEvent,
   NativeSyntheticEvent,
 } from 'react-native';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {useTheme} from '../../theme';
-import {Text} from '../../components/Text';
-import {Icon} from '../../components/Icon';
-import {Button} from '../../components/Button';
-import {Card} from '../../components/Card';
-import {LoginRequiredModal} from '../../components/Modal';
-import {LiveScreenShimmer} from '../../components/Shimmer';
-import {useAuthStore} from '../../stores';
-import {useToast} from '../../context/ToastContext';
-import {API_BASE_URL} from '../../constants/api.constants';
-import {DATE_FORMATS} from '../../constants/app.constants';
-import {formatDate} from '../../utils/helpers';
-import {useUpcomingLives} from '../../services/api/liveSessions/useUpcomingLives';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../theme';
+import { Text } from '../../components/Text';
+import { Icon } from '../../components/Icon';
+import { Button } from '../../components/Button';
+import { Card } from '../../components/Card';
+import { LoginRequiredModal } from '../../components/Modal';
+import { LiveScreenShimmer } from '../../components/Shimmer';
+import { useAuthStore } from '../../stores';
+import { useToast } from '../../context/ToastContext';
+import { API_BASE_URL } from '../../constants/api.constants';
+import { DATE_FORMATS } from '../../constants/app.constants';
+import { formatDate } from '../../utils/helpers';
+import { useUpcomingLives } from '../../services/api/liveSessions/useUpcomingLives';
 import {
   getLiveJoinRtcError,
   joinLive,
@@ -43,14 +43,14 @@ export interface FilterOption {
   icon?: string;
 }
 
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2;
 const LOAD_MORE_THRESHOLD = 200;
 
 const FILTER_OPTIONS: FilterOption[] = [
-  {key: 'all', label: 'All'},
-  {key: 'live', label: 'Live', icon: 'radio-button-checked'},
-  {key: 'upcoming', label: 'Upcoming', icon: 'schedule'},
+  { key: 'all', label: 'All' },
+  { key: 'live', label: 'Live', icon: 'radio-button-checked' },
+  { key: 'upcoming', label: 'Upcoming', icon: 'schedule' },
 ];
 
 const FILTER_STATUS: Record<
@@ -121,7 +121,7 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
   );
   const [joiningSessionId, setJoiningSessionId] = useState<string | null>(null);
   const joiningRef = useRef(false);
-  const {showError} = useToast();
+  const { showError } = useToast();
 
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -151,8 +151,8 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
   }, [refresh]);
 
   const handleScroll = useCallback(
-    ({nativeEvent}: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const {layoutMeasurement, contentOffset, contentSize} = nativeEvent;
+    ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
       if (
         layoutMeasurement.height + contentOffset.y >=
         contentSize.height - LOAD_MORE_THRESHOLD
@@ -281,12 +281,12 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
 
   const renderLiveBadge = () => (
     <View
-      style={[styles.liveBadgeContainer, {backgroundColor: colors.error.main}]}>
+      style={[styles.liveBadgeContainer, { backgroundColor: colors.error.main }]}>
       <View style={styles.liveDot} />
       <Text
         variant="captionSmall"
         weight="bold"
-        style={{color: colors.common.white}}>
+        style={{ color: colors.common.white }}>
         LIVE
       </Text>
     </View>
@@ -296,7 +296,7 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
     <View
       style={[
         styles.liveBadgeContainer,
-        {backgroundColor: colors.primary.main},
+        { backgroundColor: colors.primary.main },
       ]}>
       <Icon
         name="schedule"
@@ -307,7 +307,7 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
       <Text
         variant="captionSmall"
         weight="bold"
-        style={{color: colors.common.white, marginLeft: 4}}>
+        style={{ color: colors.common.white, marginLeft: 4 }}>
         UPCOMING
       </Text>
     </View>
@@ -324,7 +324,7 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
       <Text
         variant="captionSmall"
         weight="medium"
-        style={{color: colors.text.secondary}}>
+        style={{ color: colors.text.secondary }}>
         {(rating ?? 0).toFixed(1)}
       </Text>
     </View>
@@ -341,7 +341,7 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
         <View
           style={[
             styles.thumbnail,
-            {backgroundColor: colors.background.tertiary},
+            { backgroundColor: colors.background.tertiary },
           ]}>
           {isLive && renderLiveBadge()}
           {session.status === 'SCHEDULED' && renderUpcomingBadge()}
@@ -354,11 +354,11 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
             <View
               style={[
                 styles.smallAvatar,
-                {backgroundColor: colors.background.secondary},
+                { backgroundColor: colors.background.secondary },
               ]}>
               {profilePicUrl ? (
                 <Image
-                  source={{uri: profilePicUrl}}
+                  source={{ uri: profilePicUrl }}
                   style={styles.smallAvatarImage}
                   onError={() => handleAvatarError(session.id)}
                 />
@@ -373,7 +373,7 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
             </View>
             <Text
               variant="captionSmall"
-              style={{color: colors.text.secondary, flex: 1, marginLeft: 4}}
+              style={{ color: colors.text.secondary, flex: 1, marginLeft: 4 }}
               numberOfLines={1}>
               {getAstrologerName(session)}
             </Text>
@@ -391,7 +391,7 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
                 variant="captionSmall"
                 style={[
                   styles.shrink,
-                  {color: colors.text.tertiary, marginLeft: 4},
+                  { color: colors.text.tertiary, marginLeft: 4 },
                 ]}
                 numberOfLines={1}>
                 {formatScheduledAt(session.scheduledAt)}
@@ -402,7 +402,7 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
             title={isLive ? 'Join Now' : 'Set Reminder'}
             variant={isLive ? 'primary' : 'outline'}
             size="small"
-            style={{marginTop: 8}}
+            style={{ marginTop: 8 }}
             loading={joiningSessionId === session.id}
             // disabled={isLive && joiningSessionId !== null}
             disabled={joiningSessionId === session.id}
@@ -421,27 +421,27 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
         </Text>
         <Text
           variant="bodySmall"
-          style={{color: colors.text.secondary, marginTop: 4}}>
+          style={{ color: colors.text.secondary, marginTop: 4 }}>
           Watch expert astrologers live
         </Text>
       </View>
       <View style={styles.statsRow}>
         <View style={styles.statItem}>
-          <Text variant="h6" weight="bold" style={{color: colors.primary.main}}>
+          <Text variant="h6" weight="bold" style={{ color: colors.primary.main }}>
             {liveSessionsOnly.length}
           </Text>
-          <Text variant="caption" style={{color: colors.text.secondary}}>
+          <Text variant="caption" style={{ color: colors.text.secondary }}>
             Live Now
           </Text>
         </View>
         <View
-          style={[styles.statDivider, {backgroundColor: colors.border.light}]}
+          style={[styles.statDivider, { backgroundColor: colors.border.light }]}
         />
         <View style={styles.statItem}>
-          <Text variant="h6" weight="bold" style={{color: colors.primary.main}}>
+          <Text variant="h6" weight="bold" style={{ color: colors.primary.main }}>
             {scheduledSessionsCount}
           </Text>
-          <Text variant="caption" style={{color: colors.text.secondary}}>
+          <Text variant="caption" style={{ color: colors.text.secondary }}>
             Upcoming
           </Text>
         </View>
@@ -471,19 +471,19 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
         />
         <Text
           variant="body"
-          style={{color: colors.text.secondary, marginTop: 16}}>
+          style={{ color: colors.text.secondary, marginTop: 16 }}>
           Unable to load sessions
         </Text>
         <Text
           variant="caption"
-          style={{color: colors.text.tertiary, marginTop: 4}}>
+          style={{ color: colors.text.tertiary, marginTop: 4 }}>
           Please check your connection and try again
         </Text>
         <Button
           title="Retry"
           variant="outline"
           size="small"
-          style={{marginTop: 16}}
+          style={{ marginTop: 16 }}
           onPress={retry}
         />
       </View>
@@ -497,12 +497,12 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
         />
         <Text
           variant="body"
-          style={{color: colors.text.secondary, marginTop: 16}}>
+          style={{ color: colors.text.secondary, marginTop: 16 }}>
           No sessions available
         </Text>
         <Text
           variant="caption"
-          style={{color: colors.text.tertiary, marginTop: 4}}>
+          style={{ color: colors.text.tertiary, marginTop: 4 }}>
           Check back later for new sessions
         </Text>
       </View>
@@ -511,12 +511,12 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
   const renderSessionsList = () => (
     <FlatList
       data={filteredSessions}
-      renderItem={({item}) => renderSessionCard(item)}
+      renderItem={({ item }) => renderSessionCard(item)}
       keyExtractor={item => item.id}
       numColumns={2}
       contentContainerStyle={[
         styles.listContent,
-        {paddingBottom: insets.bottom + 100},
+        { paddingBottom: insets.bottom + 100 },
       ]}
       showsVerticalScrollIndicator={false}
       columnWrapperStyle={styles.row}
@@ -526,8 +526,8 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
             {activeFilter === 'all'
               ? 'All Sessions'
               : activeFilter === 'live'
-              ? 'Live Now'
-              : 'Upcoming Sessions'}
+                ? 'Live Now'
+                : 'Upcoming Sessions'}
           </Text>
         ) : null
       }
@@ -549,7 +549,7 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
 
   return (
     <View
-      style={[styles.container, {backgroundColor: colors.background.primary}]}>
+      style={[styles.container, { backgroundColor: colors.background.primary }]}>
       <StatusBar
         barStyle={theme.isDark ? 'light-content' : 'dark-content'}
         backgroundColor={colors.background.primary}
