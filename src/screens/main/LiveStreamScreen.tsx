@@ -117,20 +117,43 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
   const showVideo =
     rtc.status !== 'failed' && rtc.hostUid !== null && rtc.isHostVideoOn;
 
-  const renderMessage = ({item}: {item: LiveChatMessage}) => (
+
+const renderMessage = ({item}: {item: LiveChatMessage}) => {
+  console.log('[LiveChat] Message rendered:', {
+    senderName: item.senderName,
+    senderId: item.senderId,
+    text: item.text,
+    isOwn: item.isOwn,
+  });
+
+  return (
     <View style={styles.messageRow}>
       <Text
         variant="captionSmall"
         weight="bold"
-        style={{color: item.isOwn ? colors.primary.light : colors.common.white}}
+        style={{
+          color: item.isOwn
+            ? colors.primary.light
+            : colors.common.white,
+        }}
         numberOfLines={1}>
-        {item.isOwn ? 'You' : item.senderName || item.senderId}
-      </Text>
-      <Text variant="caption" style={{color: colors.common.white}}>
+{item.isOwn
+  ? 'You'
+  : (() => {
+      const name = item.senderId?.split('_')[0] || item.senderName || '';
+      return name.charAt(0).toUpperCase() + name.slice(1);
+    })()}
+    
+          </Text>
+
+      <Text
+        variant="caption"
+        style={{color: colors.common.white}}>
         {item.text}
       </Text>
     </View>
   );
+};
 
   return (
     <View style={styles.container}>
