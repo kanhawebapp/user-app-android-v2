@@ -398,16 +398,17 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
               </Text>
             </View>
           </View>
-          <Button
-            title={isLive ? 'Join Now' : 'Set Reminder'}
-            variant={isLive ? 'primary' : 'outline'}
-            size="small"
-            style={{ marginTop: 8 }}
-            loading={joiningSessionId === session.id}
-            // disabled={isLive && joiningSessionId !== null}
-            disabled={joiningSessionId === session.id}
-            onPress={() => handleJoinOrReminderPress(session)}
-          />
+          {isLive && (
+            <Button
+              title="Join Now"
+              variant="primary"
+              size="small"
+              style={{ marginTop: 8 }}
+              loading={joiningSessionId === session.id}
+              disabled={joiningSessionId === session.id}
+              onPress={() => handleJoinOrReminderPress(session)}
+            />
+          )}
         </View>
       </Card>
     );
