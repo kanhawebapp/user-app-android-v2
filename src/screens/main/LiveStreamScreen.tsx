@@ -1,4 +1,4 @@
-import React, {useCallback, useMemo, useState} from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -10,22 +10,22 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   RenderModeType,
   RtcSurfaceView,
   VideoSourceType,
 } from 'react-native-agora';
-import {useTheme} from '../../theme';
-import {Text} from '../../components/Text';
-import {Icon} from '../../components/Icon';
-import {Button} from '../../components/Button';
-import {getLiveJoinChatError} from '../../services/api/liveSessions/live-sessions.api';
+import { useTheme } from '../../theme';
+import { Text } from '../../components/Text';
+import { Icon } from '../../components/Icon';
+import { Button } from '../../components/Button';
+import { getLiveJoinChatError } from '../../services/api/liveSessions/live-sessions.api';
 import type {
   LiveJoinResponse,
   UpcomingLive,
 } from '../../services/api/liveSessions/live-sessions.types';
-import {useLiveAudienceRtc} from '../../modules/live/hooks/useLiveAudienceRtc';
+import { useLiveAudienceRtc } from '../../modules/live/hooks/useLiveAudienceRtc';
 import {
   LiveChatMessage,
   useLiveRoomChat,
@@ -118,42 +118,42 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
     rtc.status !== 'failed' && rtc.hostUid !== null && rtc.isHostVideoOn;
 
 
-const renderMessage = ({item}: {item: LiveChatMessage}) => {
-  console.log('[LiveChat] Message rendered:', {
-    senderName: item.senderName,
-    senderId: item.senderId,
-    text: item.text,
-    isOwn: item.isOwn,
-  });
+  const renderMessage = ({ item }: { item: LiveChatMessage }) => {
+    // console.log('[LiveChat] Message rendered:', {
+    //   senderName: item.senderName,
+    //   senderId: item.senderId,
+    //   text: item.text,
+    //   isOwn: item.isOwn,
+    // });
 
-  return (
-    <View style={styles.messageRow}>
-      <Text
-        variant="captionSmall"
-        weight="bold"
-        style={{
-          color: item.isOwn
-            ? colors.primary.light
-            : colors.common.white,
-        }}
-        numberOfLines={1}>
-{item.isOwn
-  ? 'You'
-  : (() => {
-      const name = item.senderId?.split('_')[0] || item.senderName || '';
-      return name.charAt(0).toUpperCase() + name.slice(1);
-    })()}
-    
-          </Text>
+    return (
+      <View style={styles.messageRow}>
+        <Text
+          variant="captionSmall"
+          weight="bold"
+          style={{
+            color: item.isOwn
+              ? colors.primary.light
+              : colors.common.white,
+          }}
+          numberOfLines={1}>
+          {item.isOwn
+            ? 'You'
+            : (() => {
+              const name = item.senderId?.split('_')[0] || item.senderName || '';
+              return name.charAt(0).toUpperCase() + name.slice(1);
+            })()}
 
-      <Text
-        variant="caption"
-        style={{color: colors.common.white}}>
-        {item.text}
-      </Text>
-    </View>
-  );
-};
+        </Text>
+
+        <Text
+          variant="caption"
+          style={{ color: colors.common.white }}>
+          {item.text}
+        </Text>
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -181,7 +181,7 @@ const renderMessage = ({item}: {item: LiveChatMessage}) => {
         )}
       </View>
 
-      <View style={[styles.topBar, {paddingTop: insets.top + 8}]}>
+      <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity
           onPress={onBack}
           style={styles.iconButton}
@@ -197,25 +197,25 @@ const renderMessage = ({item}: {item: LiveChatMessage}) => {
           <Text
             variant="subtitle"
             weight="semibold"
-            style={{color: colors.common.white}}
+            style={{ color: colors.common.white }}
             numberOfLines={1}>
             {session.title}
           </Text>
           {!!astrologerName && (
             <Text
               variant="caption"
-              style={{color: colors.common.white}}
+              style={{ color: colors.common.white }}
               numberOfLines={1}>
               {astrologerName}
             </Text>
           )}
         </View>
-        <View style={[styles.liveBadge, {backgroundColor: colors.error.main}]}>
+        <View style={[styles.liveBadge, { backgroundColor: colors.error.main }]}>
           <View style={styles.liveDot} />
           <Text
             variant="captionSmall"
             weight="bold"
-            style={{color: colors.common.white}}>
+            style={{ color: colors.common.white }}>
             LIVE
           </Text>
         </View>
@@ -229,7 +229,7 @@ const renderMessage = ({item}: {item: LiveChatMessage}) => {
             )}
             <Text
               variant="body"
-              style={[styles.statusText, {color: colors.common.white}]}>
+              style={[styles.statusText, { color: colors.common.white }]}>
               {rtcStatusText}
             </Text>
             {rtc.status === 'failed' && (
@@ -269,7 +269,7 @@ const renderMessage = ({item}: {item: LiveChatMessage}) => {
           <View style={styles.chatNotice}>
             <Text
               variant="captionSmall"
-              style={[styles.chatNoticeText, {color: colors.common.white}]}>
+              style={[styles.chatNoticeText, { color: colors.common.white }]}>
               {chatNotice}
             </Text>
             {!chatCredentialError && chat.status === 'failed' && (
@@ -277,7 +277,7 @@ const renderMessage = ({item}: {item: LiveChatMessage}) => {
                 <Text
                   variant="captionSmall"
                   weight="bold"
-                  style={{color: colors.primary.light}}>
+                  style={{ color: colors.primary.light }}>
                   Retry
                 </Text>
               </TouchableOpacity>
@@ -285,7 +285,7 @@ const renderMessage = ({item}: {item: LiveChatMessage}) => {
           </View>
         )}
 
-        <View style={[styles.inputRow, {paddingBottom: insets.bottom + 8}]}>
+        <View style={[styles.inputRow, { paddingBottom: insets.bottom + 8 }]}>
           <TextInput
             value={draft}
             onChangeText={setDraft}
@@ -293,12 +293,12 @@ const renderMessage = ({item}: {item: LiveChatMessage}) => {
               isChatReady
                 ? 'Say something...'
                 : chat.status === 'connecting'
-                ? 'Connecting to chat...'
-                : 'Chat unavailable'
+                  ? 'Connecting to chat...'
+                  : 'Chat unavailable'
             }
             placeholderTextColor="rgba(255, 255, 255, 0.6)"
             editable={isChatReady}
-            style={[styles.input, {color: colors.common.white}]}
+            style={[styles.input, { color: colors.common.white }]}
             maxLength={500}
             returnKeyType="send"
             onSubmitEditing={handleSend}
