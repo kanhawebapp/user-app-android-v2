@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   View,
   StyleSheet,
@@ -10,22 +10,30 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {
   RenderModeType,
   RtcSurfaceView,
   VideoSourceType,
 } from 'react-native-agora';
-import { useTheme } from '../../theme';
-import { Text } from '../../components/Text';
-import { Icon } from '../../components/Icon';
-import { Button } from '../../components/Button';
-import { getLiveJoinChatError } from '../../services/api/liveSessions/live-sessions.api';
+import {useTheme} from '../../theme';
+import {API_BASE_URL} from '../../constants/api.constants';
+import {Text} from '../../components/Text';
+import {Icon} from '../../components/Icon';
+import {Button} from '../../components/Button';
+import {AvatarImage} from '../../components/Image';
+import {getLiveJoinChatError} from '../../services/api/liveSessions/live-sessions.api';
 import type {
   LiveJoinResponse,
   UpcomingLive,
 } from '../../services/api/liveSessions/live-sessions.types';
-import { useLiveAudienceRtc } from '../../modules/live/hooks/useLiveAudienceRtc';
+import {
+  followAstrologer,
+  getFollowStatus,
+  unfollowAstrologer,
+} from '../../services/api/followAstrologer/follow-astrologer.api';
+import {getAstrologerFollowersCount} from '../../services/api/followersCount/followers-count.api';
+import {useLiveAudienceRtc} from '../../modules/live/hooks/useLiveAudienceRtc';
 import {
   LiveChatMessage,
   useLiveRoomChat,
@@ -49,6 +57,19 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
   const colors = theme.colors;
   const insets = useSafeAreaInsets();
   const [draft, setDraft] = useState('');
+
+  const astrologer = session.astrologer;
+  const astrologerId = astrologer?.id;
+  const astrologerName =
+    astrologer?.displayName?.trim() || astrologer?.name?.trim() || '';
+  const profilePicUrl = astrologer?.profilePic
+    ? astrologer.profilePic.startsWith('http')
+      ? astrologer.profilePic
+      : `${API_BASE_URL.DEVELOPMENT}${astrologer.profilePic.replace(
+          /^\/+/,
+          '',
+        )}`
+    : null;
 
   const rtc = useLiveAudienceRtc({
     appId: joinData.appId,
@@ -75,10 +96,108 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
     [chat.messages],
   );
 
-  const astrologerName =
-    session.astrologer?.displayName?.trim() ||
-    session.astrologer?.name?.trim() ||
-    '';
+  const [isFollowing, setIsFollowing] = useState<boolean | null>(null);
+  const [followersCount, setFollowersCount] = useState<number | null>(null);
+  const [initialLoading, setInitialLoading] = useState(!!astrologerId);
+  const [isFollowMutating, setIsFollowMutating] = useState(false);
+  const [followError, setFollowError] = useState<string | null>(null);
+  const currentAstrologerIdRef = useRef(astrologerId);
+
+  useEffect(() => {
+    const id = astrologerId;
+    currentAstrologerIdRef.current = id;
+
+    if (!id) {
+      setIsFollowing(null);
+      setFollowersCount(null);
+      setInitialLoading(false);
+      return;
+    }
+
+    setInitialLoading(true);
+
+    let cancelled = false;
+
+    const init = async () => {
+      try {
+        const status = await getFollowStatus(id);
+        if (cancelled || currentAstrologerIdRef.current !== id) {
+          return;
+        }
+        setIsFollowing(status ?? false);
+      } catch {
+        if (cancelled || currentAstrologerIdRef.current !== id) {
+          return;
+        }
+        setIsFollowing(null);
+      }
+
+      try {
+        const count = await getAstrologerFollowersCount(id);
+        if (cancelled || currentAstrologerIdRef.current !== id) {
+          return;
+        }
+        setFollowersCount(count?.totalFollowers ?? 0);
+      } catch {
+        if (!cancelled && currentAstrologerIdRef.current === id) {
+          setFollowersCount(null);
+        }
+      } finally {
+        if (!cancelled && currentAstrologerIdRef.current === id) {
+          setInitialLoading(false);
+        }
+      }
+    };
+
+    init();
+    return () => {
+      cancelled = true;
+    };
+  }, [astrologerId]);
+
+  const handleFollow = useCallback(async () => {
+    if (
+      !astrologerId ||
+      isFollowMutating ||
+      initialLoading ||
+      isFollowing === null
+    ) {
+      return;
+    }
+
+    setIsFollowMutating(true);
+    setFollowError(null);
+
+    try {
+      if (isFollowing) {
+        const res = await unfollowAstrologer(astrologerId);
+        if (res?.success) {
+          setIsFollowing(false);
+          setFollowersCount(prev =>
+            prev == null ? prev : Math.max(0, prev - 1),
+          );
+        }
+      } else {
+        const res = await followAstrologer(astrologerId);
+        if (res?.success) {
+          setIsFollowing(true);
+          setFollowersCount(prev => (prev == null ? prev : prev + 1));
+        }
+      }
+    } catch (err: any) {
+      setFollowError(
+        err?.message || 'Failed to update follow status. Please try again.',
+      );
+      console.log('FOLLOW MUTATION ERROR:', err);
+    } finally {
+      setIsFollowMutating(false);
+    }
+  }, [astrologerId, isFollowMutating, isFollowing, initialLoading]);
+
+  const retryFollow = useCallback(() => {
+    setFollowError(null);
+    handleFollow();
+  }, [handleFollow]);
 
   const isChatReady = chat.status === 'connected';
   const chatNotice = chatCredentialError ?? chat.error;
@@ -135,19 +254,16 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
     });
   };
 
-
-
-  const renderMessage = ({ item }: { item: LiveChatMessage }) => {
+  const renderMessage = ({item}: {item: LiveChatMessage}) => {
     console.log('[LiveChat] Message rendered:', item);
 
     const senderName = item.isOwn
       ? 'You'
       : (() => {
-        const name =
-          item.senderId?.split('_')[0] || item.senderName || '';
+          const name = item.senderId?.split('_')[0] || item.senderName || '';
 
-        return name.charAt(0).toUpperCase() + name.slice(1);
-      })();
+          return name.charAt(0).toUpperCase() + name.slice(1);
+        })();
 
     const messageTime = formatMessageTime(item.timestamp);
 
@@ -158,35 +274,25 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
             variant="captionSmall"
             weight="bold"
             style={{
-              color: item.isOwn
-                ? colors.primary.light
-                : colors.common.white,
+              color: item.isOwn ? colors.primary.light : colors.common.white,
             }}
-            numberOfLines={1}
-          >
+            numberOfLines={1}>
             {senderName}
           </Text>
 
           {!!messageTime && (
-            <Text
-              variant="captionSmall"
-              style={styles.messageTime}
-            >
+            <Text variant="captionSmall" style={styles.messageTime}>
               {messageTime}
             </Text>
           )}
         </View>
 
-        <Text
-          variant="caption"
-          style={{ color: colors.common.white }}
-        >
+        <Text variant="caption" style={{color: colors.common.white}}>
           {item.text}
         </Text>
       </View>
     );
   };
-
 
   return (
     <View style={styles.container}>
@@ -214,7 +320,7 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
         )}
       </View>
 
-      <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.topBar, {paddingTop: insets.top + 8}]}>
         <TouchableOpacity
           onPress={onBack}
           style={styles.iconButton}
@@ -226,33 +332,97 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
             library="MaterialIcons"
           />
         </TouchableOpacity>
+        {!!profilePicUrl && (
+          <AvatarImage
+            source={{uri: profilePicUrl}}
+            size={32}
+            name={astrologerName}
+            style={styles.avatar}
+          />
+        )}
         <View style={styles.topBarText}>
           <Text
             variant="subtitle"
             weight="semibold"
-            style={{ color: colors.common.white }}
+            style={{color: colors.common.white}}
             numberOfLines={1}>
             {session.title}
           </Text>
           {!!astrologerName && (
             <Text
               variant="caption"
-              style={{ color: colors.common.white }}
+              style={{color: colors.common.white}}
               numberOfLines={1}>
               {astrologerName}
             </Text>
           )}
+          {followersCount != null && (
+            <Text
+              variant="captionSmall"
+              style={{color: colors.common.white}}
+              numberOfLines={1}
+              testID="followers-count">
+              {followersCount} {followersCount === 1 ? 'follower' : 'followers'}
+            </Text>
+          )}
         </View>
-        <View style={[styles.liveBadge, { backgroundColor: colors.error.main }]}>
+        {astrologerId != null && !initialLoading && (
+          <>
+            {isFollowing === null ? (
+              <ActivityIndicator
+                size="small"
+                color={colors.common.white}
+                style={styles.loadingIndicator}
+              />
+            ) : (
+              <Button
+                title={isFollowing ? 'Following' : 'Follow'}
+                variant={isFollowing ? 'secondary' : 'primary'}
+                size="small"
+                loading={isFollowMutating}
+                disabled={isFollowMutating}
+                onPress={handleFollow}
+                accessibilityLabel={
+                  isFollowing ? 'Unfollow astrologer' : 'Follow astrologer'
+                }
+                testID="follow-button"
+              />
+            )}
+          </>
+        )}
+        <View style={[styles.liveBadge, {backgroundColor: colors.error.main}]}>
           <View style={styles.liveDot} />
           <Text
             variant="captionSmall"
             weight="bold"
-            style={{ color: colors.common.white }}>
+            style={{color: colors.common.white}}>
             LIVE
           </Text>
         </View>
       </View>
+
+      {!!followError && (
+        <View
+          style={[
+            styles.followErrorRow,
+            {backgroundColor: colors.error.background},
+          ]}>
+          <Text
+            variant="captionSmall"
+            style={{color: colors.error.light}}
+            numberOfLines={2}>
+            {followError}
+          </Text>
+          <TouchableOpacity onPress={retryFollow}>
+            <Text
+              variant="captionSmall"
+              weight="bold"
+              style={{color: colors.primary.main}}>
+              Retry
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {!!rtcStatusText && (
         <View style={styles.statusOverlay} pointerEvents="box-none">
@@ -262,7 +432,7 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
             )}
             <Text
               variant="body"
-              style={[styles.statusText, { color: colors.common.white }]}>
+              style={[styles.statusText, {color: colors.common.white}]}>
               {rtcStatusText}
             </Text>
             {rtc.status === 'failed' && (
@@ -302,7 +472,7 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
           <View style={styles.chatNotice}>
             <Text
               variant="captionSmall"
-              style={[styles.chatNoticeText, { color: colors.common.white }]}>
+              style={[styles.chatNoticeText, {color: colors.common.white}]}>
               {chatNotice}
             </Text>
             {!chatCredentialError && chat.status === 'failed' && (
@@ -310,7 +480,7 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
                 <Text
                   variant="captionSmall"
                   weight="bold"
-                  style={{ color: colors.primary.light }}>
+                  style={{color: colors.primary.light}}>
                   Retry
                 </Text>
               </TouchableOpacity>
@@ -318,7 +488,7 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
           </View>
         )}
 
-        <View style={[styles.inputRow, { paddingBottom: insets.bottom + 8 }]}>
+        <View style={[styles.inputRow, {paddingBottom: insets.bottom + 8}]}>
           <TextInput
             value={draft}
             onChangeText={setDraft}
@@ -326,12 +496,12 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
               isChatReady
                 ? 'Say something...'
                 : chat.status === 'connecting'
-                  ? 'Connecting to chat...'
-                  : 'Chat unavailable'
+                ? 'Connecting to chat...'
+                : 'Chat unavailable'
             }
             placeholderTextColor="rgba(255, 255, 255, 0.6)"
             editable={isChatReady}
-            style={[styles.input, { color: colors.common.white }]}
+            style={[styles.input, {color: colors.common.white}]}
             maxLength={500}
             returnKeyType="send"
             onSubmitEditing={handleSend}
@@ -377,13 +547,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingBottom: 8,
     backgroundColor: OVERLAY_BACKGROUND,
+    gap: 8,
   },
   iconButton: {
     padding: 4,
   },
+  avatar: {
+    marginRight: 4,
+  },
   topBarText: {
     flex: 1,
+    minWidth: 0,
     marginHorizontal: 8,
+  },
+  loadingIndicator: {
+    marginHorizontal: 6,
+  },
+  followErrorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingTop: 4,
+    paddingBottom: 4,
   },
   liveBadge: {
     flexDirection: 'row',
