@@ -19,7 +19,7 @@ export type ButtonSize = 'small' | 'medium' | 'large';
 
 const getButtonSize = (size: ButtonSize) => {
   const sizes = {
-    small: {height: 36, paddingHorizontal: 12, fontSize: 14},
+    small: {height: 30, paddingHorizontal: 12, fontSize: 14},
     medium: {height: 48, paddingHorizontal: 16, fontSize: 16},
     large: {height: 56, paddingHorizontal: 24, fontSize: 18},
   };
