@@ -34,6 +34,7 @@ import {
 } from '../../services/api/followAstrologer/follow-astrologer.api';
 import {getAstrologerFollowersCount} from '../../services/api/followersCount/followers-count.api';
 import {useLiveAudienceRtc} from '../../modules/live/hooks/useLiveAudienceRtc';
+import {useLiveViewerPresence} from '../../modules/live/hooks/useLiveViewerPresence';
 import {
   LiveChatMessage,
   useLiveRoomChat,
@@ -233,6 +234,12 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
   };
 
   const rtcStatusText = getRtcStatusText();
+  const chatPresence = useLiveViewerPresence({
+    enabled: chat.status !== 'idle' && chat.status !== 'failed',
+    chatRoomId: joinData.chatRoomId,
+    chatUserId: joinData.chatUserId,
+  });
+  const viewerCount = chatPresence.viewerCount;
   const showVideo =
     rtc.status !== 'failed' && rtc.hostUid !== null && rtc.isHostVideoOn;
 
@@ -397,6 +404,11 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
             weight="bold"
             style={{color: colors.common.white}}>
             LIVE
+          </Text>
+          <Text
+            variant="captionSmall"
+            style={[styles.viewerCountSeparator, {color: colors.common.white}]}>
+            · 👁 {viewerCount}
           </Text>
         </View>
       </View>
@@ -584,6 +596,9 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: '#fff',
     marginRight: 6,
+  },
+  viewerCountSeparator: {
+    marginLeft: 6,
   },
   statusOverlay: {
     ...StyleSheet.absoluteFillObject,

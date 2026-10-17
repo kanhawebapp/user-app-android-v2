@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {
   AudienceLatencyLevelType,
   ChannelProfileType,
@@ -55,6 +55,7 @@ export const useLiveAudienceRtc = ({
   const [hostUid, setHostUid] = useState<number | null>(null);
   const [isHostVideoOn, setIsHostVideoOn] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const localUidRef = useRef(uid);
 
   useEffect(() => {
     const engine = createAgoraRtcEngine();
@@ -64,6 +65,7 @@ export const useLiveAudienceRtc = ({
     setError(null);
     setHostUid(null);
     setIsHostVideoOn(false);
+    localUidRef.current = uid;
 
     const fail = (message: string) => {
       if (!active) {
@@ -80,7 +82,10 @@ export const useLiveAudienceRtc = ({
         }
       },
       onUserJoined: (_connection, remoteUid) => {
-        if (active) {
+        if (!active) {
+          return;
+        }
+        if (remoteUid !== localUidRef.current) {
           setHostUid(prev => prev ?? remoteUid);
         }
       },
@@ -110,6 +115,8 @@ export const useLiveAudienceRtc = ({
           setError(null);
         } else if (state === ConnectionStateType.ConnectionStateReconnecting) {
           setStatus('reconnecting');
+        } else if (state === ConnectionStateType.ConnectionStateDisconnected) {
+          setStatus('left');
         } else if (state === ConnectionStateType.ConnectionStateFailed) {
           fail(getConnectionFailureMessage(reason));
         }
