@@ -70,3 +70,12 @@ export interface LiveJoinResponse {
 export interface JoinLiveResponse {
   joinLive: LiveJoinResponse;
 }
+
+export interface LeaveLiveResponse {
+  leaveLive: {
+    success: boolean;
+    message: string;
+    channelName: string;
+    __typename?: string;
+  };
+}

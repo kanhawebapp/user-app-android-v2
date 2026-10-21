@@ -22,7 +22,7 @@ import {Text} from '../../components/Text';
 import {Icon} from '../../components/Icon';
 import {Button} from '../../components/Button';
 import {AvatarImage} from '../../components/Image';
-import {getLiveJoinChatError} from '../../services/api/liveSessions/live-sessions.api';
+import {getLiveJoinChatError, leaveLiveStream} from '../../services/api/liveSessions/live-sessions.api';
 import type {
   LiveJoinResponse,
   UpcomingLive,
@@ -68,6 +68,8 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
   const [draft, setDraft] = useState('');
   const [isGiftPanelVisible, setIsGiftPanelVisible] = useState(false);
   const sendInFlightRef = useRef(false);
+  const leaveInFlightRef = useRef(false);
+  const [isLeaving, setIsLeaving] = useState(false);
 
   /** Prefer join response stream id; fall back to the listed session id. */
   const streamId = joinData.id || session.id;
@@ -269,6 +271,33 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
     [streamId, sendingGift, submitLiveGift, showError, showSuccess],
   );
 
+
+  const handleLeaveSession = useCallback(async () => {
+    if (leaveInFlightRef.current) {
+      return;
+    }
+    const channelName = joinData?.channelName;
+    if (!channelName) {
+      showError('Unable to leave live session. Missing channel.');
+      return;
+    }
+    leaveInFlightRef.current = true;
+    setIsLeaving(true);
+    try {
+      const response = await leaveLiveStream(channelName);
+      if (response?.success) {
+        onBack();
+      } else {
+        showError(response?.message || 'Failed to leave live session.');
+      }
+    } catch (err: any) {
+      showError(err?.message || 'Failed to leave live session. Please try again.');
+    } finally {
+      leaveInFlightRef.current = false;
+      setIsLeaving(false);
+    }
+  }, [joinData?.channelName, onBack, showError]);
+
   const getRtcStatusText = (): string | null => {
     switch (rtc.status) {
       case 'joining':
@@ -386,15 +415,20 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
 
       <View style={[styles.topBar, {paddingTop: insets.top + 8}]}>
         <TouchableOpacity
-          onPress={onBack}
+          onPress={handleLeaveSession}
+          disabled={isLeaving}
           style={styles.iconButton}
           accessibilityLabel="Leave live session">
-          <Icon
-            name="arrow-back"
-            size={24}
-            color={colors.common.white}
-            library="MaterialIcons"
-          />
+          {isLeaving ? (
+            <ActivityIndicator size="small" color={colors.common.white} />
+          ) : (
+            <Icon
+              name="arrow-back"
+              size={24}
+              color={colors.common.white}
+              library="MaterialIcons"
+            />
+          )}
         </TouchableOpacity>
         {!!profilePicUrl && (
           <AvatarImage

@@ -75,6 +75,28 @@ export const joinLive = async (channelName: string) => {
   return response.joinLive;
 };
 
+const LEAVE_LIVE_STREAM = `
+mutation LeaveLiveStream($channelName: String!) {
+  leaveLive(channelName: $channelName) {
+    success
+    message
+    channelName
+    __typename
+  }
+}
+`;
+
+export const leaveLiveStream = async (channelName: string) => {
+  const response = await graphqlRequest<LeaveLiveResponse>(
+    'LeaveLiveStream',
+    LEAVE_LIVE_STREAM,
+    {
+      channelName,
+    },
+  );
+
+  return response.leaveLive;
+};
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === 'string' && value.trim().length > 0;
 
