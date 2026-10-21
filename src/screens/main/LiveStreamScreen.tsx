@@ -525,95 +525,101 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
         </View>
       )}
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.chatContainer}>
-        <FlatList
-          data={reversedMessages}
-          keyExtractor={item => item.id}
-          renderItem={renderMessage}
-          inverted
-          style={styles.messageList}
-          showsVerticalScrollIndicator={false}
-        />
-
-        {!!chatNotice && (
-          <View style={styles.chatNotice}>
-            <Text
-              variant="captionSmall"
-              style={[styles.chatNoticeText, {color: colors.common.white}]}>
-              {chatNotice}
-            </Text>
-            {!chatCredentialError && chat.status === 'failed' && (
-              <TouchableOpacity onPress={chat.retry}>
-                <Text
-                  variant="captionSmall"
-                  weight="bold"
-                  style={{color: colors.primary.light}}>
-                  Retry
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-
-        <View style={[styles.inputRow, {paddingBottom: insets.bottom + 8}]}>
-          <TouchableOpacity
-            onPress={() => setIsGiftPanelVisible(true)}
-            style={[styles.giftButton, {backgroundColor: colors.primary.main}]}
-            accessibilityLabel="Open gifts"
-            testID="live-gift-button">
-            <Icon
-              name="card-giftcard"
-              size={20}
-              color={colors.primary.contrastText}
-              library="MaterialIcons"
-            />
-          </TouchableOpacity>
-          <TextInput
-            value={draft}
-            onChangeText={setDraft}
-            placeholder={
-              isChatReady
-                ? 'Say something...'
-                : chat.status === 'connecting'
-                ? 'Connecting to chat...'
-                : 'Chat unavailable'
-            }
-            placeholderTextColor="rgba(255, 255, 255, 0.6)"
-            editable={isChatReady}
-            style={[styles.input, {color: colors.common.white}]}
-            maxLength={500}
-            returnKeyType="send"
-            onSubmitEditing={handleSend}
+      {isGiftPanelVisible ? (
+        <View style={styles.giftPanelAnchor} pointerEvents="box-none">
+          <LiveGiftPanel
+            onClose={() => setIsGiftPanelVisible(false)}
+            onSend={handleSendLiveGift}
+            sending={sendingGift}
           />
-          <TouchableOpacity
-            onPress={handleSend}
-            disabled={!isChatReady || !draft.trim()}
-            style={[
-              styles.sendButton,
-              {
-                backgroundColor: colors.primary.main,
-                opacity: isChatReady && draft.trim() ? 1 : 0.5,
-              },
-            ]}
-            accessibilityLabel="Send message">
-            <Icon
-              name="send"
-              size={18}
-              color={colors.primary.contrastText}
-              library="MaterialIcons"
-            />
-          </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+      ) : (
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.chatContainer}>
+          <FlatList
+            data={reversedMessages}
+            keyExtractor={item => item.id}
+            renderItem={renderMessage}
+            inverted
+            style={styles.messageList}
+            showsVerticalScrollIndicator={false}
+          />
 
-      <LiveGiftPanel
-        visible={isGiftPanelVisible}
-        onClose={() => setIsGiftPanelVisible(false)}
-        onSend={handleSendLiveGift}
-        sending={sendingGift}
-      />
+          {!!chatNotice && (
+            <View style={styles.chatNotice}>
+              <Text
+                variant="captionSmall"
+                style={[styles.chatNoticeText, {color: colors.common.white}]}>
+                {chatNotice}
+              </Text>
+              {!chatCredentialError && chat.status === 'failed' && (
+                <TouchableOpacity onPress={chat.retry}>
+                  <Text
+                    variant="captionSmall"
+                    weight="bold"
+                    style={{color: colors.primary.light}}>
+                    Retry
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          <View style={[styles.inputRow, {paddingBottom: insets.bottom + 8}]}>
+            <TouchableOpacity
+              onPress={() => setIsGiftPanelVisible(true)}
+              style={[
+                styles.giftButton,
+                {backgroundColor: colors.primary.main},
+              ]}
+              accessibilityLabel="Open gifts"
+              testID="live-gift-button">
+              <Icon
+                name="card-giftcard"
+                size={20}
+                color={colors.primary.contrastText}
+                library="MaterialIcons"
+              />
+            </TouchableOpacity>
+            <TextInput
+              value={draft}
+              onChangeText={setDraft}
+              placeholder={
+                isChatReady
+                  ? 'Say something...'
+                  : chat.status === 'connecting'
+                  ? 'Connecting to chat...'
+                  : 'Chat unavailable'
+              }
+              placeholderTextColor="rgba(255, 255, 255, 0.6)"
+              editable={isChatReady}
+              style={[styles.input, {color: colors.common.white}]}
+              maxLength={500}
+              returnKeyType="send"
+              onSubmitEditing={handleSend}
+            />
+            <TouchableOpacity
+              onPress={handleSend}
+              disabled={!isChatReady || !draft.trim()}
+              style={[
+                styles.sendButton,
+                {
+                  backgroundColor: colors.primary.main,
+                  opacity: isChatReady && draft.trim() ? 1 : 0.5,
+                },
+              ]}
+              accessibilityLabel="Send message">
+              <Icon
+                name="send"
+                size={18}
+                color={colors.primary.contrastText}
+                library="MaterialIcons"
+              />
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      )}
     </View>
   );
 };
@@ -700,6 +706,12 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   chatContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  giftPanelAnchor: {
     position: 'absolute',
     left: 0,
     right: 0,

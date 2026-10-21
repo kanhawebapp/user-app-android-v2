@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useState} from 'react';
 import {
   View,
   StyleSheet,
@@ -9,7 +9,7 @@ import {
   ScrollView,
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {Modal, Text, Button, Icon, useTheme} from '../../../components';
+import {Text, Button, Icon, useTheme} from '../../../components';
 import {LiveGift} from '../../../services/api/liveGifts/live-gifts.types';
 import {useLiveGifts} from '../../../services/api/liveGifts/useLiveGifts';
 import {useWallet} from '../../../services/api/wallet/wallet.hooks';
@@ -19,14 +19,13 @@ const MIN_QUANTITY = 1;
 const MAX_QUANTITY = 99;
 
 interface LiveGiftPanelProps {
-  visible: boolean;
   onClose: () => void;
   onSend: (gift: LiveGift, quantity: number) => Promise<void>;
   sending?: boolean;
 }
 
+/** Inline bottom gift panel — plain Views only (no Modal / animations). */
 export const LiveGiftPanel: React.FC<LiveGiftPanelProps> = ({
-  visible,
   onClose,
   onSend,
   sending = false,
@@ -43,20 +42,12 @@ export const LiveGiftPanel: React.FC<LiveGiftPanelProps> = ({
     error,
     refresh,
   } = useLiveGifts({
-    enabled: visible,
+    enabled: true,
   });
 
   const [selectedGift, setSelectedGift] = useState<LiveGift | null>(null);
   const [quantity, setQuantity] = useState(MIN_QUANTITY);
   const [localError, setLocalError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!visible) {
-      setSelectedGift(null);
-      setQuantity(MIN_QUANTITY);
-      setLocalError(null);
-    }
-  }, [visible]);
 
   const handleSelect = useCallback((gift: LiveGift) => {
     setSelectedGift(gift);
@@ -217,207 +208,199 @@ export const LiveGiftPanel: React.FC<LiveGiftPanelProps> = ({
     : null;
 
   return (
-    <Modal
-      visible={visible}
-      onClose={onClose}
-      animationType="none"
-      dismissOnBackdropPress={!sending}
-      contentStyle={styles.modalContent}>
-      <View
-        style={[
-          styles.sheet,
-          {
-            backgroundColor: colors.background.primary,
-            paddingBottom: Math.max(insets.bottom, 12),
-          },
-        ]}>
-        <View style={styles.header}>
-          <View style={styles.headerRow}>
-            <Text variant="h6" weight="semibold" style={styles.headerTitle}>
-              🎁 Send a Gift
-            </Text>
-            <TouchableOpacity
-              activeOpacity={1}
-              onPress={onClose}
-              disabled={sending}
-              style={[
-                styles.closeButton,
-                {backgroundColor: colors.background.secondary},
-              ]}
-              accessibilityLabel="Close gift panel">
-              <Text
-                variant="subtitle"
-                weight="semibold"
-                color={colors.text.primary}>
-                ✕
-              </Text>
-            </TouchableOpacity>
-          </View>
-          <Text variant="bodySmall" color={colors.text.secondary}>
-            Choose a gift to support the astrologer.
+    <View
+      style={[
+        styles.sheet,
+        {
+          backgroundColor: colors.background.primary,
+          borderTopColor: colors.border.light,
+          paddingBottom: Math.max(insets.bottom, 12),
+        },
+      ]}
+      testID="live-gift-panel">
+      <View style={styles.header}>
+        <View style={styles.headerRow}>
+          <Text variant="h6" weight="semibold" style={styles.headerTitle}>
+            🎁 Send a Gift
           </Text>
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={onClose}
+            disabled={sending}
+            style={[
+              styles.closeButton,
+              {backgroundColor: colors.background.secondary},
+            ]}
+            accessibilityLabel="Close gift panel">
+            <Text
+              variant="subtitle"
+              weight="semibold"
+              color={colors.text.primary}>
+              ✕
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <Text variant="bodySmall" color={colors.text.secondary}>
+          Choose a gift to support the astrologer.
+        </Text>
+        <Text
+          variant="caption"
+          color={colors.text.tertiary}
+          style={styles.walletLine}>
+          Wallet: {walletLoading ? '...' : `${balanceCoins.toFixed(0)} coins`}
+        </Text>
+      </View>
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        bounces={false}>
+        {renderGiftGrid()}
+
+        {selectedGift != null && (
+          <View
+            style={[
+              styles.detailsCard,
+              {
+                backgroundColor: colors.background.secondary,
+                borderColor: colors.border.light,
+              },
+            ]}>
+            <View style={styles.detailsHeader}>
+              {selectedIconUri ? (
+                <Image
+                  source={{uri: selectedIconUri}}
+                  style={styles.detailsIcon}
+                  resizeMode="contain"
+                />
+              ) : (
+                <View style={styles.detailsIconFallback}>
+                  <Icon
+                    name="card-giftcard"
+                    size={28}
+                    color={colors.primary.main}
+                    library="MaterialIcons"
+                  />
+                </View>
+              )}
+              <View style={styles.detailsText}>
+                <Text
+                  variant="subtitle"
+                  weight="semibold"
+                  color={colors.text.primary}
+                  numberOfLines={1}>
+                  {selectedGift.name}
+                </Text>
+                <Text variant="caption" color={colors.text.secondary}>
+                  {selectedGift.price} coins each
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.quantityBlock}>
+              <Text variant="bodySmall" color={colors.text.secondary}>
+                Quantity
+              </Text>
+              <View style={styles.quantityControls}>
+                <TouchableOpacity
+                  onPress={decreaseQuantity}
+                  disabled={quantity <= MIN_QUANTITY || sending}
+                  style={[
+                    styles.quantityButton,
+                    {
+                      borderColor: colors.border.light,
+                      opacity: quantity <= MIN_QUANTITY || sending ? 0.4 : 1,
+                    },
+                  ]}
+                  accessibilityLabel="Decrease quantity">
+                  <Text
+                    variant="subtitle"
+                    weight="semibold"
+                    color={colors.text.primary}>
+                    −
+                  </Text>
+                </TouchableOpacity>
+                <Text
+                  variant="subtitle"
+                  weight="semibold"
+                  style={styles.quantityValue}
+                  color={colors.text.primary}>
+                  {quantity}
+                </Text>
+                <TouchableOpacity
+                  onPress={increaseQuantity}
+                  disabled={quantity >= MAX_QUANTITY || sending}
+                  style={[
+                    styles.quantityButton,
+                    {
+                      borderColor: colors.border.light,
+                      opacity: quantity >= MAX_QUANTITY || sending ? 0.4 : 1,
+                    },
+                  ]}
+                  accessibilityLabel="Increase quantity">
+                  <Text
+                    variant="subtitle"
+                    weight="semibold"
+                    color={colors.text.primary}>
+                    +
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <Text
+              variant="bodySmall"
+              weight="semibold"
+              color={colors.text.primary}
+              style={styles.totalLine}>
+              Total cost: {totalPrice} coins
+            </Text>
+          </View>
+        )}
+
+        {!!localError && (
           <Text
             variant="caption"
-            color={colors.text.tertiary}
-            style={styles.walletLine}>
-            Wallet: {walletLoading ? '...' : `${balanceCoins.toFixed(0)} coins`}
+            color={colors.error.main}
+            style={styles.localError}>
+            {localError}
           </Text>
-        </View>
+        )}
+      </ScrollView>
 
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          bounces={false}>
-          {renderGiftGrid()}
-
-          {selectedGift != null && (
-            <View
-              style={[
-                styles.detailsCard,
-                {
-                  backgroundColor: colors.background.secondary,
-                  borderColor: colors.border.light,
-                },
-              ]}>
-              <View style={styles.detailsHeader}>
-                {selectedIconUri ? (
-                  <Image
-                    source={{uri: selectedIconUri}}
-                    style={styles.detailsIcon}
-                    resizeMode="contain"
-                  />
-                ) : (
-                  <View style={styles.detailsIconFallback}>
-                    <Icon
-                      name="card-giftcard"
-                      size={28}
-                      color={colors.primary.main}
-                      library="MaterialIcons"
-                    />
-                  </View>
-                )}
-                <View style={styles.detailsText}>
-                  <Text
-                    variant="subtitle"
-                    weight="semibold"
-                    color={colors.text.primary}
-                    numberOfLines={1}>
-                    {selectedGift.name}
-                  </Text>
-                  <Text variant="caption" color={colors.text.secondary}>
-                    {selectedGift.price} coins each
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.quantityBlock}>
-                <Text variant="bodySmall" color={colors.text.secondary}>
-                  Quantity
-                </Text>
-                <View style={styles.quantityControls}>
-                  <TouchableOpacity
-                    onPress={decreaseQuantity}
-                    disabled={quantity <= MIN_QUANTITY || sending}
-                    style={[
-                      styles.quantityButton,
-                      {
-                        borderColor: colors.border.light,
-                        opacity: quantity <= MIN_QUANTITY || sending ? 0.4 : 1,
-                      },
-                    ]}
-                    accessibilityLabel="Decrease quantity">
-                    <Text
-                      variant="subtitle"
-                      weight="semibold"
-                      color={colors.text.primary}>
-                      −
-                    </Text>
-                  </TouchableOpacity>
-                  <Text
-                    variant="subtitle"
-                    weight="semibold"
-                    style={styles.quantityValue}
-                    color={colors.text.primary}>
-                    {quantity}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={increaseQuantity}
-                    disabled={quantity >= MAX_QUANTITY || sending}
-                    style={[
-                      styles.quantityButton,
-                      {
-                        borderColor: colors.border.light,
-                        opacity: quantity >= MAX_QUANTITY || sending ? 0.4 : 1,
-                      },
-                    ]}
-                    accessibilityLabel="Increase quantity">
-                    <Text
-                      variant="subtitle"
-                      weight="semibold"
-                      color={colors.text.primary}>
-                      +
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              <Text
-                variant="bodySmall"
-                weight="semibold"
-                color={colors.text.primary}
-                style={styles.totalLine}>
-                Total cost: {totalPrice} coins
-              </Text>
-            </View>
-          )}
-
-          {!!localError && (
-            <Text
-              variant="caption"
-              color={colors.error.main}
-              style={styles.localError}>
-              {localError}
-            </Text>
-          )}
-        </ScrollView>
-
-        <View style={styles.footer}>
-          <Button
-            title={sendButtonTitle}
-            variant="primary"
-            size="large"
-            onPress={handleSend}
-            loading={sending}
-            disabled={!canSend}
-          />
-          <Text
-            variant="captionSmall"
-            color={colors.text.tertiary}
-            style={styles.footerNote}>
-            Your wallet will be charged when the gift is sent successfully.
-          </Text>
-        </View>
+      <View style={styles.footer}>
+        <Button
+          title={sendButtonTitle}
+          variant="primary"
+          size="large"
+          onPress={handleSend}
+          loading={sending}
+          disabled={!canSend}
+        />
+        <Text
+          variant="captionSmall"
+          color={colors.text.tertiary}
+          style={styles.footerNote}>
+          Your wallet will be charged when the gift is sent successfully.
+        </Text>
       </View>
-    </Modal>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  modalContent: {
-    justifyContent: 'flex-end',
-    margin: 0,
-  },
   sheet: {
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    maxHeight: '88%',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    maxHeight: '70%',
     overflow: 'hidden',
   },
   header: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 14,
     paddingBottom: 10,
   },
   headerRow: {
@@ -442,14 +425,14 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flexGrow: 0,
-    maxHeight: 420,
+    maxHeight: 320,
   },
   scrollContent: {
     paddingHorizontal: 12,
     paddingBottom: 8,
   },
   centered: {
-    minHeight: 160,
+    minHeight: 140,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
