@@ -3,7 +3,11 @@ import {ChatClient, ChatRoomEventListener} from 'react-native-agora-chat';
 import loggingService from '../../../services/logging';
 
 export interface UseLiveViewerPresenceOptions {
-  /** When false, presence tracking is disabled and the count resets to 0. */
+  /**
+   * When false, presence tracking is disabled and the count resets to 0.
+   * Must only be true after Agora Chat is fully initialized/connected —
+   * calling room APIs earlier crashes the native SDK on Android.
+   */
   enabled: boolean;
   /** Agora Chat room ID for the live session (from LiveJoinResponse.chatRoomId). */
   chatRoomId: string;
@@ -34,10 +38,15 @@ export const useLiveViewerPresence = ({
       return;
     }
     try {
-      const result =
-        await ChatClient.getInstance().roomManager.fetchChatRoomMembers(
-          chatRoomId,
+      const client = ChatClient.getInstance();
+      // Native EMChatRoomManager is null until ChatClient.init completes.
+      if (!client?.roomManager) {
+        loggingService.warn(
+          '[LiveViewerPresence] Skipping member fetch; chat not ready',
         );
+        return;
+      }
+      const result = await client.roomManager.fetchChatRoomMembers(chatRoomId);
       const members = result?.list ?? [];
       participantsRef.current = new Set(members);
       if (chatUserId && !participantsRef.current.has(chatUserId)) {
@@ -121,7 +130,14 @@ export const useLiveViewerPresence = ({
 
     try {
       const client = ChatClient.getInstance();
-      client.roomManager.addRoomListener(listener);
+      if (!client?.roomManager) {
+        setError('Live chat is not ready for viewer presence.');
+        loggingService.warn(
+          '[LiveViewerPresence] Skipping listener; chat not ready',
+        );
+      } else {
+        client.roomManager.addRoomListener(listener);
+      }
     } catch (err: any) {
       const msg = err?.message || 'Failed to register presence listener';
       setError(msg);
@@ -137,7 +153,7 @@ export const useLiveViewerPresence = ({
       isMountedRef.current = false;
       try {
         const client = ChatClient.getInstance();
-        client.roomManager.removeRoomListener(listener);
+        client?.roomManager?.removeRoomListener(listener);
       } catch {
         // Ignore cleanup errors
       }

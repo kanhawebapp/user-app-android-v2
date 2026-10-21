@@ -279,6 +279,13 @@
       "createdAt": "2026-09-26T10:30:04.201Z",
       "remote": "origin",
       "branchOwned": true
+    },
+    "wt-1792558959556-1": {
+      "branch": "citrine-dry",
+      "path": "/Users/sudoraj/Desktop/DhwaniAstro/.kilo/worktrees/citrine-dry",
+      "parentBranch": "dev12octlive2026",
+      "createdAt": "2026-10-17T09:04:27.047Z",
+      "remote": "origin"
     }
   },
   "sessions": {
@@ -501,6 +508,10 @@
     "ses_f22bc2777ffewXIPHdsyC5lsLf": {
       "worktreeId": "wt-1790418604201-1",
       "createdAt": "2026-09-26T10:30:10.772Z"
+    },
+    "ses_eb6e3e764ffeMs7G70p7eZ31sf": {
+      "worktreeId": "wt-1792558959556-1",
+      "createdAt": "2026-10-21T05:02:39.557Z"
     }
   },
   "tabOrder": {
@@ -602,7 +613,8 @@
     "wt-1785559054518-1",
     "wt-1785748671676-1",
     "wt-1787718680674-1",
-    "wt-1790418604201-1"
+    "wt-1790418604201-1",
+    "wt-1792558959556-1"
   ],
   "sessionsCollapsed": false
 }

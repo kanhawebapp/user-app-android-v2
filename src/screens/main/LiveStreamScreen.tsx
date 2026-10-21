@@ -39,6 +39,12 @@ import {
   LiveChatMessage,
   useLiveRoomChat,
 } from '../../modules/live/hooks/useLiveRoomChat';
+import {useToast} from '../../context/ToastContext';
+import {useSendLiveGift} from '../../services/api/liveGifts/useSendLiveGift';
+import type {LiveGift} from '../../services/api/liveGifts/live-gifts.types';
+import {applyWalletBalanceCoins} from '../../services/api/wallet/wallet.hooks';
+import {useAuthStore} from '../../stores/auth.store';
+import {LiveGiftPanel} from './liveStream/LiveGiftPanel';
 
 interface LiveStreamScreenProps {
   joinData: LiveJoinResponse;
@@ -57,7 +63,14 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
   const theme = useTheme();
   const colors = theme.colors;
   const insets = useSafeAreaInsets();
+  const {showSuccess, showError} = useToast();
+  const {submitLiveGift, loading: sendingGift} = useSendLiveGift();
   const [draft, setDraft] = useState('');
+  const [isGiftPanelVisible, setIsGiftPanelVisible] = useState(false);
+  const sendInFlightRef = useRef(false);
+
+  /** Prefer join response stream id; fall back to the listed session id. */
+  const streamId = joinData.id || session.id;
 
   const astrologer = session.astrologer;
   const astrologerId = astrologer?.id;
@@ -215,6 +228,47 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
     }
   }, [chat, draft]);
 
+  const handleSendLiveGift = useCallback(
+    async (gift: LiveGift, quantity: number) => {
+      if (!streamId) {
+        showError('Live stream is unavailable. Please rejoin and try again.');
+        return;
+      }
+      if (sendInFlightRef.current || sendingGift) {
+        return;
+      }
+
+      sendInFlightRef.current = true;
+      try {
+        const response = await submitLiveGift({
+          streamId,
+          giftId: gift.id,
+          quantity,
+        });
+
+        if (!response?.success) {
+          showError(response?.message || 'Failed to send gift');
+          return;
+        }
+
+        if (typeof response.userBalance === 'number') {
+          applyWalletBalanceCoins(response.userBalance);
+          useAuthStore.getState().updateWalletBalance(response.userBalance);
+        }
+
+        showSuccess(
+          response.message || `${response.giftName || gift.name} sent`,
+        );
+        setIsGiftPanelVisible(false);
+      } catch (err: any) {
+        showError(err?.message || 'Failed to send gift. Please try again.');
+      } finally {
+        sendInFlightRef.current = false;
+      }
+    },
+    [streamId, sendingGift, submitLiveGift, showError, showSuccess],
+  );
+
   const getRtcStatusText = (): string | null => {
     switch (rtc.status) {
       case 'joining':
@@ -234,8 +288,11 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
   };
 
   const rtcStatusText = getRtcStatusText();
+  // Presence must wait until ChatClient is fully connected. Enabling during
+  // "connecting" calls room APIs before native init and crashes Android
+  // (EMChatRoomManager NPE / ExceptionInInitializerError).
   const chatPresence = useLiveViewerPresence({
-    enabled: chat.status !== 'idle' && chat.status !== 'failed',
+    enabled: chat.status === 'connected',
     chatRoomId: joinData.chatRoomId,
     chatUserId: joinData.chatUserId,
   });
@@ -501,6 +558,18 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
         )}
 
         <View style={[styles.inputRow, {paddingBottom: insets.bottom + 8}]}>
+          <TouchableOpacity
+            onPress={() => setIsGiftPanelVisible(true)}
+            style={[styles.giftButton, {backgroundColor: colors.primary.main}]}
+            accessibilityLabel="Open gifts"
+            testID="live-gift-button">
+            <Icon
+              name="card-giftcard"
+              size={20}
+              color={colors.primary.contrastText}
+              library="MaterialIcons"
+            />
+          </TouchableOpacity>
           <TextInput
             value={draft}
             onChangeText={setDraft}
@@ -538,6 +607,13 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      <LiveGiftPanel
+        visible={isGiftPanelVisible}
+        onClose={() => setIsGiftPanelVisible(false)}
+        onSend={handleSendLiveGift}
+        sending={sendingGift}
+      />
     </View>
   );
 };
@@ -669,6 +745,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingTop: 8,
+  },
+  giftButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   input: {
     flex: 1,
