@@ -15,6 +15,7 @@ interface RechargeAmountGridProps {
   packs: RechargePack[];
   selectedPack: RechargePack | null;
   onSelectPack: (pack: RechargePack) => void;
+  isFirstRecharge?: boolean;
 }
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
@@ -24,6 +25,7 @@ export const RechargeAmountGrid: React.FC<RechargeAmountGridProps> = ({
   packs,
   selectedPack,
   onSelectPack,
+  isFirstRecharge = false,
 }) => {
   const theme = useTheme();
   const colors = theme.colors;
@@ -37,6 +39,7 @@ export const RechargeAmountGrid: React.FC<RechargeAmountGridProps> = ({
           pack={item}
           isSelected={isSelected}
           onSelect={onSelectPack}
+          isFirstRecharge={isFirstRecharge}
         />
       </View>
     );

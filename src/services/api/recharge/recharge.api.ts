@@ -10,9 +10,11 @@ query GetRechargePacks {
       description
       price
       talktime
+      coins
       __typename
     }
     totalCount
+    isFirstRecharge
     __typename
   }
 }

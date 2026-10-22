@@ -9,6 +9,7 @@ interface RechargeSectionProps {
   selectedPack: RechargePack | null;
   onSelectPack: (pack: RechargePack) => void;
   loading?: boolean;
+  isFirstRecharge?: boolean;
 }
 
 export const RechargeSection: React.FC<RechargeSectionProps> = ({
@@ -16,6 +17,7 @@ export const RechargeSection: React.FC<RechargeSectionProps> = ({
   selectedPack,
   onSelectPack,
   loading = false,
+  isFirstRecharge = false,
 }) => {
   const theme = useTheme();
   const colors = theme.colors;
@@ -33,6 +35,7 @@ export const RechargeSection: React.FC<RechargeSectionProps> = ({
         packs={packs}
         selectedPack={selectedPack}
         onSelectPack={onSelectPack}
+        isFirstRecharge={isFirstRecharge}
       />
     </View>
   );

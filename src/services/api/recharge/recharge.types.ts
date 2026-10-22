@@ -44,6 +44,7 @@ export interface RechargePack {
   description: string;
   price: number;
   talktime: number;
+  coins?: number;
   __typename?: string;
 }
 
@@ -51,6 +52,7 @@ export interface RechargePackResponse {
   getRechargePacks: {
     data: RechargePack[];
     totalCount: number;
+    isFirstRecharge?: boolean;
     __typename?: string;
   };
 }

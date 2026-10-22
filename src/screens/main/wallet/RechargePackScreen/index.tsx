@@ -47,7 +47,7 @@ const RechargePackScreen: React.FC<RechargePackScreenProps> = ({
   const [customAmount, setCustomAmount] = useState<string>('');
 
   const [isCustomAmount, setIsCustomAmount] = useState<boolean>(false);
-  const { data: rechargePacks, loading } = useRechargePacks();
+  const { data: rechargePacks, loading, isFirstRecharge } = useRechargePacks();
 
   const handlePackSelect = useCallback((pack: RechargePack) => {
     setSelectedPack(pack);
@@ -104,6 +104,7 @@ const RechargePackScreen: React.FC<RechargePackScreenProps> = ({
             packs={rechargePacks}
             selectedPack={selectedPack}
             onSelectPack={handlePackSelect}
+            isFirstRecharge={isFirstRecharge}
           />
         </View>
 

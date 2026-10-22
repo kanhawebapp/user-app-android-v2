@@ -8,12 +8,14 @@ interface RechargePackCardProps {
   pack: RechargePack;
   isSelected: boolean;
   onSelect: (pack: RechargePack) => void;
+  isFirstRecharge?: boolean;
 }
 
 export const RechargePackCard: React.FC<RechargePackCardProps> = ({
   pack,
   isSelected,
   onSelect,
+  isFirstRecharge = false,
 }) => {
   const theme = useTheme();
   const colors = theme.colors;
@@ -81,7 +83,7 @@ export const RechargePackCard: React.FC<RechargePackCardProps> = ({
           color: colors.text.secondary,
           marginTop: 2,
         }}>
-        Talktime: ₹{pack.talktime}
+        Talktime: ₹{isFirstRecharge ? pack.coins : pack.talktime}
       </Text>
 
       {/* 📝 DESCRIPTION */}
