@@ -746,10 +746,10 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   giftPanelAnchor: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'flex-end',
+    zIndex: 20,
+    elevation: 20,
   },
   messageList: {
     maxHeight: 260,

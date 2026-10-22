@@ -392,6 +392,7 @@ export const LiveGiftPanel: React.FC<LiveGiftPanelProps> = ({
 
 const styles = StyleSheet.create({
   sheet: {
+    width: '100%',
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -425,6 +426,7 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flexGrow: 0,
+    flexShrink: 1,
     maxHeight: 320,
   },
   scrollContent: {
@@ -547,6 +549,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
   },
   footer: {
+    flexShrink: 0,
     paddingHorizontal: 16,
     paddingTop: 10,
     gap: 8,
