@@ -67,7 +67,7 @@ const getGraphQLEndpoint = (): string => {
 
 export const createGraphQLClient = (): AxiosInstance => {
   const client = axios.create({
-    baseURL: getGraphQLEndpoint(),
+    baseURL: `${API_BASE_URL.STAGING}userAuth/graphql`,
     timeout: TIMEOUT.DEFAULT,
     headers: {
       'Content-Type': 'application/json',
