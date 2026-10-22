@@ -15,6 +15,7 @@ interface RechargePack {
   description: string;
   price: number;
   talktime: number;
+  coins?: number;
 }
 
 interface Props {
@@ -22,6 +23,7 @@ interface Props {
   onClose: () => void;
   rechargePacks: RechargePack[];
   loading: boolean;
+  isFirstRecharge?: boolean;
   onProceed: (pack: RechargePack) => void;
 }
 
@@ -30,6 +32,7 @@ const RechargePaymentModal: React.FC<Props> = ({
   onClose,
   rechargePacks,
   loading,
+  isFirstRecharge = false,
   onProceed,
 }) => {
   const [selectedPack, setSelectedPack] = useState<RechargePack | null>(null);
@@ -49,7 +52,7 @@ const RechargePaymentModal: React.FC<Props> = ({
         <Text style={styles.desc}>{item.description}</Text>
 
         <View style={styles.footer}>
-          <Text style={styles.talktime}>🎙 {item.talktime} mins talktime</Text>
+          <Text style={styles.talktime}>Talktime: ₹{isFirstRecharge ? item.coins : item.talktime}</Text>
         </View>
       </TouchableOpacity>
     );
