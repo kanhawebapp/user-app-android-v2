@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, TouchableOpacity, Text, Image } from 'react-native';
+import { View, TouchableOpacity, Text, Image, Pressable } from 'react-native';
 import { useTheme } from '../../../../../theme';
 import { AstrologerCardProps } from './types';
 import { styles } from './styles';
@@ -106,30 +106,24 @@ console.log('experience>>>>:', experience);
   const disabledTextColor = '#9CA3AF';
 
   return (
-    <Card style={[styles.card]}>
+    <Pressable onPress={() => onCardPress?.(astrologer)}>
+      <Card style={[styles.card]}>
       <View style={styles.cardContent}>
         <View style={styles.avatarContainer}>
-          <TouchableOpacity
-            onPress={() => {
-              console.log('CARD CLICKED');
-              onCardPress?.(astrologer);
-            }}
-            activeOpacity={0.8}>
-            <View
-              style={[
-                styles.avatar,
-                { backgroundColor: colors.primary.light + '20' },
-              ]}>
-              <Image
-                source={profileImage}
-                style={{
-                  height: '100%',
-                  width: '100%',
-                  borderRadius: 50,
-                }}
-              />
-            </View>
-          </TouchableOpacity>
+          <View
+            style={[
+              styles.avatar,
+              { backgroundColor: colors.primary.light + '20' },
+            ]}>
+            <Image
+              source={profileImage}
+              style={{
+                height: '100%',
+                width: '100%',
+                borderRadius: 50,
+              }}
+            />
+          </View>
           {/* <AstrologerStatusBadge status={status} /> */}
 
           <View
@@ -325,6 +319,7 @@ console.log('experience>>>>:', experience);
         </TouchableOpacity>
       </View>
     </Card>
+    </Pressable>
   );
 };
 
