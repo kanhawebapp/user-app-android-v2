@@ -42,18 +42,22 @@ const RechargePaymentModal: React.FC<Props> = ({
 
     const isFirstTimeOffer = item.isFirstTimeOffer === true;
     const isFirstTimeOfferUsed = item.isFirstTimeOfferUsed === true;
-    const showFirstTimeOfferBadge =
+
+    const isOfferAvailable =
       isFirstTimeOffer && !isFirstTimeOfferUsed;
 
     const isOfferUsed =
       isFirstTimeOffer && isFirstTimeOfferUsed;
 
     // Display logic (all values come from the live API response):
-    //  - Used first-time offer: API-provided talktime value
-    //  - Unused first-time offer / normal pack: API-provided coins value
-    const displayTalktime = isOfferUsed
-      ? item.talktime
-      : item.coins;
+    //  - First-time offer available: API-provided coins value
+    //  - First-time offer already used: API-provided talktime value
+    //  - Both flags false / any other combination: API-provided talktime value
+    const displayAmount = isOfferAvailable
+      ? item.coins
+      : item.talktime;
+
+    const showOfferUsedMessage = isOfferUsed;
 
     return (
       <TouchableOpacity
@@ -68,17 +72,17 @@ const RechargePaymentModal: React.FC<Props> = ({
 
         <View style={styles.footer}>
           <Text style={styles.talktime}>
-            Talktime: ₹{displayTalktime}
+            Talktime: ₹{displayAmount}
           </Text>
         </View>
 
-        {showFirstTimeOfferBadge && (
+        {isOfferAvailable && (
           <View style={styles.offerBadge}>
             <Text style={styles.offerBadgeText}>First Time Offer</Text>
           </View>
         )}
 
-        {isOfferUsed && (
+        {showOfferUsedMessage && (
           <Text style={styles.usedOfferText} numberOfLines={2}>
             First time offer already used
           </Text>
