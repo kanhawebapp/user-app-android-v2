@@ -8,20 +8,34 @@ interface RechargePackCardProps {
   pack: RechargePack;
   isSelected: boolean;
   onSelect: (pack: RechargePack) => void;
-  isFirstRecharge?: boolean;
 }
 
 export const RechargePackCard: React.FC<RechargePackCardProps> = ({
   pack,
   isSelected,
   onSelect,
-  isFirstRecharge = false,
 }) => {
   const theme = useTheme();
   const colors = theme.colors;
 
+  const isFirstTimeOffer = pack.isFirstTimeOffer === true;
+  const isFirstTimeOfferUsed = pack.isFirstTimeOfferUsed === true;
+
   const isRecommended = pack.price === 499;
   const isBestValue = pack.price >= 1999;
+
+  const showFirstTimeOfferBadge =
+    isFirstTimeOffer && !isFirstTimeOfferUsed;
+
+  const isOfferUsed =
+    isFirstTimeOffer && isFirstTimeOfferUsed;
+
+  // Display logic (all values come from the live API response):
+  //  - Unused first-time offer: API-provided coins value
+  //  - Used first-time offer: API-provided talktime value
+  //  - Normal pack: API-provided coins value
+  const displayTalktime =
+    isOfferUsed ? pack.talktime : pack.coins;
 
   return (
     <TouchableOpacity
@@ -41,18 +55,24 @@ export const RechargePackCard: React.FC<RechargePackCardProps> = ({
         },
       ]}>
       {/* 🔥 TOP BADGE */}
-      {(isRecommended || isBestValue) && (
+      {(isRecommended || isBestValue || showFirstTimeOfferBadge) && (
         <View
           style={[
             styles.badge,
             {
-              backgroundColor: isRecommended
+              backgroundColor: showFirstTimeOfferBadge
+                ? colors.warning.main
+                : isRecommended
                 ? colors.success.main
                 : colors.warning.main,
             },
           ]}>
           <Text style={styles.badgeText}>
-            {isRecommended ? 'Recommended' : 'Best Value'}
+            {showFirstTimeOfferBadge
+              ? 'First Time Offer'
+              : isRecommended
+              ? 'Recommended'
+              : 'Best Value'}
           </Text>
         </View>
       )}
@@ -83,7 +103,7 @@ export const RechargePackCard: React.FC<RechargePackCardProps> = ({
           color: colors.text.secondary,
           marginTop: 2,
         }}>
-        Talktime: ₹{isFirstRecharge ? pack.coins : pack.talktime}
+        Talktime: ₹{displayTalktime}
       </Text>
 
       {/* 📝 DESCRIPTION */}
@@ -99,6 +119,21 @@ export const RechargePackCard: React.FC<RechargePackCardProps> = ({
           {pack.description}
         </Text>
       )} */}
+
+      {/* ⚠️ FIRST TIME OFFER ALREADY USED */}
+      {isOfferUsed && (
+        <Text
+          variant="captionSmall"
+          numberOfLines={2}
+          style={{
+            color: colors.error.main,
+            marginTop: 4,
+            lineHeight: 16,
+            fontWeight: '600',
+          }}>
+          First time offer already used
+        </Text>
+      )}
     </TouchableOpacity>
   );
 };

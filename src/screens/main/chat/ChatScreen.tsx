@@ -97,7 +97,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       : `${API_BASE_URL.DEVELOPMENT}${propAstrologerImage}`
     : propAstrologerImage;
 
-  const { data, loading, isFirstRecharge } = useRechargePacks();
+  const { data, loading } = useRechargePacks();
 
   // Local UI state
   const [showRatingModal, setShowRatingModal] = useState(false);
@@ -452,7 +452,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         onClose={() => setRechargeModal(false)}
          rechargePacks={Array.isArray(data) ? data : []}
          loading={loading}
-         isFirstRecharge={isFirstRecharge}
          onProceed={pack => handleProceedToPay(pack)}
       />
       <Modal

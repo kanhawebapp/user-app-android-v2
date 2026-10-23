@@ -43,7 +43,7 @@ export const SendGiftModal: React.FC<SendGiftModalProps> = ({
   const balanceCoins = wallet?.balanceCoins ?? 0;
   const [activeTab, setActiveTab] = React.useState<'gift' | 'history'>('gift');
   // Recharge packs
-  const { data: rechargePacks, loading: rechargePackLoading, isFirstRecharge } = useRechargePacks();
+  const { data: rechargePacks, loading: rechargePackLoading } = useRechargePacks();
   const [selectedPack, setSelectedPack] = React.useState<RechargePack | null>(null);
 
   // Gift history
@@ -287,13 +287,12 @@ export const SendGiftModal: React.FC<SendGiftModalProps> = ({
                 />
               </View>
 
-               <RechargeSection
-                 packs={rechargePacks || []}
-                 selectedPack={selectedPack}
-                 onSelectPack={handlePackSelect}
-                 loading={rechargePackLoading}
-                 isFirstRecharge={isFirstRecharge}
-               />
+                <RechargeSection
+                  packs={rechargePacks || []}
+                  selectedPack={selectedPack}
+                  onSelectPack={handlePackSelect}
+                  loading={rechargePackLoading}
+                />
             </>
           ) : (
             <View

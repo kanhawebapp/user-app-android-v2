@@ -45,6 +45,8 @@ export interface RechargePack {
   price: number;
   talktime: number;
   coins?: number;
+  isFirstTimeOffer?: boolean;
+  isFirstTimeOfferUsed?: boolean;
   __typename?: string;
 }
 
@@ -52,7 +54,6 @@ export interface RechargePackResponse {
   getRechargePacks: {
     data: RechargePack[];
     totalCount: number;
-    isFirstRecharge?: boolean;
     __typename?: string;
   };
 }

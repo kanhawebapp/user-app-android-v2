@@ -5,7 +5,6 @@ import {RechargePack} from './recharge.types';
 export const useRechargePacks = () => {
   const [data, setData] = useState<RechargePack[]>([]);
   const [loading, setLoading] = useState(false);
-  const [isFirstRecharge, setIsFirstRecharge] = useState(false);
 
   const fetchRechargePacks = async () => {
     try {
@@ -14,7 +13,6 @@ export const useRechargePacks = () => {
       const res = await getRechargePacks();
 
       setData(res.data);
-      setIsFirstRecharge(!!res.isFirstRecharge);
     } catch (error) {
       console.log('RECHARGE HOOK ERROR:', error);
     } finally {
@@ -30,6 +28,5 @@ export const useRechargePacks = () => {
     data,
     loading,
     refresh: fetchRechargePacks,
-    isFirstRecharge,
   };
 };

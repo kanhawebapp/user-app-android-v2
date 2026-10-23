@@ -16,6 +16,8 @@ interface RechargePack {
   price: number;
   talktime: number;
   coins?: number;
+  isFirstTimeOffer?: boolean;
+  isFirstTimeOfferUsed?: boolean;
 }
 
 interface Props {
@@ -23,7 +25,6 @@ interface Props {
   onClose: () => void;
   rechargePacks: RechargePack[];
   loading: boolean;
-  isFirstRecharge?: boolean;
   onProceed: (pack: RechargePack) => void;
 }
 
@@ -32,13 +33,27 @@ const RechargePaymentModal: React.FC<Props> = ({
   onClose,
   rechargePacks,
   loading,
-  isFirstRecharge = false,
   onProceed,
 }) => {
   const [selectedPack, setSelectedPack] = useState<RechargePack | null>(null);
 
   const renderItem = ({ item }: { item: RechargePack }) => {
     const isSelected = selectedPack?.id === item.id;
+
+    const isFirstTimeOffer = item.isFirstTimeOffer === true;
+    const isFirstTimeOfferUsed = item.isFirstTimeOfferUsed === true;
+    const showFirstTimeOfferBadge =
+      isFirstTimeOffer && !isFirstTimeOfferUsed;
+
+    const isOfferUsed =
+      isFirstTimeOffer && isFirstTimeOfferUsed;
+
+    // Display logic (all values come from the live API response):
+    //  - Used first-time offer: API-provided talktime value
+    //  - Unused first-time offer / normal pack: API-provided coins value
+    const displayTalktime = isOfferUsed
+      ? item.talktime
+      : item.coins;
 
     return (
       <TouchableOpacity
@@ -52,8 +67,22 @@ const RechargePaymentModal: React.FC<Props> = ({
         <Text style={styles.desc}>{item.description}</Text>
 
         <View style={styles.footer}>
-          <Text style={styles.talktime}>Talktime: ₹{isFirstRecharge ? item.coins : item.talktime}</Text>
+          <Text style={styles.talktime}>
+            Talktime: ₹{displayTalktime}
+          </Text>
         </View>
+
+        {showFirstTimeOfferBadge && (
+          <View style={styles.offerBadge}>
+            <Text style={styles.offerBadgeText}>First Time Offer</Text>
+          </View>
+        )}
+
+        {isOfferUsed && (
+          <Text style={styles.usedOfferText} numberOfLines={2}>
+            First time offer already used
+          </Text>
+        )}
       </TouchableOpacity>
     );
   };
@@ -100,7 +129,7 @@ const RechargePaymentModal: React.FC<Props> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'flex-end',
   },
   container: {
@@ -118,7 +147,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#000'
+    color: '#000',
 
   },
   close: {
@@ -173,6 +202,25 @@ const styles = StyleSheet.create({
   payText: {
     color: '#fff',
     fontWeight: 'bold',
+  },
+  offerBadge: {
+    marginTop: 6,
+    backgroundColor: '#FFF3E0',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    alignSelf: 'flex-start',
+  },
+  offerBadgeText: {
+    fontSize: 11,
+    color: '#F57C00',
+    fontWeight: '600',
+  },
+  usedOfferText: {
+    marginTop: 6,
+    fontSize: 12,
+    color: '#D32F2F',
+    fontWeight: '600',
   },
 });
 
