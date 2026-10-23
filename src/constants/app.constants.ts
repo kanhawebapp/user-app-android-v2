@@ -613,7 +613,7 @@ export const CHAT_CALL_LABELS = {
     'Try adjusting your filters or search query to find more astrologers',
 
   // Astrologer Card
-  CARD_EXPERIENCE: 'exp',
+  CARD_EXPERIENCE: 'Exp:',
   CARD_CHAT: 'Chat',
   CARD_CALL: 'Call',
   CARD_VIEW_PROFILE: 'View Profile',

@@ -71,7 +71,7 @@ export const AstrologerCard: React.FC<AstrologerCardProps> = ({
   const indicatorStyle = getAvailabilityIndicatorStyle(availability);
 
   const availabilityColor = getAvailabilityColor(availability, colors);
-
+console.log('experience>>>>:', experience);
   // const isOnline = availability === 'online';
   // const isBusy = availability === 'busy' || availability === 'on_call';
   const {
@@ -168,18 +168,18 @@ export const AstrologerCard: React.FC<AstrologerCardProps> = ({
           {/* Experience */}
           <View style={styles.experienceContainer}>
             <Text style={[styles.experience, { color: colors.text.secondary }]}>
-              {experience} {CHAT_CALL_LABELS.CARD_EXPERIENCE}
+              {CHAT_CALL_LABELS.CARD_EXPERIENCE} {experience} 
             </Text>
           </View>
 
           {/* Languages */}
-          <View style={styles.languageContainer}>
+          {/* <View style={styles.languageContainer}>
             <Text
               style={[styles.language, { color: colors.text.secondary }]}
               numberOfLines={1}>
               Languages: {languages.join(', ')}
             </Text>
-          </View>
+          </View> */}
 
           {/* Price per minute */}
           <View style={styles.priceRow}>
