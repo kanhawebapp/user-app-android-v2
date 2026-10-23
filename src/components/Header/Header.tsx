@@ -138,7 +138,7 @@ export const Header: React.FC<HeaderProps> = ({
             </TouchableOpacity>
 
             {/* Notification Button */}
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={styles.iconButton}
               onPress={onNotificationPress}
               activeOpacity={0.7}
@@ -166,7 +166,7 @@ export const Header: React.FC<HeaderProps> = ({
                   </View>
                 )}
               </View>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </>
         ) : null}
       </View>
