@@ -44,7 +44,7 @@ const ChatCallScreen: React.FC<ChatCallScreenProps> = ({
         displayName: item.displayName,
         rating: item.rating || 0,
         reviewCount: 0,
-        experience: `${item.experience}+ years`,
+        experience: `${item.experience}+ yrs`,
         languages: item.languages || [],
         skills: item.skills || [],
         image: item.profilePic,
