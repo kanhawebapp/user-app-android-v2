@@ -405,7 +405,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         />
 
         {/* Puja Services Section */}
-        <PujaServices />
+        {/* <PujaServices /> */}
 
         {/* 10. Blog Section */}
         <Blog
