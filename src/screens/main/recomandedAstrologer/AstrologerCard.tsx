@@ -147,7 +147,7 @@ const AstrologerCard: React.FC<AstrologerCardProps> = ({
       </Text>
 
       {/* Languages */}
-      <View style={styles.languageRow}>
+      {/* <View style={styles.languageRow}>
         <Icon
           name="language-outline"
           size={13}
@@ -159,7 +159,7 @@ const AstrologerCard: React.FC<AstrologerCardProps> = ({
           {languagesList.slice(0, 2).join(', ')}
           {languagesList.length > 2 ? '...' : ''}
         </Text>
-      </View>
+      </View> */}
 
       {/* Price Card */}
       <View style={styles.priceCard}>
