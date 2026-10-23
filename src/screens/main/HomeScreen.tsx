@@ -20,6 +20,7 @@ import {
   TrustSection,
 } from './home/components';
 import FreeServicesRow from './home/components/FreeServicesRow';
+import PujaServices from './home/components/PujaServices';
 import useScreenTracking from '../../services/analytics/hooks/useScreenTracking';
 import { HomeScreenProps, ProblemCategory } from './home/types';
 import HomeAstrologers from './home/components/RecommendedAstrologers';
@@ -402,6 +403,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           onViewAllPress={handleViewAllShop}
           style={styles.section}
         />
+
+        {/* Puja Services Section */}
+        <PujaServices />
 
         {/* 10. Blog Section */}
         <Blog
