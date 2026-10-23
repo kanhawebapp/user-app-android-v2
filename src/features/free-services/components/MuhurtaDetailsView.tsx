@@ -501,6 +501,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginBottom: 12,
     overflow: 'hidden',
+    marginTop: 15,
   },
   cardHeader: {
     flexDirection: 'row',
