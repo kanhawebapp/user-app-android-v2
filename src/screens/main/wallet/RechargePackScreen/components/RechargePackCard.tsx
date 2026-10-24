@@ -124,7 +124,7 @@ export const RechargePackCard: React.FC<RechargePackCardProps> = ({
       )} */}
 
       {/* ⚠️ FIRST TIME OFFER ALREADY USED */}
-      {showOfferUsedMessage && (
+      {/* {showOfferUsedMessage && (
         <Text
           variant="captionSmall"
           numberOfLines={2}
@@ -136,7 +136,7 @@ export const RechargePackCard: React.FC<RechargePackCardProps> = ({
           }}>
           First time offer already used
         </Text>
-      )}
+      )} */}
     </TouchableOpacity>
   );
 };
