@@ -644,7 +644,7 @@ export const WALLET_LABELS = {
   SELECT_RECHARGE: 'Select Recharge Amount',
 
   // Transaction List
-  TRANSACTION_HISTORY: 'All Transaction',
+  TRANSACTION_HISTORY: 'Transactions',
   WALLET_RECHARGE: 'Wallet Recharge',
   SERVICE_PAYMENT: 'Service Payment',
   NO_TRANSACTIONS: 'No transactions found',
