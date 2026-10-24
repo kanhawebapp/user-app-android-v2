@@ -167,13 +167,13 @@ console.log('experience>>>>:', experience);
           </View>
 
           {/* Languages */}
-          {/* <View style={styles.languageContainer}>
+          <View style={styles.languageContainer}>
             <Text
               style={[styles.language, { color: colors.text.secondary }]}
               numberOfLines={1}>
-              Languages: {languages.join(', ')}
+              {languages.join(', ')}
             </Text>
-          </View> */}
+          </View>
 
           {/* Price per minute */}
           <View style={styles.priceRow}>
