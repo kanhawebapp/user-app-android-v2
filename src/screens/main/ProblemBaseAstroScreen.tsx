@@ -15,6 +15,9 @@ import { Astrologer } from './chatcall/types';
 import { ConsultationFlowLayer } from './consultation';
 import { GoBack } from '../../components';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+
 const CATEGORY_SKILL_MAP: Record<string, string[]> = {
   Career: ['Palmistry'],
   Love: ['Tarot'],
@@ -77,6 +80,8 @@ export const ProblemBaseAstroScreen: React.FC<{
   const theme = useTheme();
   const colors = theme.colors;
 
+  const insets = useSafeAreaInsets();
+
   const { data = [] } = useAstrologers();
 
   const filteredAstrologers = useMemo(() => {
@@ -109,6 +114,8 @@ export const ProblemBaseAstroScreen: React.FC<{
               styles.container,
               {
                 backgroundColor: colors.background.primary,
+                paddingBottom: insets.bottom,
+
               },
             ]}>
             <StatusBar
@@ -173,7 +180,14 @@ export const ProblemBaseAstroScreen: React.FC<{
               data={filteredAstrologers}
               keyExtractor={item => item.id}
               renderItem={renderAstrologer}
-              contentContainerStyle={styles.listContent}
+              contentContainerStyle={[
+                styles.listContent,
+                {
+                  paddingBottom: Math.max(insets.bottom, 16) + 16,
+                  flexGrow: filteredAstrologers.length === 0 ? 1 : undefined,
+                },
+              ]}
+
               showsVerticalScrollIndicator={false}
               ListEmptyComponent={() => (
                 <View style={styles.emptyContainer}>
