@@ -214,6 +214,12 @@ const HoroscopeDetailsScreen = lazy(() =>
   ),
 );
 
+const PujaServiceDetailsScreen = lazy(() =>
+  import('../../screens/main/puja/PujaServiceDetailsScreen').then(module => ({
+    default: module.default,
+  })),
+);
+
 // Create stack navigator for animated transitions
 const Stack = createNativeStackNavigator();
 
@@ -246,6 +252,7 @@ export type RootStackParamList = {
   };
   Horoscope: undefined;
   HoroscopeDetails: {zodiacName?: string};
+  PujaServiceDetails: {slug: string};
   KundliCards: {
     result?: any;
     serviceTitle?: string;
@@ -662,6 +669,10 @@ const AnimatedAppContent: React.FC<AnimatedAppContentProps> = ({
           <Stack.Screen
             name="HoroscopeDetails"
             component={HoroscopeDetailsScreen}
+          />
+          <Stack.Screen
+            name="PujaServiceDetails"
+            component={PujaServiceDetailsScreen}
           />
         </Stack.Navigator>
         <QueueBubble />

@@ -71,9 +71,15 @@ const PujaServices: React.FC = () => {
   const navigation = useNavigation();
   const { services, loading, error } = usePujaServices();
 
-  const handlePress = useCallback((slug: string) => {
-    navigation.navigate('PujaServiceDetails' as never, { slug } as never);
-  }, [navigation]);
+  const handlePress = useCallback(
+    (slug: string) => {
+      if (!slug) {
+        return;
+      }
+      navigation.navigate('PujaServiceDetails' as never, {slug} as never);
+    },
+    [navigation],
+  );
 
   if (loading) {
     return (
