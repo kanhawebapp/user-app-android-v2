@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -31,8 +31,8 @@ import { getIPLocation } from '../../../../services/location/location.service';
 
 // Coupon API (GetCoupons + VerifyRechargeCoupon / VerifyServiceCoupon)
 import { useCoupons } from '../../../../services/api/coupon/useCoupons';
-import {useVerifyRechargeCoupon} from '../../../../services/api/coupon/useVerifyRechargeCoupon';
-import {verifyServiceCoupon} from '../../../../services/api/coupon/coupon.api';
+import { useVerifyRechargeCoupon } from '../../../../services/api/coupon/useVerifyRechargeCoupon';
+import { verifyServiceCoupon } from '../../../../services/api/coupon/coupon.api';
 import {
   Coupon,
   CouponPaymentFlow,
@@ -155,8 +155,8 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
 
   // Existing API hooks - reused as-is, only the trigger point moved here.
   const { createOrder: createRechargeOrder } = useRechargeOrder();
-  const {createOrder: createHealingOrder} = useCreateHealingOrder();
-  const {loading: isVerifyingCoupon, verify: verifyRechargeCoupon} =
+  const { createOrder: createHealingOrder } = useCreateHealingOrder();
+  const { loading: isVerifyingCoupon, verify: verifyRechargeCoupon } =
     useVerifyRechargeCoupon();
 
   // Coupon list is fetched from `GetCoupons` the first time the coupon sheet
@@ -275,7 +275,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
   };
 
   const handleRetryCoupons = () => {
-    fetchCoupons({force: true});
+    fetchCoupons({ force: true });
   };
 
   /**
@@ -327,8 +327,8 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
       setVerifiedRechargePricing(result);
       setSelectedCoupon(
         result.coupon ??
-          findCouponByCode(coupons, normalizedCode, couponFlow) ??
-          null,
+        findCouponByCode(coupons, normalizedCode, couponFlow) ??
+        null,
       );
       setCouponCode(result.coupon?.code?.trim() || normalizedCode);
       setCouponApplied(true);
@@ -396,8 +396,8 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
       setVerifiedServicePricing(result);
       setSelectedCoupon(
         result.coupon ??
-          findCouponByCode(coupons, normalizedCode, couponFlow) ??
-          null,
+        findCouponByCode(coupons, normalizedCode, couponFlow) ??
+        null,
       );
       setCouponCode(result.coupon?.code?.trim() || normalizedCode);
       setCouponApplied(true);
@@ -516,11 +516,13 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
       } catch (error: any) {
         console.log('PAYMENT FAILED', error);
 
-        showError(
-          error?.description ||
-          error?.message ||
-          'Unable to complete the payment. Please try again.',
-        );
+        // showError(
+        //   error?.description ||
+        //   error?.message ||
+        //   'Unable to complete the payment. Please try again.',
+        // );
+        showError('Payment failed. Please try again.');
+
       } finally {
         setIsProcessing(false);
       }
@@ -564,7 +566,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
         couponCode: couponApplied ? couponCode.trim() : '',
         amount: Number(astrologer.servicePrice ?? 0),
       });
-console.log('CREATE HEALING ORDER RESPONSE', order);
+      console.log('CREATE HEALING ORDER RESPONSE', order);
       // Get IP + City + State + Country
       const ipData = await getIPLocation();
 
@@ -602,10 +604,10 @@ console.log('CREATE HEALING ORDER RESPONSE', order);
           color: '#5B2CA5',
         },
       };
-console.log('RAZORPAY OPTIONS', options);
+      console.log('RAZORPAY OPTIONS', options);
       try {
         await RazorpayCheckout.open(options);
-        
+
         showSuccess('Payment successful! Your booking is confirmed.');
         onComplete?.();
       } catch (razorpayError: any) {
