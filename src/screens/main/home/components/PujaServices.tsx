@@ -59,7 +59,7 @@ const PujaCard = React.memo(({ item, onPress }: { item: PujaService; onPress: ()
             </Text>
           )}
         </View>
-        {/* <Button title="Book Now" onPress={onPress} /> */}
+        <Button title="Book Now" onPress={onPress} />
       </View>
     </Card>
   );
