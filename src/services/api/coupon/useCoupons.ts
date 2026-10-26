@@ -36,13 +36,13 @@ export const useCoupons = () => {
   );
 
   const fetchCoupons = useCallback(
-    async ({force = false}: {force?: boolean} = {}) => {
+    async ({force = false}: {force?: boolean} = {}): Promise<Coupon[] | undefined> => {
       if (isRequestInFlightRef.current) {
-        return;
+        return undefined;
       }
 
       if (hasFetched && !force) {
-        return;
+        return coupons;
       }
 
       isRequestInFlightRef.current = true;
@@ -55,20 +55,23 @@ export const useCoupons = () => {
         const response = await getCoupons();
 
         if (!isMountedRef.current) {
-          return;
+          return response;
         }
 
         setCoupons(response);
 
         setHasFetched(true);
+
+        return response;
       } catch (err: any) {
         console.log('COUPONS HOOK ERROR:', err);
 
         if (!isMountedRef.current) {
-          return;
+          throw err;
         }
 
         setError(err);
+        throw err;
       } finally {
         isRequestInFlightRef.current = false;
 
@@ -77,7 +80,7 @@ export const useCoupons = () => {
         }
       }
     },
-    [hasFetched],
+    [hasFetched, coupons],
   );
 
   return {

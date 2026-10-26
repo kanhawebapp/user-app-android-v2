@@ -29,6 +29,9 @@ import { ServiceAstrologer } from '../../../../services/api/healingServices/getS
 import { useCreateHealingOrder } from '../../../../services/api/healingServices/healingOrder/useHealingOrder';
 import { getIPLocation } from '../../../../services/location/location.service';
 
+// Puja order API
+import { useCreatePujaOrder } from '../../../../services/api/pujaServices/pujaOrder/useCreatePujaOrder';
+
 // Coupon API (GetCoupons + VerifyRechargeCoupon / VerifyServiceCoupon)
 import { useCoupons } from '../../../../services/api/coupon/useCoupons';
 import { useVerifyRechargeCoupon } from '../../../../services/api/coupon/useVerifyRechargeCoupon';
@@ -40,9 +43,12 @@ import {
   VerifyServiceCouponResult,
 } from '../../../../services/api/coupon/coupon.types';
 import {
+  CouponDiscountPreview,
   findCouponByCode,
   getApplicableCoupons,
   getCouponDiscountLabel,
+  meetsCouponMinOrder,
+  previewCouponDiscount,
 } from '../../../../services/api/coupon/coupon.utils';
 import { CouponModal } from './components';
 
@@ -76,6 +82,27 @@ export interface ServicePaymentData {
   totalAmount: number;
 }
 
+/**
+ * Data handed over after `CreatePujaBooking` succeeds on the Puja Details
+ * screen. Amounts come from the booking response (plus client GST for display).
+ */
+export interface PujaPaymentData {
+  bookingId: string;
+  puja: {
+    id: string;
+    title: string;
+    slug?: string;
+  };
+  mantraOptionId: string;
+  mantraOptionName?: string | null;
+  quantity: number;
+  unitPrice: number;
+  /** Subtotal before GST (booking `totalAmount`). */
+  amount: number;
+  gstAmount: number;
+  totalAmount: number;
+}
+
 export interface PaymentSuccessData {
   razorpay_order_id: string;
   razorpay_payment_id: string;
@@ -84,12 +111,16 @@ export interface PaymentSuccessData {
   packName?: string;
 }
 
+export type PaymentType = 'recharge' | 'service' | 'puja';
+
 interface PaymentScreenProps {
-  paymentType: 'recharge' | 'service';
+  paymentType: PaymentType;
   /** Payload for the wallet recharge flow. */
   recharge?: RechargePaymentData;
   /** Payload for the healing service booking flow. */
   servicePayment?: ServicePaymentData;
+  /** Payload for the puja booking flow. */
+  pujaPayment?: PujaPaymentData;
   /**
    * Id of the booking created on `ServiceDetailsScreen`'s "Confirm
    * Booking". Required for the service flow: coupon verification and the
@@ -99,20 +130,21 @@ interface PaymentScreenProps {
   onBack: () => void;
   /** Recharge flow: invoked after a successful Razorpay payment. */
   onPaymentSuccess?: (data: PaymentSuccessData) => void;
-  /** Service flow: invoked after a successful Razorpay payment. */
+  /** Service / puja flow: invoked after a successful Razorpay payment. */
   onComplete?: () => void;
 }
 
 /**
- * Shared payment screen for both checkout flows. The order APIs and the
- * Razorpay gateway are only triggered from the final "Pay" button below -
- * never while navigating to this screen. The service booking itself is
- * created earlier, on `ServiceDetailsScreen`'s "Confirm Booking".
+ * Shared payment screen for recharge, healing service, and puja checkout.
+ * Order APIs and Razorpay are only triggered from the final "Pay" button —
+ * never while navigating here. Service / puja bookings are created earlier
+ * (Confirm Booking / Buy It Now).
  */
 const PaymentScreen: React.FC<PaymentScreenProps> = ({
   paymentType,
   recharge,
   servicePayment,
+  pujaPayment,
   serviceBookingId,
   onBack,
   onPaymentSuccess,
@@ -153,9 +185,17 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
     useState(false);
   const isServiceCouponInFlightRef = useRef(false);
 
+  /**
+   * Local discount preview for the puja flow (no VerifyPujaCoupon mutation).
+   * CreatePujaOrder remains the authoritative coupon validator at pay time.
+   */
+  const [pujaCouponPreview, setPujaCouponPreview] =
+    useState<CouponDiscountPreview | null>(null);
+
   // Existing API hooks - reused as-is, only the trigger point moved here.
   const { createOrder: createRechargeOrder } = useRechargeOrder();
   const { createOrder: createHealingOrder } = useCreateHealingOrder();
+  const { createOrder: createPujaPaymentOrder } = useCreatePujaOrder();
   const { loading: isVerifyingCoupon, verify: verifyRechargeCoupon } =
     useVerifyRechargeCoupon();
 
@@ -170,36 +210,41 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
   } = useCoupons();
 
   const isRecharge = paymentType === 'recharge';
+  const isPuja = paymentType === 'puja';
+  const isService = paymentType === 'service';
 
   /** Only coupons the backend marks as valid for this flow reach the sheet. */
-  const couponFlow: CouponPaymentFlow = isRecharge ? 'recharge' : 'service';
+  const couponFlow: CouponPaymentFlow = isRecharge
+    ? 'recharge'
+    : isPuja
+      ? 'puja'
+      : 'service';
 
   const availableCoupons = getApplicableCoupons(coupons, couponFlow);
 
   // Header title is always "Payment"; the flow-specific heading lives in
-  // the summary card ("Recharge Summary" / "Dhwani Services Payment").
+  // the summary card.
   const headerTitle = 'Payment';
   const summaryTitle = isRecharge
     ? 'Recharge Summary'
-    : 'Dhwani Services Payment';
+    : isPuja
+      ? 'Puja Payment'
+      : 'Dhwani Services Payment';
 
   const packName = recharge?.pack?.name;
   const serviceName = servicePayment?.service?.name;
   const astrologerName =
     servicePayment?.astrologer?.displayName || servicePayment?.astrologer?.name;
+  const pujaTitle = pujaPayment?.puja?.title;
+  const mantraOptionName = pujaPayment?.mantraOptionName;
 
   /**
    * Verified pricing of the applied coupon. Which snapshot drives the
    * summary is decided by the coupon's own `applicable` value
    * (`"recharge"` / `"services"`) - never by `isRecharge`, which only keeps
-   * selecting the payment/API flow. Both flows verify on "Apply" - recharge
-   * through `VerifyRechargeCoupon`, service through `VerifyServiceCoupon`
-   * with the booking created on `ServiceDetailsScreen`. The backend
-   * response is the single source of truth - values are only adopted after
-   * `success === true`, `payableAmount` becomes the Total Payable and
-   * nothing is ever recalculated here (no `originalAmount - discount`, no
-   * `amount - discount + gst`). Removing the coupon resets the snapshots,
-   * which restores the original amounts automatically.
+   * selecting the payment/API flow. Recharge / service verify on "Apply";
+   * puja uses a local preview and lets `CreatePujaOrder` validate at pay
+   * time. Verified values are only adopted after `success === true`.
    */
   const applicable = (
     verifiedRechargePricing?.coupon ?? verifiedServicePricing?.coupon
@@ -211,29 +256,62 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
     verifiedPricing = verifiedRechargePricing;
   } else if (applicable === 'services') {
     verifiedPricing = verifiedServicePricing;
-  } else {
+  } else if (!isPuja) {
     // A verified result whose backend response omitted the `coupon` object
     // must still be shown - both snapshots are only ever set after
     // `success === true`, and at most one of them exists per screen session.
     verifiedPricing = verifiedRechargePricing ?? verifiedServicePricing;
   }
 
+  const baseAmount = isRecharge
+    ? recharge?.amount
+    : isPuja
+      ? pujaPayment?.amount
+      : servicePayment?.amount;
+  const baseGstAmount = isRecharge
+    ? recharge?.gstAmount
+    : isPuja
+      ? pujaPayment?.gstAmount
+      : servicePayment?.gstAmount;
+  const baseTotalAmount = isRecharge
+    ? recharge?.totalAmount
+    : isPuja
+      ? pujaPayment?.totalAmount
+      : servicePayment?.totalAmount;
+
+  const pujaDiscount = pujaCouponPreview?.discount ?? 0;
+  const pujaCashback = pujaCouponPreview?.cashback ?? 0;
+  const pujaDiscountedBase = Math.max(
+    0,
+    Number((Number(baseAmount ?? 0) - pujaDiscount).toFixed(2)),
+  );
+  const pujaGstWithCoupon = Number(
+    ((pujaDiscountedBase * GST_PERCENTAGE) / 100).toFixed(2),
+  );
+  const pujaTotalWithCoupon = Number(
+    (pujaDiscountedBase + pujaGstWithCoupon).toFixed(2),
+  );
+
   const amount =
-    verifiedPricing?.originalAmount ??
-    (isRecharge ? recharge?.amount : servicePayment?.amount);
-  const gstAmount =
-    verifiedPricing?.gstAmount ??
-    (isRecharge ? recharge?.gstAmount : servicePayment?.gstAmount);
-  const totalAmount =
-    verifiedPricing?.payableAmount ??
-    (isRecharge ? recharge?.totalAmount : servicePayment?.totalAmount);
+    verifiedPricing?.originalAmount ?? baseAmount;
+  const gstAmount = verifiedPricing
+    ? verifiedPricing.gstAmount
+    : isPuja && pujaCouponPreview
+      ? pujaGstWithCoupon
+      : baseGstAmount;
+  const totalAmount = verifiedPricing
+    ? verifiedPricing.payableAmount
+    : isPuja && pujaCouponPreview
+      ? pujaTotalWithCoupon
+      : baseTotalAmount;
 
   /**
    * Cashback is informational only: it is displayed as its own row and is
    * never subtracted from `payableAmount` unless the backend already did so.
    */
-  const discountAmount = verifiedPricing?.discount ?? 0;
-  const cashbackAmount = verifiedPricing?.cashback ?? 0;
+  const discountAmount = verifiedPricing?.discount ?? pujaDiscount;
+  const cashbackAmount = verifiedPricing?.cashback ?? pujaCashback;
+  const showCouponPricingRows = !!verifiedPricing || !!pujaCouponPreview;
 
   const selectedRechargePackId = recharge?.pack?.id;
   const previousRechargePackIdRef = useRef(selectedRechargePackId);
@@ -343,6 +421,57 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
   };
 
   /**
+   * Puja flow: resolves the code against `GetCoupons` (filtered for puja
+   * applicability) and previews discount/cashback locally. There is no
+   * VerifyPujaCoupon mutation — `CreatePujaOrder` validates the code at pay.
+   */
+  const applyPujaCoupon = async (normalizedCode: string) => {
+    const orderAmount = Number(pujaPayment?.amount ?? 0);
+
+    if (!pujaPayment?.bookingId) {
+      showError('Booking was not created. Please try again.');
+      return;
+    }
+
+    let couponList = coupons;
+
+    if (!hasFetchedCoupons) {
+      try {
+        couponList = (await fetchCoupons()) ?? coupons;
+      } catch {
+        showError('Unable to load coupons. Please try again.');
+        return;
+      }
+    }
+
+    const coupon = findCouponByCode(couponList, normalizedCode, couponFlow);
+
+    if (!coupon) {
+      showError('This coupon is not valid for puja purchases.');
+      return;
+    }
+
+    if (!meetsCouponMinOrder(coupon, orderAmount)) {
+      const min = coupon.minOrderAmount;
+      showError(
+        min != null
+          ? `Minimum order amount for this coupon is ₹${min}.`
+          : 'This coupon does not meet the minimum order amount.',
+      );
+      return;
+    }
+
+    const preview = previewCouponDiscount(coupon, orderAmount);
+
+    setPujaCouponPreview(preview);
+    setSelectedCoupon(coupon);
+    setCouponCode(coupon.code?.trim() || normalizedCode);
+    setCouponApplied(true);
+    setIsCouponModalVisible(false);
+    showSuccess('Coupon applied successfully.');
+  };
+
+  /**
    * Service flow: verifies the entered code through `VerifyServiceCoupon`
    * against the booking created on `ServiceDetailsScreen`. On success the
    * backend's pricing snapshot replaces the service's base pricing in the
@@ -416,16 +545,11 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
 
   /**
    * Single entry point for every "Apply" tap (manual code or list item).
-   * Coupon verification APIs are only ever triggered from here.
+   * Coupon verification APIs are only ever triggered from here (except puja,
+   * which previews against GetCoupons and validates in CreatePujaOrder).
    */
   const handleApplyCoupon = async (enteredCode: string) => {
     const normalizedCode = (enteredCode || '').trim();
-
-    // console.log('APPLY COUPON CLICKED', {
-    //   isRecharge,
-    //   couponCode: normalizedCode,
-    //   bookingId: serviceBookingId,
-    // });
 
     if (!normalizedCode) {
       showError('Please enter a coupon code.');
@@ -435,6 +559,12 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
 
     if (isRecharge) {
       await applyRechargeCoupon(normalizedCode);
+
+      return;
+    }
+
+    if (isPuja) {
+      await applyPujaCoupon(normalizedCode);
 
       return;
     }
@@ -451,9 +581,10 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
     setCouponApplied(false);
     setCouponCode('');
     setSelectedCoupon(null);
-    // Restores the original pack / service pricing in the summary.
+    // Restores the original pack / service / puja pricing in the summary.
     setVerifiedRechargePricing(null);
     setVerifiedServicePricing(null);
+    setPujaCouponPreview(null);
   };
 
   /**
@@ -523,6 +654,124 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
         // );
         showError('Payment failed. Please try again.');
 
+      } finally {
+        setIsProcessing(false);
+      }
+
+      return;
+    }
+
+    // Puja flow: CreatePujaOrder → Razorpay with backend orderId / amount.
+    if (isPuja) {
+      const bookingId = pujaPayment?.bookingId;
+
+      if (!bookingId) {
+        showError('Booking was not created. Please try again.');
+        return;
+      }
+
+      if (!pujaPayment?.puja?.id) {
+        showError('Unable to continue. Please select a puja again.');
+        return;
+      }
+
+      setIsProcessing(true);
+
+      try {
+        const order = await createPujaPaymentOrder({
+          bookingId,
+          couponCode: couponApplied ? couponCode.trim() : '',
+        });
+
+        // Duplicate in-flight request was ignored by the hook.
+        if (!order) {
+          return;
+        }
+
+        if (order.success !== true || !order.orderId) {
+          showError(
+            order.message ||
+              'Unable to create the puja payment order. Please try again.',
+          );
+          return;
+        }
+
+        const gatewayAmount = Number(order.amount);
+
+        if (!Number.isFinite(gatewayAmount) || gatewayAmount <= 0) {
+          showError(
+            order.message ||
+              'Invalid payment amount returned by the server.',
+          );
+          return;
+        }
+
+        const ipData = await getIPLocation();
+
+        // Backend `amount` is the Razorpay gateway amount (observed as paise).
+        // Do not recalculate from the display `totalAmount`.
+        const options = {
+          key: RAZORPAY_KEY.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+          amount: gatewayAmount,
+          currency: order.currency || 'INR',
+          name: 'Dhwani Astro LLP',
+          description: order.pujaTitle
+            ? `${order.pujaTitle} Payment`
+            : pujaPayment.puja.title
+              ? `${pujaPayment.puja.title} Payment`
+              : 'Puja Payment',
+          order_id: order.orderId,
+          prefill: {
+            name: user?.name || '',
+            contact: user?.mobile || '',
+            email: user?.email || '',
+          },
+          notes: {
+            bookingId: order.bookingId || bookingId,
+            pujaId: pujaPayment.puja.id,
+            pujaTitle: order.pujaTitle || pujaPayment.puja.title,
+            mantraOptionId: pujaPayment.mantraOptionId,
+            quantity: String(pujaPayment.quantity),
+            serviceType: 'PUJA',
+            couponCode: couponApplied ? couponCode.trim() : '',
+            ip: ipData.ip,
+            city: ipData.city,
+            state: ipData.state,
+            country: ipData.country,
+            platform: Platform.OS,
+          },
+          theme: {
+            color: '#5B2CA5',
+          },
+        };
+
+        console.log('PUJA RAZORPAY OPTIONS', options);
+
+        try {
+          await RazorpayCheckout.open(options);
+
+          // Gateway success only — booking payment status is confirmed by
+          // the existing backend/webhook verification, not client-side.
+          showSuccess('Payment successful! Your puja booking is confirmed.');
+          onComplete?.();
+        } catch (razorpayError: any) {
+          if (razorpayError?.code === 'Payment Cancelled') {
+            showError('Payment cancelled.');
+            return;
+          }
+
+          showError(
+            razorpayError?.description ||
+              razorpayError?.message ||
+              'Unable to complete the payment. Please try again.',
+          );
+        }
+      } catch (error: any) {
+        console.log('PUJA PAYMENT ERROR', error);
+
+        showError(
+          error?.message || 'Unable to start the payment. Please try again.',
+        );
       } finally {
         setIsProcessing(false);
       }
@@ -694,12 +943,20 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
             {summaryTitle}
           </Text>
 
-          {/* Selected pack / service / astrologer */}
-          {isRecharge
-            ? renderDetailBlock('Selected Pack', packName ?? '')
-            : renderDetailBlock('Service', serviceName ?? '')}
-
-          {!isRecharge && renderDetailBlock('Astrologer', astrologerName ?? '')}
+          {/* Selected pack / service / puja details */}
+          {isRecharge && renderDetailBlock('Selected Pack', packName ?? '')}
+          {isService && renderDetailBlock('Service', serviceName ?? '')}
+          {isService &&
+            renderDetailBlock('Astrologer', astrologerName ?? '')}
+          {isPuja && renderDetailBlock('Puja', pujaTitle ?? '')}
+          {isPuja &&
+            !!mantraOptionName &&
+            renderDetailBlock('Mantra Option', mantraOptionName)}
+          {isPuja &&
+            renderDetailBlock(
+              'Quantity',
+              String(pujaPayment?.quantity ?? 1),
+            )}
 
           {/* Amount breakdown */}
           <View
@@ -709,7 +966,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
               `₹${(amount ?? 0).toFixed(2)}`,
             )}
 
-            {verifiedPricing &&
+            {showCouponPricingRows &&
               renderSummaryRow(
                 'Discount',
                 `${discountAmount > 0 ? '-' : ''}₹${discountAmount.toFixed(2)}`,
@@ -720,7 +977,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
               `₹${(gstAmount ?? 0).toFixed(2)}`,
             )}
 
-            {verifiedPricing &&
+            {showCouponPricingRows &&
               renderSummaryRow('Cashback', `₹${cashbackAmount.toFixed(2)}`)}
 
             <View

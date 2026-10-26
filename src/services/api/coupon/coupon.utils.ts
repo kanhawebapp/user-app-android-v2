@@ -3,16 +3,15 @@ import {Coupon, CouponPaymentFlow} from './coupon.types';
 /**
  * Values accepted in the backend's free-form `Coupon.applicable` string.
  *
- * `applicable` is a nullable `String` on the schema (not an enum) and the only
- * value observed from the API is `"services"`, which the healing/service order
- * flow uses. The recharge flow has no published value yet, so it reuses the
- * app's own `paymentType` discriminator (`"recharge"`) and only matches coupons
- * that explicitly target it - service coupons are never shown for recharge.
- * Update `recharge` here once the backend publishes its own value.
+ * `applicable` is a nullable `String` on the schema (not an enum). Healing uses
+ * `"services"`. Recharge matches coupons that explicitly target `"recharge"`.
+ * Puja matches `"puja"` / `"pujas"` so service and recharge coupons stay out
+ * of the puja checkout. Update these lists if the backend publishes new values.
  */
 export const COUPON_APPLICABLE: Record<CouponPaymentFlow, string[]> = {
   service: ['services'],
   recharge: ['recharge'],
+  puja: ['puja', 'pujas'],
 };
 
 const COUPON_TYPE_CASHBACK = 'CASHBACK';
@@ -127,12 +126,37 @@ export const isCouponApplicableToFlow = (
   return accepted.some(value => normalize(value) === applicable);
 };
 
+/**
+ * True when the coupon still has redeem capacity.
+ *
+ * Missing `redeemLimit` / `usedCount` is treated as unlimited so a partial
+ * backend payload cannot hide every coupon. Authoritative enforcement still
+ * happens server side when creating the payment order.
+ */
+export const isCouponWithinRedeemLimit = (coupon: Coupon): boolean => {
+  const redeemLimit = Number(coupon?.redeemLimit);
+  const usedCount = Number(coupon?.usedCount ?? 0);
+
+  if (!Number.isFinite(redeemLimit) || redeemLimit <= 0) {
+    return true;
+  }
+
+  if (!Number.isFinite(usedCount) || usedCount < 0) {
+    return true;
+  }
+
+  return usedCount < redeemLimit;
+};
+
 /** status === true && visibility === 'VISIBLE' && now within the date window. */
 export const isCouponActive = (
   coupon: Coupon,
   flow: CouponPaymentFlow,
   now: number = Date.now(),
-): boolean => isCouponVisible(coupon) && isCouponWithinDateRange(coupon, now);
+): boolean =>
+  isCouponVisible(coupon) &&
+  isCouponWithinDateRange(coupon, now) &&
+  isCouponWithinRedeemLimit(coupon);
 
 /** Coupons that can actually be applied to the given payment flow. */
 export const getApplicableCoupons = (
@@ -226,6 +250,10 @@ export const getCouponApplicableLabel = (coupon: Coupon): string | null => {
     return 'Recharge';
   }
 
+  if (COUPON_APPLICABLE.puja.some(value => normalize(value) === normalised)) {
+    return 'Puja';
+  }
+
   return applicable;
 };
 
@@ -249,4 +277,47 @@ export const meetsCouponMinOrder = (
   }
 
   return (totalAmount ?? 0) >= minOrderAmount;
+};
+
+export interface CouponDiscountPreview {
+  discount: number;
+  cashback: number;
+  isCashback: boolean;
+}
+
+/**
+ * Client-side discount/cashback preview for flows that have no dedicated
+ * verify mutation (e.g. puja). The payment order mutation remains the
+ * authoritative validator; this only drives the Payment Screen summary.
+ */
+export const previewCouponDiscount = (
+  coupon: Coupon,
+  orderAmount: number,
+): CouponDiscountPreview => {
+  const amount = Number(orderAmount) || 0;
+  const isCashback = normalize(coupon?.type) === COUPON_TYPE_CASHBACK;
+
+  if (amount <= 0 || !meetsCouponMinOrder(coupon, amount)) {
+    return {discount: 0, cashback: 0, isCashback};
+  }
+
+  let value = 0;
+
+  if (isPositiveNumber(coupon?.percentage)) {
+    value = (amount * coupon.percentage) / 100;
+
+    if (isPositiveNumber(coupon?.maxDiscount)) {
+      value = Math.min(value, coupon.maxDiscount);
+    }
+  } else if (isPositiveNumber(coupon?.flatAmount)) {
+    value = coupon.flatAmount;
+  }
+
+  value = Math.min(Math.max(0, value), amount);
+
+  if (isCashback) {
+    return {discount: 0, cashback: value, isCashback};
+  }
+
+  return {discount: value, cashback: 0, isCashback};
 };

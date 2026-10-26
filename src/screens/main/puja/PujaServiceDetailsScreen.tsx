@@ -18,12 +18,16 @@ import {SkeletonLoader} from '../../../components/SkeletonLoader';
 import {useTheme} from '../../../theme';
 import {useToast} from '../../../context/ToastContext';
 import {usePujaDetails} from '../../../services/api/pujaServices/usePujaDetails';
+import {useCreatePujaBooking} from '../../../services/api/pujaServices/pujaBooking/useCreatePujaBooking';
 import type {
   PujaFaq,
   PujaMantraOption,
   PujaReview,
   PujaServiceDetails,
 } from '../../../services/api/pujaServices/puja-services.types';
+import PaymentScreen, {
+  PujaPaymentData,
+} from '../wallet/PaymentScreen';
 import {
   formatDevoteeCount,
   formatDiscount,
@@ -36,6 +40,7 @@ import {
 const STAR_COLOR = '#FFB300';
 const EMPTY_STAR_COLOR = '#D1D5DB';
 const MAX_STARS = 5;
+const GST_PERCENTAGE = 18;
 
 type PujaServiceDetailsRouteParams = {
   slug?: string;
@@ -329,10 +334,15 @@ const PujaServiceDetailsScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const route = useRoute<any>();
-  const {showInfo, showError} = useToast();
+  const {showError} = useToast();
 
   const {slug} = (route.params as PujaServiceDetailsRouteParams) || {};
   const {service, loading, error, refresh} = usePujaDetails(slug);
+  const {
+    loading: isBooking,
+    submitBooking,
+    resetBooking,
+  } = useCreatePujaBooking();
 
   const mantraOptions = useMemo(
     () => sortMantraOptions(service?.mantraOptions),
@@ -342,12 +352,20 @@ const PujaServiceDetailsScreen: React.FC = () => {
   const [selectedMantraId, setSelectedMantraId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [pujaPaymentData, setPujaPaymentData] =
+    useState<PujaPaymentData | null>(null);
 
   useEffect(() => {
     setQuantity(1);
     setExpandedSection(null);
     setSelectedMantraId(mantraOptions[0]?.id ?? null);
   }, [slug, mantraOptions]);
+
+  // Drop any in-progress booking/payment when navigating to a different puja.
+  useEffect(() => {
+    setPujaPaymentData(null);
+    resetBooking();
+  }, [slug, resetBooking]);
 
   const selectedMantra = useMemo(
     () => mantraOptions.find(option => option.id === selectedMantraId) ?? null,
@@ -386,48 +404,114 @@ const PujaServiceDetailsScreen: React.FC = () => {
     setExpandedSection(prev => (prev === key ? null : key));
   }, []);
 
+  const handlePaymentBack = useCallback(() => {
+    // Keep the details selection; drop payment context so a new Buy It Now
+    // creates a fresh booking instead of reusing a stale one.
+    setPujaPaymentData(null);
+    resetBooking();
+  }, [resetBooking]);
+
+  const handlePaymentComplete = useCallback(() => {
+    setPujaPaymentData(null);
+    resetBooking();
+    navigation.goBack();
+  }, [navigation, resetBooking]);
+
   /**
-   * Checkout / booking API is not implemented in the app yet.
-   * This handler builds the payload that a future flow should consume.
+   * Buy It Now → CreatePujaBooking → PaymentScreen.
+   * Mantra / quantity selections are preserved via the booking + payment payload.
    */
-  const handleBuyNow = useCallback(() => {
-    if (!service) {
+  const handleBuyNow = useCallback(async () => {
+    if (isBooking) {
+      return;
+    }
+
+    if (!service?.id) {
       showError('Puja details are unavailable. Please try again.');
       return;
     }
 
-    const payload: PujaCheckoutPayload = {
-      puja: {
-        id: service.id,
-        title: service.title,
-        slug: service.slug,
-        price: service.price,
-        mrp: service.mrp,
-        discount: service.discount,
-      },
-      mantraOption: selectedMantra,
-      quantity,
-      unitPrice: displayUnitPrice,
-      originalUnitPrice: displayOriginalPrice,
-      totalPrice,
-    };
+    if (mantraOptions.length > 0 && !selectedMantra?.id) {
+      showError('Please select a mantra option to continue.');
+      return;
+    }
 
-    // Integration point: navigate/call puja checkout when available.
-    // Example: navigation.navigate('PujaCheckout', payload);
-    console.log('PUJA CHECKOUT PAYLOAD:', JSON.stringify(payload, null, 2));
-    showInfo(
-      'Checkout is not available yet. Your selection is ready for booking when the flow is connected.',
-    );
+    if (!selectedMantra?.id) {
+      showError(
+        'A mantra option is required to book this puja. Please try again later.',
+      );
+      return;
+    }
+
+    const safeQuantity = Math.max(1, quantity);
+
+    try {
+      const booking = await submitBooking({
+        pujaId: service.id,
+        mantraOptionId: selectedMantra.id,
+        quantity: safeQuantity,
+      });
+
+      // Duplicate in-flight request was ignored by the hook.
+      if (!booking?.id) {
+        return;
+      }
+
+      const amount = Number(booking.totalAmount);
+      const unitPrice = Number(booking.unitPrice);
+
+      if (!Number.isFinite(amount) || amount < 0) {
+        showError('Invalid booking amount returned by the server.');
+        return;
+      }
+
+      const gstAmount = Number(((amount * GST_PERCENTAGE) / 100).toFixed(2));
+      const payableTotal = Number((amount + gstAmount).toFixed(2));
+
+      const paymentData: PujaPaymentData = {
+        bookingId: booking.id,
+        puja: {
+          id: service.id,
+          title: service.title,
+          slug: service.slug,
+        },
+        mantraOptionId: booking.mantraOptionId || selectedMantra.id,
+        mantraOptionName:
+          booking.mantraOptionName || selectedMantra.name || null,
+        quantity: booking.quantity || safeQuantity,
+        unitPrice: Number.isFinite(unitPrice) ? unitPrice : displayUnitPrice,
+        amount,
+        gstAmount,
+        totalAmount: payableTotal,
+      };
+
+      setPujaPaymentData(paymentData);
+    } catch (err: any) {
+      showError(
+        err?.message || 'Unable to create the puja booking. Please try again.',
+      );
+    }
   }, [
+    isBooking,
     service,
+    mantraOptions.length,
     selectedMantra,
     quantity,
     displayUnitPrice,
-    displayOriginalPrice,
-    totalPrice,
+    submitBooking,
     showError,
-    showInfo,
   ]);
+
+  if (pujaPaymentData) {
+    return (
+      <PaymentScreen
+        paymentType="puja"
+        pujaPayment={pujaPaymentData}
+        onBack={handlePaymentBack}
+        onComplete={handlePaymentComplete}
+      />
+    );
+  }
 
   if (!slug) {
     return (
@@ -787,7 +871,12 @@ const PujaServiceDetailsScreen: React.FC = () => {
           </Text>
         </View>
         <View style={{flex: 1.4}}>
-          <Button title="Buy It Now" onPress={handleBuyNow} />
+          <Button
+            title="Buy It Now"
+            onPress={handleBuyNow}
+            loading={isBooking}
+            disabled={isBooking}
+          />
         </View>
       </View>
     </View>

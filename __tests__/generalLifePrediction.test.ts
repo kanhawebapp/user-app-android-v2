@@ -71,6 +71,7 @@ describe('generalLifePrediction', () => {
     expect(isGeneralLifePredictionCard('Birth Chart')).toBe(false);
   });
 
+
   it('builds the report payload from the Kundli payload with gender', () => {
     const birthPayload = {
       ...buildBirthPayload({date: '15/08/2024', time: '09:30 PM'}, 28.61, 77.2, 5.5),

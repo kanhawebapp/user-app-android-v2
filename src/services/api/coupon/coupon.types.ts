@@ -14,7 +14,7 @@ export type CouponType = 'DISCOUNT' | 'CASHBACK';
 export type CouponVisibility = 'VISIBLE' | 'HIDDEN';
 
 /** Payment flow a coupon can be applied to, mirrors `PaymentScreen`'s `paymentType`. */
-export type CouponPaymentFlow = 'service' | 'recharge';
+export type CouponPaymentFlow = 'service' | 'recharge' | 'puja';
 
 export interface Coupon {
   id: string;
