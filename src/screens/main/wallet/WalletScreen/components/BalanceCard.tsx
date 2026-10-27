@@ -15,7 +15,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({ onRechargePress }) => 
   const balanceCoins = wallet?.balanceCoins ?? 0;
   const lockedCoins = wallet?.lockedCoins ?? 0;
 
-  console.log('BalanceCard - Balance:', balanceCoins, 'Locked:', lockedCoins);
+  // console.log('BalanceCard - Balance:', balanceCoins, 'Locked:', lockedCoins);
 
   return (
     <>
