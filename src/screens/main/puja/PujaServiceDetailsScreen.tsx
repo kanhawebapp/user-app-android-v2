@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   ScrollView,
@@ -7,30 +7,27 @@ import {
   TouchableOpacity,
   Text as RNText,
 } from 'react-native';
-import {useNavigation, useRoute} from '@react-navigation/native';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import {GoBack} from '../../../components';
-import {Text} from '../../../components/Text';
-import {Icon} from '../../../components/Icon';
-import {Button} from '../../../components/Button';
-import {SkeletonLoader} from '../../../components/SkeletonLoader';
-import {useTheme} from '../../../theme';
-import {useToast} from '../../../context/ToastContext';
-import {usePujaDetails} from '../../../services/api/pujaServices/usePujaDetails';
-import {useCreatePujaBooking} from '../../../services/api/pujaServices/pujaBooking/useCreatePujaBooking';
+import { GoBack } from '../../../components';
+import { Text } from '../../../components/Text';
+import { Icon } from '../../../components/Icon';
+import { Button } from '../../../components/Button';
+import { SkeletonLoader } from '../../../components/SkeletonLoader';
+import { useTheme } from '../../../theme';
+import { useToast } from '../../../context/ToastContext';
+import { usePujaDetails } from '../../../services/api/pujaServices/usePujaDetails';
+import { useCreatePujaBooking } from '../../../services/api/pujaServices/pujaBooking/useCreatePujaBooking';
 import type {
   PujaFaq,
   PujaMantraOption,
   PujaReview,
   PujaServiceDetails,
 } from '../../../services/api/pujaServices/puja-services.types';
-import PaymentScreen, {
-  PujaPaymentData,
-} from '../wallet/PaymentScreen';
+import PaymentScreen, { PujaPaymentData } from '../wallet/PaymentScreen';
 import {
   formatDevoteeCount,
-  formatDiscount,
   formatPrice,
   formatReviewDate,
   getPujaImageUrl,
@@ -59,7 +56,7 @@ export type PujaCheckoutPayload = {
   totalPrice: number;
 };
 
-const StarRating: React.FC<{rating: number; size?: number}> = ({
+const StarRating: React.FC<{ rating: number; size?: number }> = ({
   rating,
   size = 14,
 }) => {
@@ -70,7 +67,7 @@ const StarRating: React.FC<{rating: number; size?: number}> = ({
 
   return (
     <View style={styles.starRow}>
-      {Array.from({length: MAX_STARS}, (_, index) => (
+      {Array.from({ length: MAX_STARS }, (_, index) => (
         <RNText
           key={index}
           style={{
@@ -90,7 +87,7 @@ const ExpandableSection: React.FC<{
   content?: string | null;
   expanded: boolean;
   onToggle: () => void;
-}> = ({title, content, expanded, onToggle}) => {
+}> = ({ title, content, expanded, onToggle }) => {
   const theme = useTheme();
   const colors = theme.colors;
   const body = content?.trim();
@@ -115,7 +112,7 @@ const ExpandableSection: React.FC<{
         <Text
           variant="label"
           weight="semibold"
-          style={{color: colors.text.primary, flex: 1, paddingRight: 12}}>
+          style={{ color: colors.text.primary, flex: 1, paddingRight: 12 }}>
           {title}
         </Text>
         <View
@@ -138,7 +135,7 @@ const ExpandableSection: React.FC<{
       {expanded && (
         <Text
           variant="bodySmall"
-          style={[styles.sectionBody, {color: colors.text.secondary}]}>
+          style={[styles.sectionBody, { color: colors.text.secondary }]}>
           {body}
         </Text>
       )}
@@ -146,7 +143,7 @@ const ExpandableSection: React.FC<{
   );
 };
 
-const FaqSection: React.FC<{faqs: PujaFaq[]}> = ({faqs}) => {
+const FaqSection: React.FC<{ faqs: PujaFaq[] }> = ({ faqs }) => {
   const theme = useTheme();
   const colors = theme.colors;
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -160,7 +157,7 @@ const FaqSection: React.FC<{faqs: PujaFaq[]}> = ({faqs}) => {
       <Text
         variant="h6"
         weight="semibold"
-        style={{color: colors.text.primary, marginBottom: 12}}>
+        style={{ color: colors.text.primary, marginBottom: 12 }}>
         FAQ's
       </Text>
       {faqs.map(faq => {
@@ -215,7 +212,7 @@ const FaqSection: React.FC<{faqs: PujaFaq[]}> = ({faqs}) => {
             {expanded && !!faq.answer?.trim() && (
               <Text
                 variant="bodySmall"
-                style={[styles.sectionBody, {color: colors.text.secondary}]}>
+                style={[styles.sectionBody, { color: colors.text.secondary }]}>
                 {faq.answer.trim()}
               </Text>
             )}
@@ -226,7 +223,7 @@ const FaqSection: React.FC<{faqs: PujaFaq[]}> = ({faqs}) => {
   );
 };
 
-const ReviewItem: React.FC<{review: PujaReview}> = ({review}) => {
+const ReviewItem: React.FC<{ review: PujaReview }> = ({ review }) => {
   const theme = useTheme();
   const colors = theme.colors;
   const dateText = formatReviewDate(review.createdAt);
@@ -243,7 +240,7 @@ const ReviewItem: React.FC<{review: PujaReview}> = ({review}) => {
       <View style={styles.reviewHeader}>
         <Text
           weight="semibold"
-          style={{color: colors.text.primary, flex: 1}}
+          style={{ color: colors.text.primary, flex: 1 }}
           numberOfLines={1}>
           {review.userName?.trim() || 'User'}
         </Text>
@@ -252,14 +249,14 @@ const ReviewItem: React.FC<{review: PujaReview}> = ({review}) => {
       {!!review.comment?.trim() && (
         <Text
           variant="bodySmall"
-          style={{color: colors.text.secondary, marginTop: 8}}>
+          style={{ color: colors.text.secondary, marginTop: 8 }}>
           {review.comment.trim()}
         </Text>
       )}
       {!!dateText && (
         <Text
           variant="caption"
-          style={{color: colors.text.tertiary, marginTop: 8}}>
+          style={{ color: colors.text.tertiary, marginTop: 8 }}>
           {dateText}
         </Text>
       )}
@@ -289,28 +286,28 @@ const DetailsSkeleton: React.FC = () => {
         <SkeletonLoader
           width="100%"
           height={14}
-          style={{marginTop: 12}}
+          style={{ marginTop: 12 }}
           backgroundColor={colors.skeleton.base}
           shimmerColor={colors.skeleton.highlight}
         />
         <SkeletonLoader
           width="90%"
           height={14}
-          style={{marginTop: 8}}
+          style={{ marginTop: 8 }}
           backgroundColor={colors.skeleton.base}
           shimmerColor={colors.skeleton.highlight}
         />
         <SkeletonLoader
           width="40%"
           height={20}
-          style={{marginTop: 16}}
+          style={{ marginTop: 16 }}
           backgroundColor={colors.skeleton.base}
           shimmerColor={colors.skeleton.highlight}
         />
         <SkeletonLoader
           width="100%"
           height={72}
-          style={{marginTop: 20}}
+          style={{ marginTop: 20 }}
           borderRadius={12}
           backgroundColor={colors.skeleton.base}
           shimmerColor={colors.skeleton.highlight}
@@ -318,7 +315,7 @@ const DetailsSkeleton: React.FC = () => {
         <SkeletonLoader
           width="100%"
           height={72}
-          style={{marginTop: 12}}
+          style={{ marginTop: 12 }}
           borderRadius={12}
           backgroundColor={colors.skeleton.base}
           shimmerColor={colors.skeleton.highlight}
@@ -334,10 +331,10 @@ const PujaServiceDetailsScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const route = useRoute<any>();
-  const {showError} = useToast();
+  const { showError } = useToast();
 
-  const {slug} = (route.params as PujaServiceDetailsRouteParams) || {};
-  const {service, loading, error, refresh} = usePujaDetails(slug);
+  const { slug } = (route.params as PujaServiceDetailsRouteParams) || {};
+  const { service, loading, error, refresh } = usePujaDetails(slug);
   const {
     loading: isBooking,
     submitBooking,
@@ -383,7 +380,13 @@ const PujaServiceDetailsScreen: React.FC = () => {
     ? originalUnitPrice
     : 0;
   const totalPrice = displayUnitPrice * quantity;
-  const discountLabel = formatDiscount(service?.discount);
+  const discountAmount = displayOriginalPrice - displayUnitPrice;
+  const discountPercentage =
+    displayOriginalPrice > 0 && discountAmount > 0
+      ? Math.round((discountAmount / displayOriginalPrice) * 100)
+      : 0;
+  const discountLabel =
+    discountPercentage > 0 ? `${discountPercentage}% OFF` : '';
   const reviews = service?.reviews ?? [];
   const reviewCount = reviews.length;
   const imageUrl = getPujaImageUrl(service?.image);
@@ -518,11 +521,11 @@ const PujaServiceDetailsScreen: React.FC = () => {
       <View
         style={[
           styles.container,
-          {backgroundColor: colors.background.primary},
+          { backgroundColor: colors.background.primary },
         ]}>
         <GoBack onBack={handleBack} title="Puja Details" />
         <View style={styles.centeredState}>
-          <Text style={{color: colors.text.secondary, textAlign: 'center'}}>
+          <Text style={{ color: colors.text.secondary, textAlign: 'center' }}>
             Missing puja reference. Please go back and select a puja.
           </Text>
         </View>
@@ -535,7 +538,7 @@ const PujaServiceDetailsScreen: React.FC = () => {
       <View
         style={[
           styles.container,
-          {backgroundColor: colors.background.primary},
+          { backgroundColor: colors.background.primary },
         ]}>
         <GoBack onBack={handleBack} title="Puja Details" />
         <DetailsSkeleton />
@@ -548,14 +551,14 @@ const PujaServiceDetailsScreen: React.FC = () => {
       <View
         style={[
           styles.container,
-          {backgroundColor: colors.background.primary},
+          { backgroundColor: colors.background.primary },
         ]}>
         <GoBack onBack={handleBack} title="Puja Details" />
         <View style={styles.centeredState}>
-          <Text style={{color: colors.text.secondary, textAlign: 'center'}}>
+          <Text style={{ color: colors.text.secondary, textAlign: 'center' }}>
             Unable to load puja details. Please try again.
           </Text>
-          <View style={{marginTop: 16, width: '60%'}}>
+          <View style={{ marginTop: 16, width: '60%' }}>
             <Button title="Retry" onPress={refresh} />
           </View>
         </View>
@@ -568,14 +571,14 @@ const PujaServiceDetailsScreen: React.FC = () => {
       <View
         style={[
           styles.container,
-          {backgroundColor: colors.background.primary},
+          { backgroundColor: colors.background.primary },
         ]}>
         <GoBack onBack={handleBack} title="Puja Details" />
         <View style={styles.centeredState}>
           <Text
             variant="h6"
             weight="semibold"
-            style={{color: colors.text.primary, textAlign: 'center'}}>
+            style={{ color: colors.text.primary, textAlign: 'center' }}>
             Puja not found
           </Text>
           <Text
@@ -593,7 +596,7 @@ const PujaServiceDetailsScreen: React.FC = () => {
 
   return (
     <View
-      style={[styles.container, {backgroundColor: colors.background.primary}]}>
+      style={[styles.container, { backgroundColor: colors.background.primary }]}>
       <GoBack onBack={handleBack} title="Puja Details" />
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -602,7 +605,7 @@ const PujaServiceDetailsScreen: React.FC = () => {
         }}>
         {imageUrl ? (
           <Image
-            source={{uri: imageUrl}}
+            source={{ uri: imageUrl }}
             style={styles.heroImage}
             resizeMode="cover"
           />
@@ -610,7 +613,7 @@ const PujaServiceDetailsScreen: React.FC = () => {
           <View
             style={[
               styles.heroImage,
-              {backgroundColor: colors.background.secondary},
+              { backgroundColor: colors.background.secondary },
             ]}
           />
         )}
@@ -619,14 +622,14 @@ const PujaServiceDetailsScreen: React.FC = () => {
           <Text
             variant="h5"
             weight="semibold"
-            style={{color: colors.text.primary}}>
+            style={{ color: colors.text.primary }}>
             {service.title}
           </Text>
 
           {!!service.shortDescription?.trim() && (
             <Text
               variant="bodySmall"
-              style={{color: colors.text.secondary, marginTop: 8}}>
+              style={{ color: colors.text.secondary, marginTop: 8 }}>
               {service.shortDescription.trim()}
             </Text>
           )}
@@ -635,7 +638,7 @@ const PujaServiceDetailsScreen: React.FC = () => {
             <StarRating rating={service.rating} />
             <Text
               variant="caption"
-              style={{color: colors.text.secondary, marginLeft: 8}}>
+              style={{ color: colors.text.secondary, marginLeft: 8 }}>
               {Number.isFinite(Number(service.rating))
                 ? Number(service.rating)
                 : 0}{' '}
@@ -646,7 +649,7 @@ const PujaServiceDetailsScreen: React.FC = () => {
           <View style={styles.priceRow}>
             <Text
               weight="bold"
-              style={{color: colors.primary.main, fontSize: 22}}>
+              style={{ color: colors.primary.main, fontSize: 22 }}>
               {formatPrice(displayUnitPrice)}
             </Text>
             {displayOriginalPrice > displayUnitPrice && (
@@ -668,7 +671,7 @@ const PujaServiceDetailsScreen: React.FC = () => {
 
           <Text
             variant="caption"
-            style={{color: colors.text.secondary, marginTop: 6}}>
+            style={{ color: colors.text.secondary, marginTop: 6 }}>
             {formatDevoteeCount(service.customersCount)}
           </Text>
 
@@ -677,7 +680,7 @@ const PujaServiceDetailsScreen: React.FC = () => {
               <Text
                 variant="h6"
                 weight="semibold"
-                style={{color: colors.text.primary, marginBottom: 12}}>
+                style={{ color: colors.text.primary, marginBottom: 12 }}>
                 Mantra Jaap
               </Text>
               {mantraOptions.map(option => {
@@ -712,7 +715,7 @@ const PujaServiceDetailsScreen: React.FC = () => {
                           <View
                             style={[
                               styles.radioInner,
-                              {backgroundColor: colors.primary.main},
+                              { backgroundColor: colors.primary.main },
                             ]}
                           />
                         )}
@@ -726,23 +729,23 @@ const PujaServiceDetailsScreen: React.FC = () => {
                         }}>
                         {option.name}
                       </Text>
-                      <View style={{alignItems: 'flex-end'}}>
+                      <View style={{ alignItems: 'flex-end' }}>
                         <Text
                           weight="bold"
-                          style={{color: colors.primary.main}}>
+                          style={{ color: colors.primary.main }}>
                           {formatPrice(option.offerPrice)}
                         </Text>
                         {Number(option.originalPrice) >
                           Number(option.offerPrice) && (
-                          <Text
-                            variant="caption"
-                            style={{
-                              color: colors.text.secondary,
-                              textDecorationLine: 'line-through',
-                            }}>
-                            {formatPrice(option.originalPrice)}
-                          </Text>
-                        )}
+                            <Text
+                              variant="caption"
+                              style={{
+                                color: colors.text.secondary,
+                                textDecorationLine: 'line-through',
+                              }}>
+                              {formatPrice(option.originalPrice)}
+                            </Text>
+                          )}
                       </View>
                     </View>
                   </TouchableOpacity>
@@ -755,7 +758,7 @@ const PujaServiceDetailsScreen: React.FC = () => {
             <Text
               variant="h6"
               weight="semibold"
-              style={{color: colors.text.primary, marginBottom: 12}}>
+              style={{ color: colors.text.primary, marginBottom: 12 }}>
               Quantity
             </Text>
             <View style={styles.quantityControls}>
@@ -779,14 +782,14 @@ const PujaServiceDetailsScreen: React.FC = () => {
               </TouchableOpacity>
               <Text
                 weight="semibold"
-                style={[styles.quantityValue, {color: colors.text.primary}]}>
+                style={[styles.quantityValue, { color: colors.text.primary }]}>
                 {quantity}
               </Text>
               <TouchableOpacity
                 onPress={increaseQuantity}
                 style={[
                   styles.quantityButton,
-                  {borderColor: colors.border.light},
+                  { borderColor: colors.border.light },
                 ]}
                 accessibilityLabel="Increase quantity">
                 <Icon
@@ -837,11 +840,11 @@ const PujaServiceDetailsScreen: React.FC = () => {
             <Text
               variant="h6"
               weight="semibold"
-              style={{color: colors.text.primary, marginBottom: 12}}>
+              style={{ color: colors.text.primary, marginBottom: 12 }}>
               Reviews ({reviewCount})
             </Text>
             {reviewCount === 0 ? (
-              <Text style={{color: colors.text.secondary}}>No reviews yet</Text>
+              <Text style={{ color: colors.text.secondary }}>No reviews yet</Text>
             ) : (
               reviews.map(review => (
                 <ReviewItem key={review.id} review={review} />
@@ -860,17 +863,17 @@ const PujaServiceDetailsScreen: React.FC = () => {
             borderTopColor: colors.border.light,
           },
         ]}>
-        <View style={{flex: 1, paddingRight: 12}}>
-          <Text variant="caption" style={{color: colors.text.secondary}}>
+        <View style={{ flex: 1, paddingRight: 12 }}>
+          <Text variant="caption" style={{ color: colors.text.secondary }}>
             Total
           </Text>
           <Text
             weight="bold"
-            style={{color: colors.primary.main, fontSize: 18}}>
+            style={{ color: colors.primary.main, fontSize: 18 }}>
             {formatPrice(totalPrice)}
           </Text>
         </View>
-        <View style={{flex: 1.4}}>
+        <View style={{ flex: 1.4 }}>
           <Button
             title="Buy It Now"
             onPress={handleBuyNow}
