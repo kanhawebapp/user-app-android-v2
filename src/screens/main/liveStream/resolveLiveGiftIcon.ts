@@ -9,9 +9,11 @@ export const resolveLiveGiftIcon = (
   }
 
   const trimmed = icon.trim();
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+  if (/^https?:\/\//i.test(trimmed)) {
     return trimmed;
   }
 
-  return `${API_BASE_URL.DEVELOPMENT}${trimmed.replace(/^\/+/, '')}`;
+  const base = API_BASE_URL.DEVELOPMENT.replace(/\/+$/, '');
+  const path = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return `${base}${path}`;
 };

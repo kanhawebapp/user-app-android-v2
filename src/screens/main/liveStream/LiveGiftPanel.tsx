@@ -1,13 +1,15 @@
-import React, {useCallback, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
   View,
   StyleSheet,
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
-  Image,
   ScrollView,
+  ViewStyle,
+  ImageStyle,
 } from 'react-native';
+import FastImage from 'react-native-fast-image';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Text, Button, Icon, useTheme} from '../../../components';
 import {LiveGift} from '../../../services/api/liveGifts/live-gifts.types';
@@ -17,6 +19,51 @@ import {resolveLiveGiftIcon} from './resolveLiveGiftIcon';
 
 const MIN_QUANTITY = 1;
 const MAX_QUANTITY = 99;
+
+interface LiveGiftIconProps {
+  icon?: string | null;
+  size: number;
+  style?: ImageStyle;
+  fallbackStyle?: ViewStyle;
+}
+
+/** Remote gift icon with graceful fallback when the URL is missing or fails. */
+const LiveGiftIcon: React.FC<LiveGiftIconProps> = ({
+  icon,
+  size,
+  style,
+  fallbackStyle,
+}) => {
+  const theme = useTheme();
+  const uri = resolveLiveGiftIcon(icon);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [uri]);
+
+  if (!uri || failed) {
+    return (
+      <View style={[{width: size, height: size}, fallbackStyle]}>
+        <Icon
+          name="card-giftcard"
+          size={Math.round(size * 0.58)}
+          color={theme.colors.primary.main}
+          library="MaterialIcons"
+        />
+      </View>
+    );
+  }
+
+  return (
+    <FastImage
+      source={{uri, priority: FastImage.priority.normal}}
+      style={[{width: size, height: size}, style]}
+      resizeMode={FastImage.resizeMode.contain}
+      onError={() => setFailed(true)}
+    />
+  );
+};
 
 interface LiveGiftPanelProps {
   onClose: () => void;
@@ -83,7 +130,6 @@ export const LiveGiftPanel: React.FC<LiveGiftPanelProps> = ({
 
   const renderGift = ({item}: {item: LiveGift}) => {
     const isSelected = selectedGift?.id === item.id;
-    const iconUri = resolveLiveGiftIcon(item.icon);
 
     return (
       <TouchableOpacity
@@ -111,22 +157,12 @@ export const LiveGiftPanel: React.FC<LiveGiftPanelProps> = ({
             />
           </View>
         )}
-        {iconUri ? (
-          <Image
-            source={{uri: iconUri}}
-            style={styles.giftIcon}
-            resizeMode="contain"
-          />
-        ) : (
-          <View style={styles.giftIconFallback}>
-            <Icon
-              name="card-giftcard"
-              size={28}
-              color={colors.primary.main}
-              library="MaterialIcons"
-            />
-          </View>
-        )}
+        <LiveGiftIcon
+          icon={item.icon}
+          size={48}
+          style={styles.giftIcon}
+          fallbackStyle={styles.giftIconFallback}
+        />
         <Text
           variant="caption"
           weight="semibold"
@@ -203,10 +239,6 @@ export const LiveGiftPanel: React.FC<LiveGiftPanelProps> = ({
     );
   };
 
-  const selectedIconUri = selectedGift
-    ? resolveLiveGiftIcon(selectedGift.icon)
-    : null;
-
   return (
     <View
       style={[
@@ -269,22 +301,12 @@ export const LiveGiftPanel: React.FC<LiveGiftPanelProps> = ({
               },
             ]}>
             <View style={styles.detailsHeader}>
-              {selectedIconUri ? (
-                <Image
-                  source={{uri: selectedIconUri}}
-                  style={styles.detailsIcon}
-                  resizeMode="contain"
-                />
-              ) : (
-                <View style={styles.detailsIconFallback}>
-                  <Icon
-                    name="card-giftcard"
-                    size={28}
-                    color={colors.primary.main}
-                    library="MaterialIcons"
-                  />
-                </View>
-              )}
+              <LiveGiftIcon
+                icon={selectedGift.icon}
+                size={40}
+                style={styles.detailsIcon}
+                fallbackStyle={styles.detailsIconFallback}
+              />
               <View style={styles.detailsText}>
                 <Text
                   variant="subtitle"
