@@ -691,7 +691,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
         if (order.success !== true || !order.orderId) {
           showError(
             order.message ||
-              'Unable to create the puja payment order. Please try again.',
+            'Unable to create the puja payment order. Please try again.',
           );
           return;
         }
@@ -701,7 +701,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
         if (!Number.isFinite(gatewayAmount) || gatewayAmount <= 0) {
           showError(
             order.message ||
-              'Invalid payment amount returned by the server.',
+            'Invalid payment amount returned by the server.',
           );
           return;
         }
@@ -760,11 +760,13 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
             return;
           }
 
-          showError(
-            razorpayError?.description ||
-              razorpayError?.message ||
-              'Unable to complete the payment. Please try again.',
-          );
+          // showError(
+          //   razorpayError?.description ||
+          //     razorpayError?.message ||
+          //     'Unable to complete the payment. Please try again.',
+          // );
+          showError('Payment failed. Please try again.');
+
         }
       } catch (error: any) {
         console.log('PUJA PAYMENT ERROR', error);
@@ -865,11 +867,8 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
           return;
         }
 
-        showError(
-          razorpayError?.description ||
-          razorpayError?.message ||
-          'Unable to complete the payment. Please try again.',
-        );
+        showError('Payment failed. Please try again.');
+
       }
     } catch (error: any) {
       console.log('PAYMENT ERROR', error);
