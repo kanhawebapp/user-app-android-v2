@@ -46,7 +46,7 @@ export interface AmountOption {
 // ============================================
 
 export interface BalanceCardProps {
-  // balance: number;
+  balance: number;
   onRechargePress?: () => void;
   onWithdrawPress?: () => void;
   isAuthenticated: boolean;
