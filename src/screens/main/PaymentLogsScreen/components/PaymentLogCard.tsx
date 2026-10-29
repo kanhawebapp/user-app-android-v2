@@ -139,11 +139,11 @@ export const PaymentLogCard: React.FC<PaymentLogCardProps> = ({
               value={displayValue(item.serviceType)}
               colors={colors}
             />
-            <MetaRow
+            {/* <MetaRow
               label="Booking ID"
               value={displayValue(item.bookingId)}
               colors={colors}
-            />
+            /> */}
             <MetaRow
               label="Taxable"
               value={formatAmount(item.taxableAmount)}
