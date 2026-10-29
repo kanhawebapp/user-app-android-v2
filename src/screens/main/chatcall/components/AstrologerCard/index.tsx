@@ -71,7 +71,6 @@ export const AstrologerCard: React.FC<AstrologerCardProps> = ({
   const indicatorStyle = getAvailabilityIndicatorStyle(availability);
 
   const availabilityColor = getAvailabilityColor(availability, colors);
-console.log('experience>>>>:', experience);
   // const isOnline = availability === 'online';
   // const isBusy = availability === 'busy' || availability === 'on_call';
   const {

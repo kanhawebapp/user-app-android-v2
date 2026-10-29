@@ -16,7 +16,7 @@ export const WELCOME_BONUS_DESCRIPTION =
 export const CLAIM_BONUS_BUTTON_TEXT = 'Claim ₹100 Bonus';
 
 // Default active tab
-export const DEFAULT_ACTIVE_TAB: MainTabKey = 'home';
+export const DEFAULT_ACTIVE_TAB: MainTabKey = 'chatCall';
 
 // Gift modal offer type
 export const OFFER_TYPE_BONUS = 'bonus';
