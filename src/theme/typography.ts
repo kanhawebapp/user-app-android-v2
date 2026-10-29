@@ -1,4 +1,4 @@
-import {Platform, TextStyle, ViewStyle} from 'react-native';
+import { Platform, TextStyle, ViewStyle } from 'react-native';
 
 const BASE_SIZE = 4;
 const scale = (multiplier: number) => BASE_SIZE * multiplier;
@@ -415,42 +415,42 @@ export const typography = {
   shadow: {
     none: {
       shadowColor: 'transparent',
-      shadowOffset: {width: 0, height: 0},
+      shadowOffset: { width: 0, height: 0 },
       shadowOpacity: 0,
       shadowRadius: 0,
       elevation: 0,
     },
     sm: {
       shadowColor: '#000',
-      shadowOffset: {width: 0, height: 1},
+      shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.05,
       shadowRadius: 2,
       elevation: 1,
     },
     md: {
       shadowColor: '#000',
-      shadowOffset: {width: 0, height: 2},
+      shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
       shadowRadius: 4,
       elevation: 3,
     },
     lg: {
       shadowColor: '#000',
-      shadowOffset: {width: 0, height: 4},
+      shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.15,
       shadowRadius: 8,
       elevation: 5,
     },
     xl: {
       shadowColor: '#000',
-      shadowOffset: {width: 0, height: 6},
+      shadowOffset: { width: 0, height: 6 },
       shadowOpacity: 0.2,
       shadowRadius: 10,
       elevation: 8,
     },
     '2xl': {
       shadowColor: '#000',
-      shadowOffset: {width: 0, height: 8},
+      shadowOffset: { width: 0, height: 8 },
       shadowOpacity: 0.25,
       shadowRadius: 16,
       elevation: 10,
@@ -582,7 +582,11 @@ export const typography = {
       lineHeight: 14,
       fontWeight: '400',
     },
-
+    meta: {
+      fontSize: scale(2.75), // 11px
+      lineHeight: 14,
+      fontWeight: '400',
+    },
     overline: {
       fontSize: scale(2.5),
       lineHeight: 14,

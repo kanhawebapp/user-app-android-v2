@@ -220,7 +220,7 @@ const MetaRow = ({
       {label}
     </Text>
     <Text
-      variant="bodySmall"
+      variant="meta"
       weight="medium"
       style={{color: colors.text.primary, flex: 1, textAlign: 'right'}}
       numberOfLines={2}>
