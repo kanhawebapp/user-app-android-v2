@@ -243,6 +243,20 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     onNavigateToBlogListing?.();
   }, [onNavigateToBlogListing]);
 
+  const handlePujaBookPress = useCallback(
+    (slug: string) => {
+      // Guests: show existing LoginRequiredModal (Login → logout gate → Login screen).
+      // Authenticated: keep existing PujaServiceDetails navigation.
+      handleRestrictedAction('Please login to book puja services', () => {
+        navigation.navigate(
+          'PujaServiceDetails' as never,
+          {slug} as never,
+        );
+      });
+    },
+    [handleRestrictedAction, navigation],
+  );
+
   // Modal handlers
   const handleCloseModal = useCallback(() => {
     setShowLoginModal(false);
@@ -405,7 +419,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         />
 
         {/* Puja Services Section */}
-        <PujaServices />
+        <PujaServices onBookPress={handlePujaBookPress} />
 
         {/* 10. Blog Section */}
         <Blog

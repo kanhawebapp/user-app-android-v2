@@ -16,6 +16,14 @@ const getImageUrl = (url?: string) => {
   return `${API_BASE_URL.DEVELOPMENT}${url.replace(/^\/+/, '')}`;
 };
 
+interface PujaServicesProps {
+  /**
+   * Optional gate for Book Now. HomeScreen passes an auth-checked handler
+   * so guests are prompted to login before opening Puja details.
+   */
+  onBookPress?: (slug: string) => void;
+}
+
 const PujaCard = React.memo(({ item, onPress }: { item: PujaService; onPress: () => void }) => {
   const theme = useTheme();
   const colors = theme.colors;
@@ -65,7 +73,7 @@ const PujaCard = React.memo(({ item, onPress }: { item: PujaService; onPress: ()
   );
 });
 
-const PujaServices: React.FC = () => {
+const PujaServices: React.FC<PujaServicesProps> = ({onBookPress}) => {
   const theme = useTheme();
   const colors = theme.colors;
   const navigation = useNavigation();
@@ -76,9 +84,15 @@ const PujaServices: React.FC = () => {
       if (!slug) {
         return;
       }
+
+      if (onBookPress) {
+        onBookPress(slug);
+        return;
+      }
+
       navigation.navigate('PujaServiceDetails' as never, {slug} as never);
     },
-    [navigation],
+    [navigation, onBookPress],
   );
 
   if (loading) {
