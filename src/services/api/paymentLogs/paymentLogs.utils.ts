@@ -36,7 +36,7 @@ export const normalizeServiceBankLog = (
     kind,
     invoiceNo: item.invoiceNo ?? null,
     serviceType: item.serviceType ?? kind,
-    serviceName: item.serviceName ?? (kind === 'PUJA' ? 'Puja' : null),
+    serviceName: item.serviceName ?? (kind === 'PUJA' ? '' : null),
     bookingId: item.bookingId ?? null,
     taxableAmount: item.taxableAmount ?? null,
     totalTax: item.totalTax ?? null,

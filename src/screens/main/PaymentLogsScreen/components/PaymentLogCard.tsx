@@ -1,10 +1,10 @@
 import React from 'react';
-import {StyleSheet, View} from 'react-native';
-import {useTheme} from '../../../../theme';
-import {Text} from '../../../../components/Text';
-import {Icon} from '../../../../components/Icon';
-import {DATE_FORMATS, DEFAULTS} from '../../../../constants/app.constants';
-import {formatCurrency, formatDate} from '../../../../utils/helpers';
+import { StyleSheet, View } from 'react-native';
+import { useTheme } from '../../../../theme';
+import { Text } from '../../../../components/Text';
+import { Icon } from '../../../../components/Icon';
+import { DATE_FORMATS, DEFAULTS } from '../../../../constants/app.constants';
+import { formatCurrency, formatDate } from '../../../../utils/helpers';
 import {
   parsePaymentTimestamp,
   type UnifiedPaymentLog,
@@ -67,9 +67,9 @@ export const PaymentLogCard: React.FC<PaymentLogCardProps> = ({
   item,
   serialNumber,
 }) => {
-  const {colors} = useTheme();
+  const { colors } = useTheme();
   const isRecharge = item.kind === 'RECHARGE';
-
+console.log('PaymentLogCard item:', item, 'serialNumber:', serialNumber, 'isRecharge:', isRecharge);
   return (
     <View
       style={[
@@ -84,7 +84,7 @@ export const PaymentLogCard: React.FC<PaymentLogCardProps> = ({
           <View
             style={[
               styles.iconWrap,
-              {backgroundColor: colors.primary.main + '18'},
+              { backgroundColor: colors.primary.main + '18' },
             ]}>
             <Icon
               name={kindIcon(item.kind)}
@@ -96,19 +96,19 @@ export const PaymentLogCard: React.FC<PaymentLogCardProps> = ({
             <Text
               variant="body"
               weight="semibold"
-              style={{color: colors.text.primary}}>
+              style={{ color: colors.text.primary }}>
               {isRecharge
                 ? displayValue(item.rechargePackName)
                 : displayValue(item.serviceName)}
             </Text>
             <Text
               variant="captionSmall"
-              style={{color: colors.text.secondary, marginTop: 2}}>
+              style={{ color: colors.text.secondary, marginTop: 2 }}>
               #{serialNumber} · {kindLabel(item.kind)}
             </Text>
           </View>
         </View>
-        <Text variant="body" weight="bold" style={{color: colors.text.primary}}>
+        <Text variant="body" weight="bold" style={{ color: colors.text.primary }}>
           {formatAmount(item.amount)}
         </Text>
       </View>
@@ -139,11 +139,11 @@ export const PaymentLogCard: React.FC<PaymentLogCardProps> = ({
               value={displayValue(item.serviceType)}
               colors={colors}
             />
-            {/* <MetaRow
-              label="Booking ID"
-              value={displayValue(item.bookingId)}
+            <MetaRow
+              label="Service Name"
+              value={displayValue(item.serviceName)}
               colors={colors}
-            /> */}
+            />
             <MetaRow
               label="Taxable"
               value={formatAmount(item.taxableAmount)}
@@ -176,13 +176,13 @@ const MetaRow = ({
   colors: any;
 }) => (
   <View style={styles.metaRow}>
-    <Text variant="captionSmall" style={{color: colors.text.tertiary}}>
+    <Text variant="captionSmall" style={{ color: colors.text.tertiary }}>
       {label}
     </Text>
     <Text
       variant="bodySmall"
       weight="medium"
-      style={{color: colors.text.primary, flex: 1, textAlign: 'right'}}
+      style={{ color: colors.text.primary, flex: 1, textAlign: 'right' }}
       numberOfLines={2}>
       {value}
     </Text>
