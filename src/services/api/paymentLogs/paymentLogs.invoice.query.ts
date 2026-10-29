@@ -1,0 +1,98 @@
+export const GET_SERVICES_INVOICE = `
+query GetServicesInvoice($transactionId: ID!) {
+  getServicesInvoice(transactionId: $transactionId) {
+    id
+    invoiceNo
+    transactionId
+    razorpayOrderId
+    razorpayPaymentId
+    amount
+    discount
+    taxableAmount
+    sgst
+    cgst
+    igst
+    sgstRate
+    cgstRate
+    igstRate
+    gstRate
+    totalTax
+    totalAmount
+    amountReceived
+    amountInWords
+    userName
+    city
+    state
+    pincode
+    country
+    placeOfSupply
+    supplierGSTIN
+    supplierAddress
+    website
+    email
+    recipientGSTIN
+    transactionHistoryUrl
+    hsnSac
+    reverseCharge
+    panNumber
+    serviceType
+    serviceId
+    serviceName
+    createdAt
+  }
+}
+`;
+
+export const GET_RECHARGE_INVOICE = `
+query GetRechargeInvoice($transactionId: ID!) {
+  getRechargeInvoice(transactionId: $transactionId) {
+    id
+    invoiceNo
+    transactionId
+    paymentOrderId
+    razorpayOrderId
+    razorpayPaymentId
+    rechargePackId
+    rechargePackName
+    rechargePackDescription
+    coins
+    amount
+    taxableAmount
+    discount
+    gstRate
+    sgstRate
+    cgstRate
+    igstRate
+    sgst
+    cgst
+    igst
+    totalTax
+    totalAmount
+    pgChargeRate
+    pgCharge
+    pgIgst
+    pgTotal
+    amountReceived
+    amountInWords
+    userName
+    city
+    state
+    country
+    placeOfSupply
+    pincode
+    recipientGSTIN
+    supplierGSTIN
+    supplierAddress
+    website
+    email
+    hsnSac
+    reverseCharge
+    panNumber
+    transactionHistoryUrl
+    provider
+    status
+    platform
+    createdAt
+  }
+}
+`;

@@ -1,10 +1,10 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { useTheme } from '../../../../theme';
-import { Text } from '../../../../components/Text';
-import { Icon } from '../../../../components/Icon';
-import { DATE_FORMATS, DEFAULTS } from '../../../../constants/app.constants';
-import { formatCurrency, formatDate } from '../../../../utils/helpers';
+import {ActivityIndicator, StyleSheet, View} from 'react-native';
+import {useTheme} from '../../../../theme';
+import {Text} from '../../../../components/Text';
+import {Icon} from '../../../../components/Icon';
+import {DATE_FORMATS, DEFAULTS} from '../../../../constants/app.constants';
+import {formatCurrency, formatDate} from '../../../../utils/helpers';
 import {
   parsePaymentTimestamp,
   type UnifiedPaymentLog,
@@ -13,6 +13,8 @@ import {
 interface PaymentLogCardProps {
   item: UnifiedPaymentLog;
   serialNumber: number;
+  onDownloadInvoice?: (item: UnifiedPaymentLog) => void;
+  downloadingId?: string | null;
 }
 
 const displayValue = (value: string | number | null | undefined): string => {
@@ -63,13 +65,20 @@ const kindIcon = (kind: UnifiedPaymentLog['kind']): string => {
   }
 };
 
+const downloadKey = (item: UnifiedPaymentLog): string =>
+  `${item.rawSource}-${item.id}`;
+
 export const PaymentLogCard: React.FC<PaymentLogCardProps> = ({
   item,
   serialNumber,
+  onDownloadInvoice,
+  downloadingId,
 }) => {
-  const { colors } = useTheme();
+  const {colors} = useTheme();
   const isRecharge = item.kind === 'RECHARGE';
-console.log('PaymentLogCard item:', item, 'serialNumber:', serialNumber, 'isRecharge:', isRecharge);
+  const isDownloading = downloadingId === downloadKey(item);
+  const downloadDisabled = downloadingId != null;
+
   return (
     <View
       style={[
@@ -84,7 +93,7 @@ console.log('PaymentLogCard item:', item, 'serialNumber:', serialNumber, 'isRech
           <View
             style={[
               styles.iconWrap,
-              { backgroundColor: colors.primary.main + '18' },
+              {backgroundColor: colors.primary.main + '18'},
             ]}>
             <Icon
               name={kindIcon(item.kind)}
@@ -96,21 +105,52 @@ console.log('PaymentLogCard item:', item, 'serialNumber:', serialNumber, 'isRech
             <Text
               variant="body"
               weight="semibold"
-              style={{ color: colors.text.primary }}>
+              style={{color: colors.text.primary}}>
               {isRecharge
                 ? displayValue(item.rechargePackName)
                 : displayValue(item.serviceName)}
             </Text>
             <Text
               variant="captionSmall"
-              style={{ color: colors.text.secondary, marginTop: 2 }}>
+              style={{color: colors.text.secondary, marginTop: 2}}>
               #{serialNumber} · {kindLabel(item.kind)}
             </Text>
           </View>
         </View>
-        <Text variant="body" weight="bold" style={{ color: colors.text.primary }}>
-          {formatAmount(item.amount)}
-        </Text>
+        <View style={styles.headerRight}>
+          <Text
+            variant="body"
+            weight="bold"
+            style={{color: colors.text.primary}}>
+            {formatAmount(item.amount)}
+          </Text>
+          {onDownloadInvoice ? (
+            isDownloading ? (
+              <ActivityIndicator
+                size="small"
+                color={colors.primary.main}
+                style={styles.downloadAction}
+              />
+            ) : (
+              <Icon
+                name="download"
+                size={18}
+                color={
+                  downloadDisabled
+                    ? colors.text.tertiary
+                    : colors.text.secondary
+                }
+                library="Feather"
+                style={styles.downloadAction}
+                onPress={() => {
+                  if (!downloadDisabled) {
+                    onDownloadInvoice(item);
+                  }
+                }}
+              />
+            )
+          ) : null}
+        </View>
       </View>
 
       <View style={styles.metaGrid}>
@@ -176,13 +216,13 @@ const MetaRow = ({
   colors: any;
 }) => (
   <View style={styles.metaRow}>
-    <Text variant="captionSmall" style={{ color: colors.text.tertiary }}>
+    <Text variant="captionSmall" style={{color: colors.text.tertiary}}>
       {label}
     </Text>
     <Text
       variant="bodySmall"
       weight="medium"
-      style={{ color: colors.text.primary, flex: 1, textAlign: 'right' }}
+      style={{color: colors.text.primary, flex: 1, textAlign: 'right'}}
       numberOfLines={2}>
       {value}
     </Text>
@@ -209,6 +249,9 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 12,
   },
+  headerRight: {
+    alignItems: 'flex-end',
+  },
   iconWrap: {
     width: 36,
     height: 36,
@@ -219,6 +262,9 @@ const styles = StyleSheet.create({
   headerText: {
     marginLeft: 10,
     flex: 1,
+  },
+  downloadAction: {
+    marginTop: 8,
   },
   metaGrid: {
     gap: 8,

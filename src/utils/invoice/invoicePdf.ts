@@ -1028,8 +1028,14 @@ export const buildInvoiceBase64 = async (
     invoice.totalTax ??
     0;
 
+  const itemDescription =
+    invoice.itemDescription &&
+    String(invoice.itemDescription).trim() !== ''
+      ? String(invoice.itemDescription).trim()
+      : 'Purchase of AT-Money via Razorpay';
+
   const dataValues = [
-    'Purchase of AT-Money via Razorpay',
+    itemDescription,
 
     rupee(invoice.amount),
 

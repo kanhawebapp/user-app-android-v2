@@ -34,6 +34,12 @@ export interface PaymentInvoice {
   reverseCharge: boolean | null;
   panNumber: string | null;
   createdAt: string | null;
+  /**
+   * Optional line-item description for the PDF table.
+   * Wallet recharge invoices omit this and keep the default AT-Money label.
+   * Service / Puja / Recharge payment-log invoices supply a mapped name.
+   */
+  itemDescription?: string | null;
 }
 
 export interface GetPaymentInvoiceResponse {
