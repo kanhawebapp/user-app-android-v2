@@ -539,6 +539,7 @@ export const SidebarFallbackMap: Record<
 > = {
   profile: <ProfileScreenShimmer />,
   wallet: <WalletScreenShimmer />,
+  payment_logs: <SessionHistoryScreenShimmer />,
   session_history: <SessionHistoryScreenShimmer />,
   chat_history: <ChatHistoryScreenShimmer />,
   my_following: <MyFollowingScreenShimmer />,
@@ -550,6 +551,7 @@ export const SidebarFallbackMap: Record<
   game: <GameScreenShimmer />,
   edit_profile: <ProfileScreenShimmer />,
   faq: <ProfileScreenShimmer />,
+  privacy: <ProfileScreenShimmer />,
 };
 
 // =============================================================================

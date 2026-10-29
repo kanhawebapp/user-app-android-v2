@@ -14,6 +14,12 @@ export const DEFAULT_MENU_ITEMS: SidebarMenuItem[] = [
     iconLibrary: 'MaterialIcons',
   },
   {
+    key: 'payment_logs',
+    label: 'Payment Logs',
+    icon: 'receipt-long',
+    iconLibrary: 'MaterialIcons',
+  },
+  {
     key: 'session_history',
     label: 'Session History',
     icon: 'history',

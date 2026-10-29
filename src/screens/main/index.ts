@@ -8,6 +8,7 @@ export {default as ShopScreen} from './ShopScreen';
 export {default as RemediesScreen} from './RemediesScreen';
 export {default as ProfileScreen} from './ProfileScreen';
 export {default as WalletScreen} from './wallet/WalletScreen';
+export {default as PaymentLogsScreen} from './PaymentLogsScreen';
 export {default as SessionHistoryScreen} from './SessionHistoryScreen';
 export {default as ChatHistoryScreen} from './ChatHistoryScreen/ChatHistoryScreen';
 // Moved to src/features/my-following/\nexport { default as MyFollowingScreen } from '../features/my-following';

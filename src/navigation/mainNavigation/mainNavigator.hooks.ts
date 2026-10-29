@@ -98,6 +98,9 @@ export const useSidebarNavigation = ({
         case 'wallet':
           setSidebarScreen('wallet');
           break;
+        case 'payment_logs':
+          setSidebarScreen('payment_logs');
+          break;
         case 'session_history':
           setSidebarScreen('session_history');
           break;

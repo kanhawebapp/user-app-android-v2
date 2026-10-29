@@ -71,6 +71,11 @@ const WalletScreen = lazy(() =>
     default: module.default,
   })),
 );
+const PaymentLogsScreen = lazy(() =>
+  import('../../screens/main/PaymentLogsScreen').then(module => ({
+    default: module.default,
+  })),
+);
 const SessionHistoryScreen = lazy(() =>
   import('../../screens/main/SessionHistoryScreen').then(module => ({
     default: module.default,
@@ -319,6 +324,12 @@ export const renderSidebarScreen = ({
             onNavigateToLogin={onNavigateToLogin}
             onNavigateToSignup={onNavigateToSignup}
           />
+        </Suspense>
+      );
+    case 'payment_logs':
+      return (
+        <Suspense fallback={shimmerFallback}>
+          <PaymentLogsScreen onNavigateBack={handleSidebarBack} />
         </Suspense>
       );
     case 'session_history':

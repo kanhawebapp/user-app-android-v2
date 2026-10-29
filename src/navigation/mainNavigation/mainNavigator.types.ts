@@ -10,6 +10,7 @@ export type MainTabKey = 'home' | 'chatCall' | 'live' | 'shop' | 'remedies' | 'm
 export type SidebarScreenKey =
   | 'profile'
   | 'wallet'
+  | 'payment_logs'
   | 'session_history'
   | 'chat_history'
   | 'my_following'

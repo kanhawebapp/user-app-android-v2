@@ -219,6 +219,7 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
   const authRequiredMenuItems = [
     'my_profile',
     'wallet',
+    'payment_logs',
     'session_history',
     'chat_history',
     'my_following',
