@@ -46,7 +46,9 @@ import type {
   PlanetPosition,
   SadhesatiCurrentStatusResponse,
   SadhesatiLifeDetailsResponse,
+  SadhesatiRemediesResponse,
 } from './astrology.types';
+import {useAppStore} from '../../../stores/app.store';
 
 const ASTROLOGY_API_BASE_URL = 'https://json.astrologyapi.com';
 const ASTROLOGY_API_USERNAME = '618742';
@@ -638,10 +640,47 @@ export const getHoroscopeChart = async (
 // https://json.astrologyapi.com/v1/pitra_dosha_report
 // https://json.astrologyapi.com/v1/sadhesati_life_details
 // https://json.astrologyapi.com/v1/sadhesati_current_status
+// https://json.astrologyapi.com/v1/sadhesati_remedies
 //
 // All accept the same birth-details payload (day, month, year, hour, min,
 // lat, lon, tzone).
 // ============================================
+
+/** AstrologyAPI language codes supported by the Sadhesati endpoints. */
+const ASTROLOGY_LANGUAGE_CODES = new Set([
+  'en',
+  'hi',
+  'ma',
+  'bn',
+  'ta',
+  'te',
+  'ml',
+  'kn',
+]);
+
+/**
+ * Maps the app / profile language code onto an AstrologyAPI Accept-Language
+ * value. The app stores Marathi as ISO `mr`; the API expects `ma`.
+ */
+export const resolveAstrologyLanguage = (
+  language?: string | null,
+): string => {
+  const normalized = (language || 'en').toLowerCase().trim();
+  if (normalized === 'mr') {
+    return 'ma';
+  }
+  if (ASTROLOGY_LANGUAGE_CODES.has(normalized)) {
+    return normalized;
+  }
+  return 'en';
+};
+
+/** Accept-Language header driven by the app language store. */
+const getSadhesatiHeaders = (): Record<string, string> => ({
+  'Accept-Language': resolveAstrologyLanguage(
+    useAppStore.getState().language,
+  ),
+});
 
 export const getManglik = async (
   payload: AstrologyMuhurtaPayload,
@@ -670,6 +709,7 @@ export const getSadhesatiLifeDetails = async (
   return requestAstrology<SadhesatiLifeDetailsResponse>(
     '/v1/sadhesati_life_details',
     payload,
+    getSadhesatiHeaders(),
   );
 };
 
@@ -679,6 +719,17 @@ export const getSadhesatiCurrentStatus = async (
   return requestAstrology<SadhesatiCurrentStatusResponse>(
     '/v1/sadhesati_current_status',
     payload,
+    getSadhesatiHeaders(),
+  );
+};
+
+export const getSadhesatiRemedies = async (
+  payload: AstrologyMuhurtaPayload,
+): Promise<SadhesatiRemediesResponse> => {
+  return requestAstrology<SadhesatiRemediesResponse>(
+    '/v1/sadhesati_remedies',
+    payload,
+    getSadhesatiHeaders(),
   );
 };
 

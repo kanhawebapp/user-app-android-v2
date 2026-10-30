@@ -236,6 +236,20 @@ export const isLalKitabCard = (name: string): boolean =>
 export const isDashaCard = (name: string): boolean =>
   (name || '').toLowerCase().includes('dasha');
 
+/**
+ * Returns true when the tapped kundli card is the standalone "Sade Sati" card.
+ * Checked before `isDoshaInKundliCard` is irrelevant here — that matcher only
+ * matches names containing "dosha", so "Sade Sati" never collides with it.
+ */
+export const isSadeSatiCard = (name: string): boolean => {
+  const normalized = (name || '').toLowerCase();
+  return (
+    normalized.includes('sade sati') ||
+    normalized.includes('sadhe sati') ||
+    normalized.includes('sadhesati')
+  );
+};
+
 /** Returns true when the tapped kundli card opens Match Making (Kundli Milan). */
 export const isMatchHoroscopeCard = (name: string): boolean => {
   const normalized = (name || '').toLowerCase();

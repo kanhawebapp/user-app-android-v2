@@ -12,6 +12,7 @@ import {
   isMyDayTodayCard,
   isNakshatraCard,
   isNumerologyCard,
+  isSadeSatiCard,
 } from '../utils/kundliService';
 
 type KundliCardsRouteParams = {
@@ -71,6 +72,11 @@ const KundliCardsScreen = () => {
       navigation.navigate('Dasha', {
         result,
         serviceTitle,
+      });
+    } else if (isSadeSatiCard(card?.name)) {
+      navigation.navigate('SadeSati', {
+        result,
+        serviceTitle: serviceTitle || card?.name,
       });
     }
   };

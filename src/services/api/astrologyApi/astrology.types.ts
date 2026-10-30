@@ -410,6 +410,7 @@ export interface MajorDashaPeriod {
 // https://json.astrologyapi.com/v1/pitra_dosha_report
 // https://json.astrologyapi.com/v1/sadhesati_life_details
 // https://json.astrologyapi.com/v1/sadhesati_current_status
+// https://json.astrologyapi.com/v1/sadhesati_remedies
 //
 // All accept the same birth-details payload (AstrologyMuhurtaPayload).
 // ============================================
@@ -486,6 +487,12 @@ export interface SadhesatiCurrentStatusResponse {
   /** Whether Sade Sati is currently running. */
   sadhesati_status?: boolean;
   what_is_sadhesati?: string;
+}
+
+/** Response from POST /v1/sadhesati_remedies. */
+export interface SadhesatiRemediesResponse {
+  what_is_sadhesati?: string;
+  remedies?: Array<string | Record<string, unknown>>;
 }
 
 // ============================================

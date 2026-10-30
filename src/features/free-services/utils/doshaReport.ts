@@ -14,6 +14,7 @@ import type {
   SadhesatiCurrentStatusResponse,
   SadhesatiLifeDetailsResponse,
   SadhesatiLifeEvent,
+  SadhesatiRemediesResponse,
 } from '../../../services/api/astrologyApi/astrology.types';
 
 export const toBoolean = (value: unknown): boolean | null => {
@@ -291,13 +292,18 @@ export interface SadhesatiStatusData {
 export interface SadhesatiPhase {
   key: string;
   type: string;
-  /** Display label ('Rising', 'Peak', 'Setting') or '—'. */
+  /** Display label for the phase type, or '—'. */
   label: string;
   date: string;
   summary: string;
   moonSign: string | null;
   saturnSign: string | null;
   isRetrograde: boolean | null;
+}
+
+export interface SadhesatiRemediesData {
+  whatIs: string | null;
+  remedies: string[];
 }
 
 export interface SadeSatiData {
@@ -311,14 +317,29 @@ export interface SadeSatiData {
   isUndergoing: string | null;
   considerationDate: string | null;
   whatIs: string | null;
+  remediesWhatIs: string | null;
+  remedies: string[];
 }
 
+/** Tabs shown on the Sade Sati detail screen. */
+export type SadeSatiTab = 'status' | 'remedies' | 'life';
+
+export const SADE_SATI_TABS: Array<{key: SadeSatiTab; label: string}> = [
+  {key: 'status', label: 'Current Status'},
+  {key: 'remedies', label: 'Remedies'},
+  {key: 'life', label: 'Life Details'},
+];
+
+export const isSadeSatiTab = (value: string): value is SadeSatiTab =>
+  value === 'status' || value === 'remedies' || value === 'life';
+
 const SADHESATI_PHASE_LABELS: Record<string, string> = {
-  RISING_START: 'Rising',
-  RISING_END: 'Rising',
-  PEAK_START: 'Peak',
-  SETTING_START: 'Setting',
-  SETTING_END: 'Setting',
+  RISING_START: 'Rising Phase Started',
+  RISING_END: 'Rising Phase Ended',
+  PEAK_START: 'Peak Phase Started',
+  PEAK_END: 'Peak Phase Ended',
+  SETTING_START: 'Setting Phase Started',
+  SETTING_END: 'Setting Phase Ended',
 };
 
 export const getSadhesatiPhaseLabel = (
@@ -384,6 +405,19 @@ export const normalizeSadhesatiStatus = (
   };
 };
 
+export const normalizeSadhesatiRemedies = (
+  raw: SadhesatiRemediesResponse | null | undefined,
+): SadhesatiRemediesData | null => {
+  if (!raw || typeof raw !== 'object') {
+    return null;
+  }
+
+  return {
+    whatIs: toNullableString(raw.what_is_sadhesati),
+    remedies: toDisplayList(raw.remedies),
+  };
+};
+
 const parseEventTimestamp = (phase: SadhesatiPhase): number => {
   const milliseconds = Number(phase.key);
   if (Number.isFinite(milliseconds)) {
@@ -432,10 +466,11 @@ const deriveSadeSatiPresent = (phases: SadhesatiPhase[]): boolean | null => {
   return false;
 };
 
-/** Combines the life-details + current-status responses into one view model. */
+/** Combines life-details, current-status and remedies into one view model. */
 export const mergeSadeSati = (
   phases: SadhesatiPhase[],
   status: SadhesatiStatusData | null,
+  remedies: SadhesatiRemediesData | null = null,
 ): SadeSatiData => {
   const sortedPhases = [...phases].sort(
     (firstPhase, secondPhase) =>
@@ -460,7 +495,9 @@ export const mergeSadeSati = (
     saturnRetrograde: status?.saturnRetrograde ?? firstValue('isRetrograde'),
     isUndergoing: status?.isUndergoing ?? null,
     considerationDate: status?.considerationDate ?? null,
-    whatIs: status?.whatIs ?? null,
+    whatIs: status?.whatIs ?? remedies?.whatIs ?? null,
+    remediesWhatIs: remedies?.whatIs ?? null,
+    remedies: remedies?.remedies ?? [],
   };
 };
 
@@ -471,10 +508,39 @@ export const isSadeSatiEmpty = (data: SadeSatiData | null): boolean => {
   }
   return (
     data.phases.length === 0 &&
+    data.remedies.length === 0 &&
     !data.whatIs &&
+    !data.remediesWhatIs &&
     !data.isUndergoing &&
     !data.considerationDate &&
     data.moonSign === null &&
     data.saturnSign === null
   );
 };
+
+/** True when the Current Status tab has nothing useful to show. */
+export const isSadeSatiStatusEmpty = (data: SadeSatiData | null): boolean => {
+  if (!data) {
+    return true;
+  }
+  return (
+    !data.whatIs &&
+    !data.isUndergoing &&
+    !data.considerationDate &&
+    data.moonSign === null &&
+    data.saturnSign === null &&
+    data.present === null
+  );
+};
+
+/** True when the Remedies tab has nothing useful to show. */
+export const isSadeSatiRemediesEmpty = (data: SadeSatiData | null): boolean => {
+  if (!data) {
+    return true;
+  }
+  return data.remedies.length === 0 && !data.remediesWhatIs && !data.whatIs;
+};
+
+/** True when the Life Details tab has no lifecycle events. */
+export const isSadeSatiLifeEmpty = (data: SadeSatiData | null): boolean =>
+  !data || data.phases.length === 0;

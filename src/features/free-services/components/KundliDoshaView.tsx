@@ -65,7 +65,7 @@ const KundliDoshaView: React.FC<KundliDoshaViewProps> = ({
   const manglik = useManglik(payload);
   const kalsarpa = useKalsarpa(payload);
   const pitra = usePitraDosha(payload);
-  const sadeSati = useSadeSati(payload);
+  const sadeSati = useSadeSati(payload, {includeRemedies: false});
 
   const items: DoshaListItem[] = [
     {

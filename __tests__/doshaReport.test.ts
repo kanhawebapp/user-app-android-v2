@@ -13,6 +13,7 @@ import {
   normalizeManglik,
   normalizePitraDosha,
   normalizeSadhesatiEvents,
+  normalizeSadhesatiRemedies,
   normalizeSadhesatiStatus,
   presentText,
   toBoolean,
@@ -216,9 +217,13 @@ describe('Sade Sati lifecycle normalizers', () => {
   const FUTURE = Date.now() + 60_000;
 
   it('labels phases and maps events', () => {
-    expect(getSadhesatiPhaseLabel('RISING_START')).toBe('Rising');
-    expect(getSadhesatiPhaseLabel('PEAK_START')).toBe('Peak');
-    expect(getSadhesatiPhaseLabel('SETTING_END')).toBe('Setting');
+    expect(getSadhesatiPhaseLabel('RISING_START')).toBe('Rising Phase Started');
+    expect(getSadhesatiPhaseLabel('RISING_END')).toBe('Rising Phase Ended');
+    expect(getSadhesatiPhaseLabel('PEAK_START')).toBe('Peak Phase Started');
+    expect(getSadhesatiPhaseLabel('SETTING_START')).toBe(
+      'Setting Phase Started',
+    );
+    expect(getSadhesatiPhaseLabel('SETTING_END')).toBe('Setting Phase Ended');
     expect(getSadhesatiPhaseLabel('UNKNOWN')).toBeNull();
 
     const phases = normalizeSadhesatiEvents([
@@ -236,7 +241,7 @@ describe('Sade Sati lifecycle normalizers', () => {
     expect(phases[0]).toMatchObject({
       key: String(PAST),
       type: 'RISING_START',
-      label: 'Rising',
+      label: 'Rising Phase Started',
       date: '01-01-2020',
       summary: 'Started rising',
       moonSign: 'Aries',
@@ -247,15 +252,30 @@ describe('Sade Sati lifecycle normalizers', () => {
 
   it('picks the latest passed phase as current', () => {
     const phases = [
-      {key: String(PAST), type: 'RISING_START', label: 'Rising', summary: ''},
-      {key: String(FUTURE), type: 'PEAK_START', label: 'Peak', summary: ''},
+      {
+        key: String(PAST),
+        type: 'RISING_START',
+        label: 'Rising Phase Started',
+        summary: '',
+      },
+      {
+        key: String(FUTURE),
+        type: 'PEAK_START',
+        label: 'Peak Phase Started',
+        summary: '',
+      },
     ];
     expect(getCurrentSadhesatiPhase(phases)?.type).toBe('RISING_START');
   });
 
   it('returns null when no event has started yet', () => {
     const phases = [
-      {key: String(FUTURE), type: 'PEAK_START', label: 'Peak', summary: ''},
+      {
+        key: String(FUTURE),
+        type: 'PEAK_START',
+        label: 'Peak Phase Started',
+        summary: '',
+      },
     ];
     expect(getCurrentSadhesatiPhase(phases)).toBeNull();
   });
@@ -298,6 +318,28 @@ describe('mergeSadeSati', () => {
     expect(data.isUndergoing).toBe('Currently undergoing');
     expect(data.considerationDate).toBe('01-01-2025');
     expect(data.whatIs).toBe('Explanation');
+    expect(data.remedies).toEqual([]);
+  });
+
+  it('merges remedies into the view model', () => {
+    const data = mergeSadeSati(
+      [],
+      null,
+      normalizeSadhesatiRemedies({
+        what_is_sadhesati: 'Remedies explanation',
+        remedies: [
+          'Following are the remedies for Sadhe Sati -',
+          'Recite Shri Hanuman Chalisa.',
+        ],
+      }),
+    );
+
+    expect(data.remediesWhatIs).toBe('Remedies explanation');
+    expect(data.whatIs).toBe('Remedies explanation');
+    expect(data.remedies).toEqual([
+      'Following are the remedies for Sadhe Sati -',
+      'Recite Shri Hanuman Chalisa.',
+    ]);
   });
 
   it('derives present from the latest passed lifecycle event', () => {
@@ -310,5 +352,24 @@ describe('mergeSadeSati', () => {
 
   it('reports empty when nothing usable exists', () => {
     expect(isSadeSatiEmpty(mergeSadeSati([], null))).toBe(true);
+  });
+});
+
+describe('normalizeSadhesatiRemedies', () => {
+  it('maps remedies and explanation', () => {
+    expect(
+      normalizeSadhesatiRemedies({
+        what_is_sadhesati: 'Explanation',
+        remedies: ['Remedy one', 'Remedy two'],
+      }),
+    ).toEqual({
+      whatIs: 'Explanation',
+      remedies: ['Remedy one', 'Remedy two'],
+    });
+  });
+
+  it('returns null for invalid payloads', () => {
+    expect(normalizeSadhesatiRemedies(null)).toBeNull();
+    expect(normalizeSadhesatiRemedies(undefined)).toBeNull();
   });
 });

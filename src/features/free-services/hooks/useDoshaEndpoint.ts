@@ -32,8 +32,10 @@ export const useDoshaEndpoint = <R, T>(
   payload: AstrologyMuhurtaPayload | null,
   request: (value: AstrologyMuhurtaPayload) => Promise<R>,
   normalize: (raw: R | null | undefined) => T,
+  enabled: boolean = true,
 ): UseFieldReturn<T> => {
   const payloadRef = useRef(payload);
+  const enabledRef = useRef(enabled);
 
   const cacheKeyFor = useCallback(
     (value: AstrologyMuhurtaPayload) => buildKundliCacheKey(endpoint, value),
@@ -41,19 +43,24 @@ export const useDoshaEndpoint = <R, T>(
   );
 
   const [data, setData] = useState<T | null>(() => {
-    if (!payload || !hasCachedResponse(cacheKeyFor(payload))) {
+    if (!enabled || !payload || !hasCachedResponse(cacheKeyFor(payload))) {
       return null;
     }
     const cached = getCachedResponse<R>(cacheKeyFor(payload));
     return cached ? normalize(cached) : null;
   });
   const [loading, setLoading] = useState(() =>
-    payload ? !hasCachedResponse(cacheKeyFor(payload)) : false,
+    enabled && payload ? !hasCachedResponse(cacheKeyFor(payload)) : false,
   );
   const [error, setError] = useState<any>(null);
 
   const fetchData = useCallback(
     async (force = false) => {
+      if (!enabledRef.current) {
+        setLoading(false);
+        return;
+      }
+
       const target = payloadRef.current;
       if (!target) {
         setData(null);
@@ -88,6 +95,13 @@ export const useDoshaEndpoint = <R, T>(
 
   useEffect(() => {
     payloadRef.current = payload;
+    enabledRef.current = enabled;
+
+    if (!enabled) {
+      setLoading(false);
+      return;
+    }
+
     if (!payload) {
       setError(new Error('Birth details are missing.'));
       setLoading(false);
@@ -95,10 +109,14 @@ export const useDoshaEndpoint = <R, T>(
     }
 
     if (hasCachedResponse(cacheKeyFor(payload))) {
+      const cached = getCachedResponse<R>(cacheKeyFor(payload));
+      setData(cached ? normalize(cached) : null);
+      setError(null);
+      setLoading(false);
       return;
     }
     fetchData();
-  }, [payload, cacheKeyFor, fetchData]);
+  }, [payload, enabled, cacheKeyFor, fetchData, normalize]);
 
   return {
     data,
