@@ -6,6 +6,7 @@ import ReactNativeBlobUtil from 'react-native-blob-util';
 
 import type {PaymentInvoice} from '../../services/api/walletTransactions/paymentInvoice.types';
 import {loadInvoiceLogoBase64} from './loadLogo';
+import {amountToWords} from './amountToWords';
 
 /** A4 portrait 210mm × 297mm */
 const PAGE_W = 595.28;
@@ -597,6 +598,19 @@ export const buildInvoiceBase64 = async (
 
   // ---------------- TRANSACTION ----------------
 
+  /**
+   * Payment ID field depends on the invoice source.
+   * - Recharge invoice → paymentOrderId
+   * - Services invoice → razorpayOrderId
+   * - Wallet invoice → paymentOrderId (existing behaviour)
+   */
+  const paymentIdValue =
+    invoice.invoiceType === 'RECHARGE'
+      ? str(invoice.paymentOrderId)
+      : invoice.invoiceType === 'SERVICE'
+        ? str(invoice.razorpayOrderId)
+        : str(invoice.paymentOrderId);
+
   const transactionRows = [
     [
       'Transaction Id',
@@ -607,18 +621,18 @@ export const buildInvoiceBase64 = async (
     ],
     [
       'Payment Id',
-      str(invoice.razorpayPaymentId),
+      paymentIdValue,
     ],
     [
       'Recipient GSTIN',
       str(invoice.recipientGSTIN),
     ],
     [
-      'Invoice Voucher No',
+      'Invoice No',
       str(invoice.invoiceNo),
     ],
     [
-      'Invoice Voucher Date',
+      'Invoice Date',
       formatDate(invoice.createdAt),
     ],
   ];
@@ -1296,18 +1310,18 @@ export const buildInvoiceBase64 = async (
     },
     {
       label: 'Total amount (in words)',
-      value: str(
-        invoice.amountInWords,
+      value: amountToWords(
+        invoice.totalAmount ?? invoice.amount ?? 0,
       ),
     },
-    {
-      label: 'Total amount received',
-      value: inr(
-        invoice.amountReceived ??
-          invoice.totalAmount ??
-          invoice.amount,
-      ),
-    },
+    // {
+    //   label: 'Total amount received',
+    //   value: inr(
+    //     invoice.amountReceived ??
+    //       invoice.totalAmount ??
+    //       invoice.amount,
+    //   ),
+    // },
   ];
 
   for (const row of totalRows) {
@@ -1595,7 +1609,7 @@ export const buildInvoiceBase64 = async (
   y -= 27;
 
   const footer =
-    'This is a computer generated invoice voucher, no signatures required';
+    'This is a computer generated invoice, no signatures required';
 
   const footerWidth =
     helv.widthOfTextAtSize(

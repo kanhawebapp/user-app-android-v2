@@ -12,43 +12,12 @@ const strOrNull = (
 };
 
 /**
- * Builds the PDF table description for a recharge invoice.
- * Pack name is primary; description and coins are appended when present.
- * PG charge totals are appended only as a short suffix (layout has no PG rows).
+ * Recharge invoice description always displays exactly "Wallet Recharge".
+ * No pack name, coins, or PG charge text is appended.
  */
 export const buildRechargeItemDescription = (
-  invoice: RechargeInvoice,
-): string => {
-  const parts: string[] = [];
-
-  const packName = strOrNull(invoice.rechargePackName);
-  if (packName) {
-    parts.push(packName);
-  }
-
-  const packDescription = strOrNull(invoice.rechargePackDescription);
-  if (packDescription && packDescription !== packName) {
-    parts.push(packDescription);
-  }
-
-  if (invoice.coins != null && Number.isFinite(Number(invoice.coins))) {
-    parts.push(`${invoice.coins} coins`);
-  }
-
-  if (
-    invoice.pgTotal != null &&
-    Number.isFinite(Number(invoice.pgTotal)) &&
-    Number(invoice.pgTotal) > 0
-  ) {
-    parts.push(`PG charge Rs. ${Number(invoice.pgTotal).toFixed(2)}`);
-  }
-
-  if (parts.length === 0) {
-    return 'Wallet Recharge';
-  }
-
-  return parts.join(' - ');
-};
+  _invoice: RechargeInvoice,
+): string => 'Wallet Recharge';
 
 export const mapServicesInvoiceToPaymentInvoice = (
   invoice: ServicesInvoice,
@@ -58,6 +27,7 @@ export const mapServicesInvoiceToPaymentInvoice = (
   transactionId: invoice.transactionId,
   razorpayOrderId: invoice.razorpayOrderId,
   razorpayPaymentId: invoice.razorpayPaymentId,
+  paymentOrderId: invoice.paymentOrderId,
   amount: invoice.amount,
   discount: invoice.discount,
   taxableAmount: invoice.taxableAmount,
@@ -92,6 +62,7 @@ export const mapServicesInvoiceToPaymentInvoice = (
     strOrNull(invoice.serviceName) ??
     strOrNull(invoice.serviceType) ??
     'Service',
+  invoiceType: 'SERVICE',
 });
 
 export const mapRechargeInvoiceToPaymentInvoice = (
@@ -100,6 +71,7 @@ export const mapRechargeInvoiceToPaymentInvoice = (
   id: invoice.id,
   invoiceNo: invoice.invoiceNo,
   transactionId: invoice.transactionId,
+  paymentOrderId: invoice.paymentOrderId,
   razorpayOrderId: invoice.razorpayOrderId,
   razorpayPaymentId: invoice.razorpayPaymentId,
   amount: invoice.amount,
@@ -133,4 +105,5 @@ export const mapRechargeInvoiceToPaymentInvoice = (
   panNumber: invoice.panNumber,
   createdAt: invoice.createdAt,
   itemDescription: buildRechargeItemDescription(invoice),
+  invoiceType: 'RECHARGE',
 });

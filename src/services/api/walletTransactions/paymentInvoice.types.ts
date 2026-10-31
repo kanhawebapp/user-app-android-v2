@@ -3,6 +3,7 @@ export interface PaymentInvoice {
   invoiceNo: string | null;
   transactionId: string | null;
   razorpayOrderId: string | null;
+  paymentOrderId: string | null;
   razorpayPaymentId: string | null;
   amount: number | null;
   discount: number | null;
@@ -40,6 +41,11 @@ export interface PaymentInvoice {
    * Service / Puja / Recharge payment-log invoices supply a mapped name.
    */
   itemDescription?: string | null;
+  /**
+   * Source of the invoice, used by the PDF renderer to pick the correct
+   * Payment ID field and description logic.
+   */
+  invoiceType?: 'WALLET' | 'SERVICE' | 'RECHARGE' | null;
 }
 
 export interface GetPaymentInvoiceResponse {
