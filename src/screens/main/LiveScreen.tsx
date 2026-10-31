@@ -343,6 +343,21 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
             styles.thumbnail,
             { backgroundColor: colors.background.tertiary },
           ]}>
+          {profilePicUrl ? (
+            <Image
+              source={{ uri: profilePicUrl }}
+              style={styles.thumbnailImage}
+              resizeMode="cover"
+              onError={() => handleAvatarError(session.id)}
+            />
+          ) : (
+            <Icon
+              name="person"
+              size={40}
+              color={colors.text.secondary}
+              library="MaterialIcons"
+            />
+          )}
           {isLive && renderLiveBadge()}
           {session.status === 'SCHEDULED' && renderUpcomingBadge()}
         </View>
@@ -666,7 +681,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
-  sessionInfo: {
+    thumbnailImage: {
+      width: '100%',
+      height: '100%',
+      borderRadius: 8,
+    },
+    sessionInfo: {
     flex: 1,
   },
   astrologerRow: {
