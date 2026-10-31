@@ -675,7 +675,7 @@ const styles = StyleSheet.create({
   },
   thumbnail: {
     width: '100%',
-    height: 100,
+    height: 135,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
