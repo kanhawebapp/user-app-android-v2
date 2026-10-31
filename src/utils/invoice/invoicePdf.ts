@@ -623,10 +623,10 @@ export const buildInvoiceBase64 = async (
       'Payment Id',
       paymentIdValue,
     ],
-    [
-      'Recipient GSTIN',
-      str(invoice.recipientGSTIN),
-    ],
+    // [
+    //   'Recipient GSTIN',
+    //   str(invoice.recipientGSTIN),
+    // ],
     [
       'Invoice No',
       str(invoice.invoiceNo),
