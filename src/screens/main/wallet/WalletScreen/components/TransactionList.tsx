@@ -122,7 +122,7 @@ const TransactionItem = ({
           {item.coins ?? item.amount}
         </Text>
 
-        {showDownload ? (
+        {/* {showDownload ? (
           isDownloading ? (
             <ActivityIndicator
               size="small"
@@ -139,7 +139,7 @@ const TransactionItem = ({
               onPress={() => onDownloadInvoice?.(item)}
             />
           )
-        ) : null}
+        ) : null} */}
       </View>
     </View>
   );
