@@ -8,6 +8,7 @@ import {
   createAgoraRtcEngine,
   IRtcEngineEventHandler,
   RemoteVideoState,
+  UserOfflineReasonType,
 } from 'react-native-agora';
 import loggingService from '../../../services/logging';
 
@@ -23,6 +24,8 @@ interface UseLiveAudienceRtcOptions {
   channelName: string;
   rtcToken: string;
   uid: number;
+  /** Fired once the tracked host leaves the channel (Agora onUserOffline). */
+  onHostOffline?: () => void;
 }
 
 const getConnectionFailureMessage = (
@@ -49,6 +52,7 @@ export const useLiveAudienceRtc = ({
   channelName,
   rtcToken,
   uid,
+  onHostOffline,
 }: UseLiveAudienceRtcOptions) => {
   const [status, setStatus] = useState<LiveRtcStatus>('joining');
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +60,9 @@ export const useLiveAudienceRtc = ({
   const [isHostVideoOn, setIsHostVideoOn] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const localUidRef = useRef(uid);
+  const hostUidRef = useRef<number | null>(null);
+  const onHostOfflineRef = useRef(onHostOffline);
+  onHostOfflineRef.current = onHostOffline;
 
   useEffect(() => {
     const engine = createAgoraRtcEngine();
@@ -65,6 +72,7 @@ export const useLiveAudienceRtc = ({
     setError(null);
     setHostUid(null);
     setIsHostVideoOn(false);
+    hostUidRef.current = null;
     localUidRef.current = uid;
 
     const fail = (message: string) => {
@@ -86,21 +94,53 @@ export const useLiveAudienceRtc = ({
           return;
         }
         if (remoteUid !== localUidRef.current) {
-          setHostUid(prev => prev ?? remoteUid);
+          setHostUid(prev => {
+            const next = prev ?? remoteUid;
+            hostUidRef.current = next;
+            return next;
+          });
         }
       },
-      onUserOffline: (_connection, remoteUid) => {
+      onUserOffline: (_connection, remoteUid, reason) => {
+        loggingService.info('[LiveRTC] onUserOffline', {
+          remoteUid,
+          reason,
+          reasonName: Object.keys(UserOfflineReasonType).find(
+            key =>
+              UserOfflineReasonType[
+                key as keyof typeof UserOfflineReasonType
+              ] === reason,
+          ),
+          localUid: localUidRef.current,
+          hostUid: hostUidRef.current,
+          channelName,
+        });
+
         if (!active) {
           return;
         }
-        setHostUid(prev => (prev === remoteUid ? null : prev));
-        setIsHostVideoOn(false);
+
+        const wasHost =
+          hostUidRef.current === remoteUid ||
+          // Host left before we locked a uid — treat the first remote leave as host.
+          (hostUidRef.current === null && remoteUid !== localUidRef.current);
+
+        if (wasHost) {
+          hostUidRef.current = null;
+          setHostUid(null);
+          setIsHostVideoOn(false);
+          onHostOfflineRef.current?.();
+        }
       },
       onRemoteVideoStateChanged: (_connection, remoteUid, state) => {
         if (!active) {
           return;
         }
-        setHostUid(prev => prev ?? remoteUid);
+        setHostUid(prev => {
+          const next = prev ?? remoteUid;
+          hostUidRef.current = next;
+          return next;
+        });
         setIsHostVideoOn(
           state === RemoteVideoState.RemoteVideoStateStarting ||
             state === RemoteVideoState.RemoteVideoStateDecoding,

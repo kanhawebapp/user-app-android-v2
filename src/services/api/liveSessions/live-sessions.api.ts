@@ -1,9 +1,12 @@
 import {graphqlRequest} from '../graphql.client';
 
 import {
+  GetLiveStatusResponse,
+  GetLiveStatusResult,
   GetUpcomingLivesResponse,
   GetUpcomingLivesVariables,
   JoinLiveResponse,
+  LeaveLiveResponse,
   LiveJoinResponse,
 } from './live-sessions.types';
 
@@ -97,6 +100,49 @@ export const leaveLiveStream = async (channelName: string) => {
 
   return response.leaveLive;
 };
+
+const GET_LIVE_STATUS = `
+query GetLiveStatus($chatRoomId: String!) {
+  getLiveStatus(chatRoomId: $chatRoomId) {
+    success
+    message
+    data {
+      id
+      astrologerId
+      title
+      channelName
+      chatRoomId
+      status
+      startedAt
+      endedAt
+      totalViews
+    }
+  }
+}
+`;
+
+export const getLiveStatus = async (
+  chatRoomId: string,
+): Promise<GetLiveStatusResult> => {
+  try {
+    const response = await graphqlRequest<GetLiveStatusResponse>(
+      'GetLiveStatus',
+      GET_LIVE_STATUS,
+      {
+        chatRoomId,
+      },
+    );
+
+    return response.getLiveStatus;
+  } catch (error: any) {
+    console.log(
+      'GET LIVE STATUS ERROR:',
+      error?.response?.data || error?.message || error,
+    );
+    throw error;
+  }
+};
+
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === 'string' && value.trim().length > 0;
 

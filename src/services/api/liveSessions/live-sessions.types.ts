@@ -79,3 +79,27 @@ export interface LeaveLiveResponse {
     __typename?: string;
   };
 }
+
+export type LiveStreamStatus = 'LIVE' | 'SCHEDULED' | 'ENDED' | string;
+
+export interface LiveStatusData {
+  id: string;
+  astrologerId: string;
+  title: string;
+  channelName: string;
+  chatRoomId: string;
+  status: LiveStreamStatus;
+  startedAt: string | null;
+  endedAt: string | null;
+  totalViews: number | null;
+}
+
+export interface GetLiveStatusResult {
+  success: boolean;
+  message: string;
+  data: LiveStatusData | null;
+}
+
+export interface GetLiveStatusResponse {
+  getLiveStatus: GetLiveStatusResult;
+}

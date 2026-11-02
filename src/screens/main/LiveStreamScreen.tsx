@@ -22,7 +22,11 @@ import {Text} from '../../components/Text';
 import {Icon} from '../../components/Icon';
 import {Button} from '../../components/Button';
 import {AvatarImage} from '../../components/Image';
-import {getLiveJoinChatError, leaveLiveStream} from '../../services/api/liveSessions/live-sessions.api';
+import {
+  getLiveJoinChatError,
+  getLiveStatus,
+  leaveLiveStream,
+} from '../../services/api/liveSessions/live-sessions.api';
 import type {
   LiveJoinResponse,
   UpcomingLive,
@@ -44,7 +48,10 @@ import {useSendLiveGift} from '../../services/api/liveGifts/useSendLiveGift';
 import type {LiveGift} from '../../services/api/liveGifts/live-gifts.types';
 import {applyWalletBalanceCoins} from '../../services/api/wallet/wallet.hooks';
 import {useAuthStore} from '../../stores/auth.store';
+import loggingService from '../../services/logging';
 import {LiveGiftPanel} from './liveStream/LiveGiftPanel';
+
+const HOST_OFFLINE_STATUS_DELAY_MS = 5000;
 
 interface LiveStreamScreenProps {
   joinData: LiveJoinResponse;
@@ -69,10 +76,16 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
   const [isGiftPanelVisible, setIsGiftPanelVisible] = useState(false);
   const sendInFlightRef = useRef(false);
   const leaveInFlightRef = useRef(false);
+  const hostOfflineTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const liveStatusCheckInFlightRef = useRef(false);
+  const hasNavigatedBackRef = useRef(false);
   const [isLeaving, setIsLeaving] = useState(false);
 
   /** Prefer join response stream id; fall back to the listed session id. */
   const streamId = joinData.id || session.id;
+  const chatRoomId = joinData.chatRoomId;
 
   const astrologer = session.astrologer;
   const astrologerId = astrologer?.id;
@@ -87,11 +100,98 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
         )}`
     : null;
 
+  const navigateBackOnce = useCallback(() => {
+    if (hasNavigatedBackRef.current) {
+      return;
+    }
+    hasNavigatedBackRef.current = true;
+    onBack();
+  }, [onBack]);
+
+  const handleHostOffline = useCallback(() => {
+    if (
+      hasNavigatedBackRef.current ||
+      liveStatusCheckInFlightRef.current ||
+      hostOfflineTimeoutRef.current != null
+    ) {
+      loggingService.info(
+        '[LiveStream] Ignoring duplicate host offline while status check pending',
+        {chatRoomId},
+      );
+      return;
+    }
+
+    if (!chatRoomId) {
+      loggingService.error(
+        '[LiveStream] Host offline but chatRoomId is missing; cannot call GetLiveStatus',
+      );
+      return;
+    }
+
+    loggingService.info(
+      '[LiveStream] Host offline — scheduling GetLiveStatus after delay',
+      {
+        chatRoomId,
+        delayMs: HOST_OFFLINE_STATUS_DELAY_MS,
+      },
+    );
+
+    hostOfflineTimeoutRef.current = setTimeout(async () => {
+      hostOfflineTimeoutRef.current = null;
+
+      if (hasNavigatedBackRef.current) {
+        return;
+      }
+
+      liveStatusCheckInFlightRef.current = true;
+      loggingService.info('[LiveStream] Calling GetLiveStatus', {chatRoomId});
+
+      try {
+        const result = await getLiveStatus(chatRoomId);
+        loggingService.info('[LiveStream] GetLiveStatus response', {
+          chatRoomId,
+          success: result?.success,
+          message: result?.message,
+          status: result?.data?.status,
+        });
+
+        if (
+          result?.success === true &&
+          result?.data?.status === 'ENDED' &&
+          !hasNavigatedBackRef.current
+        ) {
+          loggingService.info(
+            '[LiveStream] Live session ended — navigating back',
+            {chatRoomId},
+          );
+          navigateBackOnce();
+        }
+      } catch (err: any) {
+        loggingService.error('[LiveStream] GetLiveStatus failed', {
+          chatRoomId,
+          error: err?.message || err,
+        });
+      } finally {
+        liveStatusCheckInFlightRef.current = false;
+      }
+    }, HOST_OFFLINE_STATUS_DELAY_MS);
+  }, [chatRoomId, navigateBackOnce]);
+
+  useEffect(() => {
+    return () => {
+      if (hostOfflineTimeoutRef.current != null) {
+        clearTimeout(hostOfflineTimeoutRef.current);
+        hostOfflineTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
   const rtc = useLiveAudienceRtc({
     appId: joinData.appId,
     channelName: joinData.channelName,
     rtcToken: joinData.rtcToken,
     uid: joinData.uid,
+    onHostOffline: handleHostOffline,
   });
 
   const chatCredentialError = useMemo(
@@ -104,7 +204,7 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
     chatAppKey: joinData.chatAppKey,
     chatUserId: joinData.chatUserId,
     chatToken: joinData.chatToken,
-    chatRoomId: joinData.chatRoomId,
+    chatRoomId,
   });
 
   const reversedMessages = useMemo(
@@ -273,7 +373,7 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
 
 
   const handleLeaveSession = useCallback(async () => {
-    if (leaveInFlightRef.current) {
+    if (leaveInFlightRef.current || hasNavigatedBackRef.current) {
       return;
     }
     const channelName = joinData?.channelName;
@@ -286,7 +386,7 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
     try {
       const response = await leaveLiveStream(channelName);
       if (response?.success) {
-        onBack();
+        navigateBackOnce();
       } else {
         showError(response?.message || 'Failed to leave live session.');
       }
@@ -296,7 +396,7 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
       leaveInFlightRef.current = false;
       setIsLeaving(false);
     }
-  }, [joinData?.channelName, onBack, showError]);
+  }, [joinData?.channelName, navigateBackOnce, showError]);
 
   const getRtcStatusText = (): string | null => {
     switch (rtc.status) {
@@ -322,7 +422,7 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
   // (EMChatRoomManager NPE / ExceptionInInitializerError).
   const chatPresence = useLiveViewerPresence({
     enabled: chat.status === 'connected',
-    chatRoomId: joinData.chatRoomId,
+    chatRoomId,
     chatUserId: joinData.chatUserId,
   });
   const viewerCount = chatPresence.viewerCount;
@@ -551,7 +651,7 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
                   variant="outline"
                   size="small"
                   style={styles.leaveButton}
-                  onPress={onBack}
+                  onPress={navigateBackOnce}
                 />
               </View>
             )}
