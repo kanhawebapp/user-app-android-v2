@@ -90,8 +90,8 @@ android {
         applicationId "com.DhwaniAstro.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 47
-        versionName "2.0.6"
+        versionCode 50
+        versionName "2.0.9"
     }
     signingConfigs {
         debug {

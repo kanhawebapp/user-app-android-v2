@@ -25,6 +25,11 @@
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         tools:node="remove" />
+    <!-- io.agora.rtc:full-screen-sharing (pulled in by react-native-agora) declares
+         this for screen sharing. This app does not use MediaProjection / screen share. -->
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION"
+        tools:node="remove" />
 
     <application
       android:name=".MainApplication"
