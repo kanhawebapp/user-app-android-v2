@@ -52,6 +52,18 @@
 -dontwarn org.webrtc.**
 
 ############################################
+# Agora Chat (react-native-agora-chat / Hyphenate)
+# libext_sdk.so JNI_OnLoad calls FindClass("com/chatsdk/dispatch/ExtSdkDispatch")
+# and then GetStaticMethodID. R8 treats that class as unused and removes it,
+# so release startup aborts with "JNI DETECTED ERROR: java_class == null".
+# libhyphenate.so likewise looks up com.hyphenate.chat.adapter.* by name.
+############################################
+-keep class com.chatsdk.** { *; }
+-keep class com.hyphenate.** { *; }
+-dontwarn com.chatsdk.**
+-dontwarn com.hyphenate.**
+
+############################################
 # Lottie
 ############################################
 -keep class com.airbnb.lottie.** { *; }
