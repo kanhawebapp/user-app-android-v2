@@ -100,7 +100,8 @@ export const AstrologerCard: React.FC<AstrologerCardProps> = ({
   const disabledColor = '#D1D5DB';
   const disabledTextColor = '#9CA3AF';
 
-  const skillsDisplay = skills.slice(0, 3).join(', ');
+  const languagesDisplay = languages.slice(0, 3).join(', ');
+  const skillsDisplay = skills.slice(0, 2).join(', ');
 
   return (
     <Pressable onPress={() => onCardPress?.(astrologer)}>
@@ -155,13 +156,15 @@ export const AstrologerCard: React.FC<AstrologerCardProps> = ({
               <Text
                 style={styles.language}
                 numberOfLines={1}>
-                {languages.join(', ')}
+                {languagesDisplay}
+                {languages.length > 3 ? '...' : ''}
               </Text>
             </View>
 
             {skillsDisplay.length > 0 && (
               <Text style={styles.skillsText} numberOfLines={1}>
                 {skillsDisplay}
+                {skills.length > 2 ? '...' : ''}
               </Text>
             )}
           </View>

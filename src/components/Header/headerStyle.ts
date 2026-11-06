@@ -12,7 +12,7 @@ export const headerStyle = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 6,
     paddingBottom: 8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8F7FB',
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
   },
