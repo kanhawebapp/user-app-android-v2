@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { View, TouchableOpacity, Text, Image, Pressable } from 'react-native';
 import { useTheme } from '../../../../../theme';
 import { AstrologerCardProps } from './types';
@@ -8,12 +8,11 @@ import {
   CHAT_CALL_LABELS,
   DEFAULTS,
 } from '../../../../../constants/app.constants';
-import { Card, Icon } from '../../../../../components';
+import { Card } from '../../../../../components';
 import images from '../../../../../assets/images';
 import { API_BASE_URL } from '../../../../../constants/api.constants';
 import { getAstrologerPrice, isFreeCurrentPrice } from '../../../astrologerProfile/utils/astrologerPricing';
 import { getAstrologerStatus } from '../../../chat/utils/astrologerStatus';
-import AstrologerStatusBadge from '../../../chat/utils/AstrologerStatusBadge';
 
 const getAvailabilityColor = (
   availability: AstrologerAvailability,
@@ -71,8 +70,6 @@ export const AstrologerCard: React.FC<AstrologerCardProps> = ({
   const indicatorStyle = getAvailabilityIndicatorStyle(availability);
 
   const availabilityColor = getAvailabilityColor(availability, colors);
-  // const isOnline = availability === 'online';
-  // const isBusy = availability === 'busy' || availability === 'on_call';
   const {
     status,
     color: indicatorColor,
@@ -84,8 +81,6 @@ export const AstrologerCard: React.FC<AstrologerCardProps> = ({
 
   const displayIndicatorColor = isOffline ? '#EF4444' : indicatorColor;
 
-  // const canTakeConsultation = isOnline && !isBusy;
-
   const profileImage = astrologer.profilePic
     ? {
       uri: astrologer.profilePic.startsWith('http')
@@ -95,229 +90,167 @@ export const AstrologerCard: React.FC<AstrologerCardProps> = ({
     : images.Logo;
 
   const chatPriceData = getAstrologerPrice(astrologer, 'CHAT');
-
   const callPriceData = getAstrologerPrice(astrologer, 'CALL');
 
-  const chatRate = chatPriceData.currentPrice;
-  const callRate = callPriceData.currentPrice;
+  const displayPriceData =
+    activeTab === 'call' ? callPriceData : chatPriceData;
+  const displayRate = displayPriceData.currentPrice;
+  const displayOldPrice = displayPriceData.oldPrice;
 
   const disabledColor = '#D1D5DB';
   const disabledTextColor = '#9CA3AF';
 
+  const skillsDisplay = skills.slice(0, 3).join(', ');
+
   return (
     <Pressable onPress={() => onCardPress?.(astrologer)}>
       <Card style={[styles.card]}>
-      <View style={styles.cardContent}>
-        <View style={styles.avatarContainer}>
-          <View
-            style={[
-              styles.avatar,
-              { backgroundColor: colors.primary.light + '20' },
-            ]}>
-            <Image
-              source={profileImage}
-              style={{
-                height: '100%',
-                width: '100%',
-                borderRadius: 50,
-              }}
+        <View style={styles.cardContent}>
+          <View style={styles.avatarContainer}>
+            <View
+              style={[
+                styles.avatar,
+                { backgroundColor: colors.primary.light + '20' },
+              ]}>
+              <Image
+                source={profileImage}
+                style={styles.avatarImage}
+              />
+            </View>
+
+            <View
+              style={[
+                styles[indicatorStyle],
+                {
+                  backgroundColor: displayIndicatorColor,
+                  borderColor: colors.common.white,
+                },
+              ]}
             />
+
           </View>
-          {/* <AstrologerStatusBadge status={status} /> */}
 
-          <View
-            style={[
-              styles[indicatorStyle],
-              {
-                backgroundColor: displayIndicatorColor,
-                borderColor: colors.common.white,
-              },
-            ]}
-          />
-
-        </View>
-
-        {/* Info Section */}
-        <View style={styles.infoContainer}>
-          {/* Name and Rating */}
-          <View style={styles.nameRow}>
-            <Text style={[styles.name, { color: colors.text.primary }]}>
+          {/* Info Section */}
+          <View style={styles.infoContainer}>
+            <Text
+              style={[styles.name, { color: colors.primary.main }]}
+              numberOfLines={1}>
               {astrologer.displayName || astrologer.name || 'Astrologer'}
             </Text>
-            <View style={styles.ratingContainer}>
+
+            <View style={styles.statsRow}>
               <Text style={[styles.starIcon, { color: colors.warning.main }]}>
                 ★
               </Text>
-              <Text style={[styles.rating, { color: colors.text.primary }]}>
-                {rating.toFixed(1)}
-              </Text>
-              {/* <Text
-                style={[styles.reviewCount, { color: colors.text.secondary }]}>
-                ({reviewCount})
-              </Text> */}
-            </View>
-          </View>
-
-          {/* Experience */}
-          <View style={styles.experienceContainer}>
-            <Text style={[styles.experience, { color: colors.text.secondary }]}>
-              {CHAT_CALL_LABELS.CARD_EXPERIENCE} {experience} 
-            </Text>
-          </View>
-
-          {/* Languages */}
-          <View style={styles.languageContainer}>
-            <Text
-              style={[styles.language, { color: colors.text.secondary }]}
-              numberOfLines={1}>
-              {languages.join(', ')}
-            </Text>
-          </View>
-
-          {/* Price per minute */}
-          <View style={styles.priceRow}>
-            <View style={styles.priceItem}>
-              <Text style={[styles.priceLabel, { color: colors.text.secondary }]}>
-                Chat:
-              </Text>
-              <Text style={[styles.priceValue, { color: colors.primary.main }]}>
-                {isFreeCurrentPrice(chatRate) ? (
-                  'Free'
-                ) : (
-                  <>
-                    {DEFAULTS.CURRENCY}
-                    {chatRate}
-                    {CHAT_CALL_LABELS.CARD_PER_MINUTE}
-                  </>
-                )}
+              <Text style={styles.rating}>{rating.toFixed(1)}</Text>
+              <Text style={styles.statsSeparator}>|</Text>
+              <Text style={styles.statsText}>{reviewCount} orders</Text>
+              <Text style={styles.statsSeparator}>|</Text>
+              <Text style={styles.statsText}>
+                {CHAT_CALL_LABELS.CARD_EXPERIENCE} {experience}
               </Text>
             </View>
-            <View style={styles.priceItem}>
-              <Text style={[styles.priceLabel, { color: colors.text.secondary }]}>
-                Call:
-              </Text>
-              <Text style={[styles.priceValue, { color: colors.primary.main }]}>
-                {isFreeCurrentPrice(callRate) ? (
-                  'Free'
-                ) : (
-                  <>
-                    {DEFAULTS.CURRENCY}
-                    {callRate}
-                    {CHAT_CALL_LABELS.CARD_PER_MINUTE}
-                  </>
-                )}
+
+            <View style={styles.languageContainer}>
+              <Text
+                style={styles.language}
+                numberOfLines={1}>
+                {languages.join(', ')}
               </Text>
             </View>
+
+            {skillsDisplay.length > 0 && (
+              <Text style={styles.skillsText} numberOfLines={1}>
+                {skillsDisplay}
+              </Text>
+            )}
           </View>
         </View>
-      </View>
 
-      {/* Skills */}
-      <View style={styles.skillsContainer}>
-        {skills.slice(0, 3).map((skill, index) => (
-          <View
-            key={index}
-            style={[
-              styles.skillBadge,
-              { backgroundColor: colors.primary.light + '20' },
-            ]}>
-            <Text style={[styles.skillText, { color: colors.primary.main }]}>
-              {skill}
-            </Text>
+        {/* Footer: Price + Action Buttons */}
+        <View style={styles.footerRow}>
+          <View style={styles.priceBlock}>
+            {isFreeCurrentPrice(displayRate) ? (
+              <Text style={[styles.currentPrice, { color: colors.primary.main }]}>
+                Free
+              </Text>
+            ) : (
+              <Text style={styles.currentPrice}>
+                {DEFAULTS.CURRENCY}
+                {displayRate}
+                {CHAT_CALL_LABELS.CARD_PER_MINUTE}
+              </Text>
+            )}
+            {!!displayOldPrice && !isFreeCurrentPrice(displayRate) && (
+              <Text style={styles.oldPrice}>
+                {DEFAULTS.CURRENCY}
+                {displayOldPrice}
+                {CHAT_CALL_LABELS.CARD_PER_MINUTE}
+              </Text>
+            )}
           </View>
-        ))}
-        {skills.length > 4 && (
-          <View
-            style={[
-              styles.skillBadge,
-              { backgroundColor: colors.primary.light + '20' },
-            ]}>
-            <Text style={[styles.skillText, { color: colors.primary.main }]}>
-              +{skills.length - 4}
-            </Text>
+
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[
+                styles.chatButton,
+                {
+                  borderColor: canChat
+                    ? colors.primary.main
+                    : disabledColor,
+
+                  backgroundColor: canChat
+                    ? colors.common.white
+                    : '#F3F4F6',
+                },
+              ]}
+              onPress={() => onChatPress?.(astrologer)}
+              disabled={!canChat}
+              activeOpacity={0.7}>
+              <Text
+                style={[
+                  styles.buttonText,
+                  {
+                    color: canChat
+                      ? colors.primary.main
+                      : disabledTextColor,
+                  },
+                ]}>
+                {CHAT_CALL_LABELS.CARD_CHAT}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.callButton,
+                {
+                  borderColor: canCall
+                    ? colors.primary.main
+                    : disabledColor,
+
+                  backgroundColor: canCall
+                    ? colors.common.white
+                    : '#F3F4F6',
+                },
+              ]}
+              onPress={() => onCallPress?.(astrologer)}
+              disabled={!canCall}
+              activeOpacity={0.7}>
+              <Text
+                style={[
+                  styles.buttonText,
+                  {
+                    color: canCall
+                      ? colors.primary.main
+                      : disabledTextColor,
+                  },
+                ]}>
+                {CHAT_CALL_LABELS.CARD_CALL}
+              </Text>
+            </TouchableOpacity>
           </View>
-        )}
-      </View>
-
-      {/* Action Buttons */}
-      <View style={styles.actionButtons}>
-
-
-        {/* Chat Button */}
-
-        <TouchableOpacity
-          style={[
-            styles.chatButton,
-            {
-              borderColor: canChat
-                ? colors.primary.main
-                : disabledColor,
-
-              backgroundColor: canChat
-                ? colors.common.white
-                : '#F3F4F6',
-            },
-          ]}
-          onPress={() => onChatPress?.(astrologer)}
-          disabled={!canChat}
-          activeOpacity={0.7}>
-          <Icon
-            name="chatbubble-ellipses-outline"
-            library="Ionicons"
-            color={canChat ? colors.primary.main : disabledTextColor}
-          />
-
-          <Text
-            style={[
-              styles.buttonText,
-              {
-                color: canChat
-                  ? colors.primary.main
-                  : disabledTextColor,
-              },
-            ]}>
-            {CHAT_CALL_LABELS.CARD_CHAT}
-          </Text>
-        </TouchableOpacity>
-
-        {/* Call Button */}
-
-        <TouchableOpacity
-          style={[
-            styles.callButton,
-            {
-              borderColor: canCall
-                ? colors.primary.main
-                : disabledColor,
-
-              backgroundColor: canCall
-                ? colors.common.white
-                : '#F3F4F6',
-            },
-          ]}
-          onPress={() => onCallPress?.(astrologer)}
-          disabled={!canCall}
-          activeOpacity={0.7}>
-          <Icon
-            name="call"
-            size={22}
-            color={canCall ? colors.primary.main : disabledTextColor}
-          />
-
-          <Text
-            style={[
-              styles.buttonText,
-              {
-                color: canCall
-                  ? colors.primary.main
-                  : disabledTextColor,
-              },
-            ]}>
-            {CHAT_CALL_LABELS.CARD_CALL}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </Card>
+        </View>
+      </Card>
     </Pressable>
   );
 };

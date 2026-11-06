@@ -2,36 +2,42 @@
  * AstrologerCard Styles
  */
 
-import {StyleSheet} from 'react-native';
-import {colors} from '../../../../../theme';
+import { StyleSheet } from 'react-native';
+import { colors } from '../../../../../theme';
 
 export const styles = StyleSheet.create({
   card: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 14,
   },
   cardContent: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
   },
   avatarContainer: {
     position: 'relative',
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: '#EDE7F6',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
     padding: 2,
-    borderColor: colors.primary.light,
+    borderColor: colors.primary.main,
+  },
+  avatarImage: {
+    height: '100%',
+    width: '100%',
+    borderRadius: 50,
   },
   onlineIndicator: {
     position: 'absolute',
-    bottom: 22,
-    right: 5,
+    bottom: 2,
+    right: 2,
     width: 14,
     height: 14,
     borderRadius: 7,
@@ -41,8 +47,8 @@ export const styles = StyleSheet.create({
   },
   offlineIndicator: {
     position: 'absolute',
-    bottom: 22,
-    right: 5,
+    bottom: 2,
+    right: 2,
     width: 14,
     height: 14,
     borderRadius: 7,
@@ -52,8 +58,8 @@ export const styles = StyleSheet.create({
   },
   busyIndicator: {
     position: 'absolute',
-    bottom: 22,
-    right: 5,
+    bottom: 2,
+    right: 2,
     width: 14,
     height: 14,
     borderRadius: 7,
@@ -64,6 +70,7 @@ export const styles = StyleSheet.create({
   infoContainer: {
     flex: 1,
     marginLeft: 12,
+    minWidth: 0,
   },
   nameRow: {
     flexDirection: 'row',
@@ -72,27 +79,42 @@ export const styles = StyleSheet.create({
   },
   name: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1A1A1A',
+    fontWeight: '700',
+    color: '#2D1B4E',
+    flexShrink: 1,
   },
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   starIcon: {
-    width: 14,
-    height: 20,
-    marginRight: 4,
+    fontSize: 13,
+    marginRight: 3,
   },
   rating: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1A1A1A',
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#6B6B80',
   },
   reviewCount: {
     fontSize: 12,
     color: '#666666',
     marginLeft: 2,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    marginTop: 4,
+  },
+  statsText: {
+    fontSize: 12,
+    color: '#8A8A9A',
+  },
+  statsSeparator: {
+    fontSize: 12,
+    color: '#C5C5D0',
+    marginHorizontal: 6,
   },
   experienceContainer: {
     marginTop: 4,
@@ -102,11 +124,16 @@ export const styles = StyleSheet.create({
     color: '#666666',
   },
   languageContainer: {
-    marginTop: 4,
+    marginTop: 3,
   },
   language: {
     fontSize: 13,
-    color: '#666666',
+    color: '#8A8A9A',
+  },
+  skillsText: {
+    fontSize: 13,
+    color: '#8A8A9A',
+    marginTop: 2,
   },
   priceRow: {
     flexDirection: 'row',
@@ -125,7 +152,7 @@ export const styles = StyleSheet.create({
   priceValue: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#6200EE',
+    color: '#5B2CA5',
   },
   skillsContainer: {
     flexDirection: 'row',
@@ -144,35 +171,62 @@ export const styles = StyleSheet.create({
     color: '#6200EE',
     fontWeight: '500',
   },
+  footerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 14,
+    gap: 20,
+  },
+  priceBlock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexShrink: 1,
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  currentPrice: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#2D1B4E',
+  },
+  oldPrice: {
+    fontSize: 13,
+    color: '#9E9E9E',
+    textDecorationLine: 'line-through',
+  },
   actionButtons: {
     flexDirection: 'row',
-    marginTop: 16,
-    gap: 10,
+    alignItems: 'center',
+    gap: 20,
+    flexShrink: 0,
   },
   chatButton: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 18,
+    borderRadius: 10,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#6200EE',
+    borderWidth: 1.5,
+    borderColor: '#5B2CA5',
+    minWidth: 80,
   },
   chatButtonDisabled: {
     backgroundColor: '#BDBDBD',
   },
   callButton: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 18,
+    borderRadius: 10,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#6200EE',
+    borderWidth: 1.5,
+    borderColor: '#5B2CA5',
+    minWidth: 80,
   },
   callButtonDisabled: {
     borderColor: '#BDBDBD',

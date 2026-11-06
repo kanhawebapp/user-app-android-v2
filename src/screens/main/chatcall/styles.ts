@@ -2,13 +2,13 @@
  * ChatCallScreen Styles
  */
 
-import {StyleSheet, StatusBar} from 'react-native';
+import {StyleSheet} from 'react-native';
 import {colors} from '../../../theme';
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F8F7FB',
   },
   header: {
     backgroundColor: '#FFFFFF',
@@ -26,7 +26,6 @@ export const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 14,
     color: '#666666',
-    // marginTop: 4,
   },
   tabsContainer: {
     backgroundColor: '#FFFFFF',
@@ -64,22 +63,25 @@ export const styles = StyleSheet.create({
   },
   searchContainer: {
     width: '100%',
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-  },
-  searchInputContainer: {
-    width: '85%',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    // paddingVertical: 10,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 12,
+    backgroundColor: '#F8F7FB',
+    gap: 10,
+  },
+  searchInputContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    height: 48,
     borderWidth: 1,
+    borderColor: '#E5E5EA',
   },
   searchIcon: {
     marginRight: 10,
@@ -88,11 +90,11 @@ export const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     color: '#1A1A1A',
+    paddingVertical: 0,
   },
   filterToggleContainer: {
     paddingHorizontal: 16,
     paddingBottom: 12,
-    // backgroundColor: '#FFFFFF',
   },
   filterToggleRow: {
     flexDirection: 'row',
@@ -112,11 +114,11 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
   },
   filterToggleButton: {
-    flexDirection: 'row',
+    width: 48,
+    height: 48,
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
+    justifyContent: 'center',
+    borderRadius: 12,
     backgroundColor: colors.primary.light,
   },
   filterToggleText: {
@@ -132,7 +134,7 @@ export const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 4,
     paddingBottom: 100,
   },
   emptyContainer: {

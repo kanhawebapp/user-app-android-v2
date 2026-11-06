@@ -246,14 +246,10 @@ const ChatCallScreen: React.FC<ChatCallScreenProps> = ({
         }
 
         return (
-          <View
-            style={[
-              styles.container,
-              { backgroundColor: colors.background.secondary },
-            ]}>
+          <View style={styles.container}>
             <StatusBar
               barStyle={theme.isDark ? 'light-content' : 'dark-content'}
-              backgroundColor={colors.background.primary}
+              backgroundColor="#F8F7FB"
             />
             {/* 
             <View
@@ -270,33 +266,25 @@ const ChatCallScreen: React.FC<ChatCallScreenProps> = ({
               </Text>
             </View> */}
 
-            <View
-              style={[
-                styles.searchContainer,
-                { backgroundColor: colors.background.primary },
-              ]}>
-              <View
-                style={[
-                  styles.searchInputContainer,
-                  { backgroundColor: colors.background.secondary },
-                ]}>
+            <View style={styles.searchContainer}>
+              <View style={styles.searchInputContainer}>
                 <Icon
                   name="search"
                   size={20}
-                  color={colors.text.secondary}
+                  color={colors.text.tertiary}
                   library="Ionicons"
                   style={styles.searchIcon}
                 />
                 <TextInput
                   style={[styles.searchInput, { color: colors.text.primary }]}
-                  placeholder={CHAT_CALL_LABELS.SEARCH_PLACEHOLDER}
+                  placeholder="Search Astrologer"
                   placeholderTextColor={colors.text.tertiary}
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                 />
               </View>
               <TouchableOpacity
-                style={[styles.filterToggleButton]}
+                style={styles.filterToggleButton}
                 onPress={() => setShowFilters(!showFilters)}
                 activeOpacity={0.7}>
                 <Filter />
