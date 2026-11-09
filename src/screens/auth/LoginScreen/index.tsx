@@ -6,6 +6,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Text,
+  Dimensions,
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useTheme} from '../../../theme';
@@ -23,7 +24,6 @@ import {
   TermsAndConditions,
   GuestSkipButton,
 } from './components';
-import {loginScreenStyles} from './loginStyle';
 import {LoginScreenProps} from './loginType';
 import {
   AUTH_LABELS,
@@ -34,6 +34,8 @@ import {Card} from '../../../components';
 
 // Default country (India)
 const DEFAULT_COUNTRY = COUNTRY_CODES[0];
+const {width: SCREEN_WIDTH} = Dimensions.get('window');
+const HORIZONTAL_PADDING = Math.min(20, SCREEN_WIDTH * 0.05);
 
 const LoginScreen: React.FC<LoginScreenProps> = ({
   onLoginSuccess,
@@ -169,26 +171,35 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         style={[styles.container, {backgroundColor: colors.background.primary}]}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingTop: Math.max(insets.top, 16) + 12,
+              paddingHorizontal: HORIZONTAL_PADDING,
+            },
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled">
           <LogoSection />
 
-          {/* <View style={styles.cardContainer}> */}
-          <Card style={loginScreenStyles(colors)}>
+          <Card
+            style={[
+              styles.card,
+              {
+                backgroundColor: colors.common.white,
+                borderColor: 'rgba(0,0,0,0.04)',
+              },
+            ]}>
             <Text
               style={[
                 styles.heading,
                 {
                   color: colors.text.primary,
-                  marginBottom: 20,
-                  textAlign: 'left',
-                  alignSelf: 'flex-start',
                 },
               ]}>
-              {AUTH_LABELS.LOGIN_OR_SIGNUP ||
-                'Enter your phone number to continue'}
+              Login or Signup
             </Text>
+
             {/* Phone Input */}
             <PhoneInputSection
               phoneNumber={phoneNumber}
@@ -212,25 +223,29 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
               disabled={!isPhoneValid || isOTPRequested}
               loading={isOTPRequested}
               style={styles.getOTPButton}
+              textStyle={styles.getOTPButtonText}
             />
 
             {/* OR */}
             <View style={styles.orContainer}>
               <View
-                style={[styles.line, {backgroundColor: colors.primary.light}]}
+                style={[styles.line, {backgroundColor: colors.border.light}]}
               />
 
               <Text style={[styles.orText, {color: '#A5A5B8'}]}>OR</Text>
 
               <View
-                style={[styles.line, {backgroundColor: colors.primary.light}]}
+                style={[styles.line, {backgroundColor: colors.border.light}]}
               />
             </View>
 
             <View
-              style={{
-                paddingBottom: Math.max(insets.bottom, 16),
-              }}>
+              style={[
+                styles.footerActions,
+                {
+                  paddingBottom: Math.max(insets.bottom, 8),
+                },
+              ]}>
               <GuestSkipButton
                 onPress={handleGuestLogin}
                 isLoading={isGuestLoading}
@@ -271,45 +286,47 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
   },
 
   scrollContent: {
     flexGrow: 1,
-    // justifyContent: 'center',
-    // // paddingHorizontal: 20,
-    marginTop: 30,
+    justifyContent: 'flex-start',
+    paddingBottom: 24,
   },
 
-  cardContainer: {
-    // borderRadius: 24,
-    // padding: 10,
-    // marginTop: 10,
-    // shadowColor: '#000',
-    // shadowOpacity: 0.15,
-    // shadowRadius: 20,
-    // shadowOffset: {width: 10, height: 10},
-    // elevation: 10,
+  card: {
+    width: '100%',
+    borderRadius: 16,
+    paddingHorizontal: 24,
+    paddingTop: 28,
+    paddingBottom: 20,
+    marginTop: 8,
+    alignItems: 'stretch',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 18,
+    shadowOffset: {width: 0, height: 8},
+    elevation: 4,
+    borderWidth: 0.5,
   },
 
   getOTPButton: {
-    marginTop: 10,
+    marginTop: 16,
     width: '100%',
+    borderRadius: 12,
   },
 
-  guestButton: {
-    marginTop: 14,
+  getOTPButtonText: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 16,
   },
 
-  divider: {
-    height: 1,
-    backgroundColor: '#eee',
-    marginVertical: 18,
-  },
   orContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 20,
+    marginTop: 22,
+    marginBottom: 4,
   },
 
   line: {
@@ -318,20 +335,24 @@ const styles = StyleSheet.create({
   },
 
   orText: {
-    marginHorizontal: 12,
-    fontSize: 14,
+    marginHorizontal: 14,
+    fontSize: 13,
     fontWeight: '600',
     letterSpacing: 1,
   },
+
   heading: {
     fontFamily: 'Inter',
-    fontWeight: '600', // Medium (fixed)
-    fontSize: 20, // fixed
+    fontWeight: '700',
+    fontSize: 20,
+    textAlign: 'left',
+    alignSelf: 'flex-start',
+    marginBottom: 18,
+  },
 
-    // lineHeight: 18, // 100% of fontSize
-    textAlign: 'center', // fixed
-
-    marginBottom: 10,
+  footerActions: {
+    width: '100%',
+    alignItems: 'center',
   },
 });
 

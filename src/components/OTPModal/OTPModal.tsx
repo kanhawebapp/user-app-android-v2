@@ -191,7 +191,7 @@ export const OTPModal: React.FC<OTPModalProps> = ({
                   weight="semibold"
                   style={{textAlign: 'center', color: colors.text.primary}}>
                   {/* {title} */}
-                  Verify Otp
+                  Verify OTP
                 </Text>
 
                 {/* <TouchableOpacity onPress={onClose}>

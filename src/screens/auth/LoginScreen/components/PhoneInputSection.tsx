@@ -3,11 +3,7 @@ import {View, StyleSheet, TouchableOpacity, TextInput} from 'react-native';
 import {useTheme} from '../../../../theme';
 import {Text} from '../../../../components/Text';
 import {Icon} from '../../../../components/Icon';
-import {
-  CountryCode,
-  COUNTRY_CODES,
-  AUTH_LABELS,
-} from '../../../../constants/app.constants';
+import {CountryCode} from '../../../../constants/app.constants';
 import {CountryCodePicker} from '../../../../components/CountryCodePicker';
 
 interface Props {
@@ -32,8 +28,10 @@ export const PhoneInputSection: React.FC<Props> = ({
   const [focused, setFocused] = useState(false);
 
   return (
-    <View style={{width: '100%'}}>
-      {/* <Text style={styles.phonelabel}>{AUTH_LABELS.PHONE_LABEL}</Text> */}
+    <View style={styles.wrapper}>
+      <Text style={[styles.phonelabel, {color: colors.text.tertiary}]}>
+        Mobile Number
+      </Text>
       <View
         style={[
           styles.container,
@@ -43,13 +41,15 @@ export const PhoneInputSection: React.FC<Props> = ({
               : focused
               ? colors.primary.main
               : colors.border.main,
+            backgroundColor: colors.common.white,
           },
         ]}>
         {/* Country Code */}
 
         <TouchableOpacity
-          style={[styles.countryContainer, {backgroundColor: 'transparent'}]}
-          onPress={() => setPickerVisible(true)}>
+          style={styles.countryContainer}
+          onPress={() => setPickerVisible(true)}
+          activeOpacity={0.7}>
           <Text style={[styles.code, {color: colors.text.primary}]}>
             {selectedCountry.phoneCode}
           </Text>
@@ -67,8 +67,8 @@ export const PhoneInputSection: React.FC<Props> = ({
         {/* Phone Input */}
         <TextInput
           style={[styles.input, {color: colors.text.primary}]}
-          placeholder={AUTH_LABELS.PHONE_PLACEHOLDER || 'Enter Phone Number'}
-          placeholderTextColor={colors.text.secondary}
+          placeholder="Enter mobile number"
+          placeholderTextColor={colors.input.placeholder}
           keyboardType="phone-pad"
           value={phoneNumber}
           onChangeText={onPhoneChange}
@@ -94,13 +94,17 @@ export const PhoneInputSection: React.FC<Props> = ({
 };
 
 const styles = StyleSheet.create({
+  wrapper: {
+    width: '100%',
+  },
+
   container: {
-    height: 56,
+    height: 54,
     borderWidth: 1,
     borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
   },
 
   countryContainer: {
@@ -110,26 +114,30 @@ const styles = StyleSheet.create({
   },
 
   code: {
+    fontFamily: 'Inter',
     fontSize: 16,
     fontWeight: '600',
-    marginRight: 4,
+    marginRight: 2,
   },
 
   divider: {
     width: 1,
-    height: 28,
-    marginHorizontal: 10,
+    height: 24,
+    marginHorizontal: 12,
   },
 
   input: {
     flex: 1,
+    fontFamily: 'Inter',
     fontSize: 16,
+    paddingVertical: 0,
   },
+
   phonelabel: {
     fontFamily: 'Inter',
-    fontWeight: '500', // Regular
-    fontSize: 18,
+    fontWeight: '500',
+    fontSize: 14,
     textAlign: 'left',
-    marginBottom: 5,
+    marginBottom: 8,
   },
 });

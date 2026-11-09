@@ -1,6 +1,6 @@
 import React from 'react';
 import {View, StyleSheet} from 'react-native';
-import {colors, useTheme} from '../../../../theme';
+import {useTheme} from '../../../../theme';
 import {CustomImage} from '../../../../components/Image';
 import {Text} from '../../../../components/Text';
 import {useAppName, useLogoUrl} from '../../../../stores/config.store';
@@ -16,11 +16,11 @@ export const LogoSection: React.FC<LogoSectionProps> = ({
   testID = 'logo-section',
 }) => {
   const theme = useTheme();
-  const colors = theme.colors;
+  const themeColors = theme.colors;
 
   const appName = useAppName();
   const logoUrl = useLogoUrl();
-  const styles = logoSectionStyles(colors);
+  const styles = logoSectionStyles(themeColors);
 
   const logoSource = getLogoSource(logoUrl);
 
@@ -31,7 +31,7 @@ export const LogoSection: React.FC<LogoSectionProps> = ({
         <CustomImage
           source={logoSource}
           width={120}
-          height={140}
+          height={120}
           borderRadius={0}
           resizeMode="contain"
           showLoading={false}
@@ -42,35 +42,30 @@ export const LogoSection: React.FC<LogoSectionProps> = ({
       <Text
         variant="h2"
         weight="bold"
-        color={colors.text.primary}
+        color={themeColors.text.primary}
         align="center"
         style={styles.appName}>
         {appName}
       </Text>
 
       {/* Trust Badge */}
-      <View
-        style={[
-          localStyles.trustBadge,
-          // {backgroundColor: colors.primary.main + '15'},
-        ]}>
-        {/* <Icon
-          name="verified"
-          size={16}
-          color={colors.primary.main}
-          library="MaterialIcons"
-        /> */}
+      <View style={localStyles.trustBadge}>
         <CustomImage
           source={images.TrustedGuidance}
-          width={24}
-          height={24}
+          width={18}
+          height={18}
           resizeMode="contain"
-          localStyles={styles.iconImage}
           showLoading={false}
-          tintColor={colors.text.tertiary}
+          tintColor={themeColors.text.tertiary}
         />
 
-        <Text variant="bodySmall" weight="medium" style={localStyles.trustText}>
+        <Text
+          variant="bodySmall"
+          weight="medium"
+          style={[
+            localStyles.trustText,
+            {color: themeColors.text.tertiary},
+          ]}>
           {AUTH_LABELS.TRUSTED_THOUSANDS}
         </Text>
       </View>
@@ -83,26 +78,17 @@ const localStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginTop: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginTop: 8,
   },
 
   trustText: {
     marginLeft: 6,
-
     fontFamily: 'Inter',
-    fontWeight: '400', // Regular
-    fontSize: 16,
-    color: colors.textColor.tertiary,
-    // lineHeight: 16, // 100%
+    fontWeight: '400',
+    fontSize: 14,
     textAlign: 'center',
-  },
-
-  iconImage: {
-    width: 24,
-    height: 24,
   },
 });
 

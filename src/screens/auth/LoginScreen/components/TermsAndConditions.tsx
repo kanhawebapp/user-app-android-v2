@@ -1,9 +1,8 @@
 import React from 'react';
-import {View} from 'react-native';
+import {View, StyleSheet} from 'react-native';
 import {useTheme} from '../../../../theme';
 import {Text} from '../../../../components/Text';
 import {TERMS_AND_POLICY} from '../../../../constants/app.constants';
-import {termsAndConditionsStyles} from '../loginStyle';
 
 interface TermsAndConditionsProps {
   onTermsPress?: () => void;
@@ -18,7 +17,6 @@ export const TermsAndConditions: React.FC<TermsAndConditionsProps> = ({
 }) => {
   const theme = useTheme();
   const colors = theme.colors;
-  const styles = termsAndConditionsStyles(colors);
 
   const handleTermsPress = () => {
     if (onTermsPress) {
@@ -46,10 +44,10 @@ export const TermsAndConditions: React.FC<TermsAndConditionsProps> = ({
     <View style={styles.container} testID={testID}>
       <Text
         variant="caption"
-        color={colors.text.secondary}
+        color={colors.text.tertiary}
         align="center"
         style={styles.termsText}>
-        {TERMS_AND_POLICY.LOGIN_TERMS_PREFIX}{' '}
+        By continuing you agree to our{' '}
         <Text
           variant="caption"
           color={colors.primary.main}
@@ -57,8 +55,8 @@ export const TermsAndConditions: React.FC<TermsAndConditionsProps> = ({
           style={styles.link}
           onPress={handleTermsPress}>
           {TERMS_AND_POLICY.TERMS_OF_SERVICE}
-        </Text>{' '}
-        {TERMS_AND_POLICY.AND}{' '}
+        </Text>
+        {' & '}
         <Text
           variant="caption"
           color={colors.primary.main}
@@ -71,5 +69,25 @@ export const TermsAndConditions: React.FC<TermsAndConditionsProps> = ({
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    marginTop: 16,
+    paddingHorizontal: 8,
+    width: '100%',
+  },
+  termsText: {
+    fontFamily: 'Inter',
+    fontWeight: '400',
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: 'center',
+  },
+  link: {
+    fontFamily: 'Inter',
+    fontWeight: '500',
+    fontSize: 12,
+  },
+});
 
 export default TermsAndConditions;

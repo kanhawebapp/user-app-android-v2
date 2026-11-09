@@ -1,6 +1,6 @@
 import React from 'react';
 import {TouchableOpacity, StyleSheet, ActivityIndicator} from 'react-native';
-import {useTheme, typography} from '../../../../theme';
+import {useTheme} from '../../../../theme';
 import {Text} from '../../../../components/Text';
 import {AUTH_LABELS} from '../../../../constants/app.constants';
 
@@ -31,7 +31,7 @@ export const GuestSkipButton: React.FC<GuestSkipButtonProps> = ({
       accessibilityLabel="Continue as Guest"
       accessibilityState={{disabled: disabled || isLoading}}>
       {isLoading ? (
-        <ActivityIndicator size="small" color={colors.text.secondary} />
+        <ActivityIndicator size="small" color={colors.primary.main} />
       ) : (
         <Text
           variant="body"
@@ -46,16 +46,16 @@ export const GuestSkipButton: React.FC<GuestSkipButtonProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: typography.spacing.xl,
+    marginTop: 12,
     alignSelf: 'center',
-    paddingVertical: typography.padding.md,
-    paddingHorizontal: typography.padding.xl,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
   },
   continueGuest: {
     fontFamily: 'Inter',
-    fontWeight: '600', // Medium
+    fontWeight: '700',
     fontSize: 16,
-    textAlign: 'center', // usually centered CTA text
+    textAlign: 'center',
     alignSelf: 'center',
   },
 });

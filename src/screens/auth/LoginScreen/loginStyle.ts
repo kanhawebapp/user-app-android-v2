@@ -358,21 +358,27 @@ export const loginScreenStyles = (
       flexGrow: 1,
     } as ViewStyle,
     cardContainer: {
-      backgroundColor: colors.background.card || colors.common.white,
-      marginTop: 20,
-      padding: 20,
+      backgroundColor: colors.common.white,
+      marginTop: 8,
+      paddingHorizontal: 24,
+      paddingTop: 28,
+      paddingBottom: 20,
       borderRadius: 28,
-      shadowColor: colors.shadow?.default || '#000',
-      shadowOffset: {width: 0, height: 12},
-      shadowOpacity: 0.18,
-      shadowRadius: 24,
-      elevation: 2,
-      borderWidth: 1,
-      borderColor: colors.border?.light || 'rgba(255,255,255,0.2)',
+      shadowColor: '#000',
+      shadowOffset: {width: 0, height: 8},
+      shadowOpacity: 0.1,
+      shadowRadius: 18,
+      elevation: 4,
+      borderWidth: 0.5,
+      borderColor: 'rgba(0,0,0,0.04)',
+      alignItems: 'stretch',
+      width: '100%',
     } as ViewStyle,
     getOTPButton: {
-      marginTop: 4,
+      marginTop: 16,
       marginBottom: 0,
+      width: '100%',
+      borderRadius: 12,
     } as ViewStyle,
   });
 
@@ -728,25 +734,24 @@ export const logoSectionStyles = (
   StyleSheet.create({
     container: {
       alignItems: 'center',
-      marginBottom: typography.spacing['3xl'],
+      marginBottom: typography.spacing.xl,
+      paddingHorizontal: typography.spacing.md,
     } as ViewStyle,
     logoContainer: {
-      // width: 130,
-      // height: 130,
       borderRadius: typography.borderRadius.full,
       alignItems: 'center',
       justifyContent: 'center',
-      // marginBottom: typography.spacing.lg,
-      marginTop: 20,
+      marginTop: 4,
+      marginBottom: 4,
     } as ViewStyle,
     appName: {
       fontFamily: 'Inter',
-      fontWeight: '600', // SemiBold
-      fontSize: 23,
-      lineHeight: 24, // 100%
+      fontWeight: '700',
+      fontSize: 24,
+      lineHeight: 30,
       textAlign: 'center',
-
-      alignSelf: 'center', // ensures proper centering
+      alignSelf: 'center',
+      marginTop: 4,
     },
     tagline: {
       opacity: 0.8,
@@ -886,20 +891,20 @@ export const termsAndConditionsStyles = (
   StyleSheet.create({
     container: {
       marginTop: typography.spacing.xl,
-      paddingHorizontal: typography.spacing.lg,
+      paddingHorizontal: typography.spacing.md,
     } as ViewStyle,
     termsText: {
       fontFamily: 'Inter',
-      fontWeight: '400', // Regular
+      fontWeight: '400',
       fontSize: 12,
-
-      lineHeight: 12, // 100%
+      lineHeight: 18,
       textAlign: 'center',
-
-      letterSpacing: 0, // explicit (figma match)
+      letterSpacing: 0,
     },
     link: {
-      textDecorationLine: 'underline' as const,
+      fontFamily: 'Inter',
+      fontWeight: '500',
+      fontSize: 12,
     } as TextStyle,
   });
 
@@ -910,9 +915,9 @@ export const guestSkipButtonStyles = (
 ): ReturnType<typeof StyleSheet.create> =>
   StyleSheet.create({
     container: {
-      marginTop: typography.spacing.xl,
+      marginTop: typography.spacing.lg,
       alignSelf: 'center',
-      paddingVertical: typography.padding.md,
+      paddingVertical: typography.padding.sm,
       paddingHorizontal: typography.padding.xl,
     } as ViewStyle,
   });

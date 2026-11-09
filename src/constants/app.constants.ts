@@ -541,7 +541,7 @@ export const AUTH_LABELS = {
   // Signup Button
   DONT_HAVE_ACCOUNT: "Don't have an account?",
   SIGNUP_LINK: 'Sign up',
-  OTP_DIDNT_RECEIVE: "Didn't receive the OTP?",
+  OTP_DIDNT_RECEIVE: "Didn't receive the code?",
 
   // Login Redirect
   ALREADY_HAVE_ACCOUNT: 'Already have an account?',
