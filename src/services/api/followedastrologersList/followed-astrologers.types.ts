@@ -15,16 +15,31 @@ export interface AstrologerOffer {
   offer: Offer;
 }
 
-// export interface FollowedAstrologer {
-//   id: string;
-//   name: string;
-//   displayName: string;
-//   profilePic: string | null;
-//   rating: number;
-//   experience: number;
-//   pricing: Pricing[];
-//   offers: AstrologerOffer[];
-// }
+export interface FollowedAstrologerPricing {
+  id: string;
+  type: string;
+  price: number;
+  offerPrice?: number | null;
+}
+
+export interface FollowedAstrologer {
+  id: string;
+  name?: string;
+  displayName?: string;
+  profilePic?: string | null;
+  rating?: number;
+  skills?: string[];
+  createdAt?: string | number | null;
+  experience?: number;
+  pricing?: FollowedAstrologerPricing[];
+  isBusy?: boolean;
+  isOnline?: boolean;
+  isChatActive?: boolean;
+  isCallActive?: boolean;
+  isLiveActive?: boolean;
+  isAvailableForCall?: boolean;
+  isAvailableForChat?: boolean;
+}
 
 export interface FollowedAstrologersData {
   astrologers: FollowedAstrologer[];
@@ -36,30 +51,4 @@ export interface FollowedAstrologersData {
 
 export interface GetFollowedAstrologersResponse {
   getFollowedAstrologers: FollowedAstrologersData;
-}
-
-export interface FollowedAstrologerPricing {
-  id: string;
-
-  type: string;
-
-  price: number;
-
-  offerPrice?: number | null;
-}
-
-export interface FollowedAstrologer {
-  id: string;
-
-  name: string;
-
-  displayName?: string;
-
-  profilePic?: string | null;
-
-  rating?: number;
-
-  experience?: number;
-
-  pricing: FollowedAstrologerPricing[];
 }

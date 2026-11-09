@@ -147,7 +147,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     minHeight: 200,
     marginHorizontal: 10,
-    marginTop: -15,
   },
   contentContainer: {
     flex: 1,

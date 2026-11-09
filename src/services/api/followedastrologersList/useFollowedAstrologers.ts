@@ -1,130 +1,134 @@
-import {useEffect, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 
 import {getFollowedAstrologers} from './followed-astrologers.api';
 
-import {
-  FollowedAstrologer,
-} from './followed-astrologers.types';
+import {FollowedAstrologer} from './followed-astrologers.types';
 
-export const useFollowedAstrologers =
-  () => {
-    const [data, setData] =
-      useState<FollowedAstrologer[]>(
-        [],
-      );
+const PAGE_LIMIT = 10;
 
-    const [loading, setLoading] =
-      useState(false);
+export const useFollowedAstrologers = () => {
+  const [data, setData] = useState<FollowedAstrologer[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
-    const [refreshing, setRefreshing] =
-      useState(false);
+  const isFetchingRef = useRef(false);
+  const hasFetchedRef = useRef(false);
 
-    const [page, setPage] =
-      useState(1);
+  const fetchAstrologers = useCallback(
+    async (
+      pageNumber: number = 1,
+      options: {
+        isLoadMore?: boolean;
+        isRefresh?: boolean;
+      } = {},
+    ) => {
+      const {isLoadMore = false, isRefresh = false} = options;
 
-    const [totalPages, setTotalPages] =
-      useState(1);
+      if (isFetchingRef.current) {
+        return;
+      }
 
-    const [hasMore, setHasMore] =
-      useState(true);
+      isFetchingRef.current = true;
 
-    const fetchAstrologers =
-      async (
-        pageNumber: number = 1,
-        isLoadMore: boolean = false,
-      ) => {
-        try {
-          setLoading(
-            !isLoadMore,
-          );
+      try {
+        setError(null);
 
-          const response =
-            await getFollowedAstrologers(
-              pageNumber,
-              10,
-            );
-
-          const astrologers =
-            response?.astrologers || [];
-
-          if (isLoadMore) {
-            setData(prev => [
-              ...prev,
-              ...astrologers,
-            ]);
-          } else {
-            setData(astrologers);
-          }
-
-          setPage(
-            response?.page || 1,
-          );
-
-          setTotalPages(
-            response?.totalPages || 1,
-          );
-
-          setHasMore(
-            pageNumber <
-              (response?.totalPages ||
-                1),
-          );
-        } catch (error) {
-          console.log(
-            'FOLLOWED ASTROLOGERS HOOK ERROR:',
-            error,
-          );
-        } finally {
-          setLoading(false);
-
-          setRefreshing(false);
-        }
-      };
-
-    const loadMore =
-      async () => {
-        if (
-          loading ||
-          !hasMore
-        ) {
-          return;
+        if (isRefresh) {
+          setRefreshing(true);
+        } else if (isLoadMore) {
+          setLoadingMore(true);
+        } else {
+          setLoading(true);
         }
 
-        await fetchAstrologers(
-          page + 1,
-          true,
+        const response = await getFollowedAstrologers(
+          pageNumber,
+          PAGE_LIMIT,
         );
-      };
 
-    const refresh =
-      async () => {
-        setRefreshing(true);
+        const astrologers = response.astrologers || [];
+        const nextPage = response.page || pageNumber;
+        const nextTotalPages = response.totalPages || 1;
 
-        await fetchAstrologers(
-          1,
-          false,
+        setData(prev =>
+          isLoadMore ? [...prev, ...astrologers] : astrologers,
         );
-      };
+        setPage(nextPage);
+        setTotal(response.total || 0);
+        setTotalPages(nextTotalPages);
+        setHasMore(nextPage < nextTotalPages);
+        hasFetchedRef.current = true;
+      } catch (err: any) {
+        console.log('FOLLOWED ASTROLOGERS HOOK ERROR:', err);
 
-    useEffect(() => {
-      fetchAstrologers();
-    }, []);
+        const message =
+          err?.message ||
+          err?.response?.data?.errors?.[0]?.message ||
+          'Failed to load followed astrologers';
 
-    return {
-      data,
+        setError(message);
 
-      loading,
+        if (!isLoadMore) {
+          setData([]);
+          setPage(1);
+          setTotal(0);
+          setTotalPages(1);
+          setHasMore(false);
+        }
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+        setLoadingMore(false);
+        isFetchingRef.current = false;
+      }
+    },
+    [],
+  );
 
-      refreshing,
+  const loadMore = useCallback(async () => {
+    if (loading || loadingMore || refreshing || !hasMore) {
+      return;
+    }
 
-      page,
+    await fetchAstrologers(page + 1, {isLoadMore: true});
+  }, [
+    fetchAstrologers,
+    hasMore,
+    loading,
+    loadingMore,
+    page,
+    refreshing,
+  ]);
 
-      totalPages,
+  const refresh = useCallback(async () => {
+    await fetchAstrologers(1, {isRefresh: true});
+  }, [fetchAstrologers]);
 
-      hasMore,
+  useEffect(() => {
+    if (hasFetchedRef.current) {
+      return;
+    }
 
-      loadMore,
+    fetchAstrologers(1);
+  }, [fetchAstrologers]);
 
-      refresh,
-    };
+  return {
+    data,
+    loading,
+    refreshing,
+    loadingMore,
+    error,
+    page,
+    total,
+    totalPages,
+    hasMore,
+    loadMore,
+    refresh,
   };
+};

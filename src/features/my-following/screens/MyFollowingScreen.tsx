@@ -6,31 +6,113 @@ import {
   StatusBar,
   ActivityIndicator,
   Image,
+  RefreshControl,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
-import { Text } from '../../../components/Text';
-import { Icon } from '../../../components/Icon';
-import { Button } from '../../../components/Button';
-import { Card } from '../../../components/Card';
-import { GoBack } from '../../../components';
+import {Text} from '../../../components/Text';
+import {Icon} from '../../../components/Icon';
+import {Button} from '../../../components/Button';
+import {Card} from '../../../components/Card';
+import {GoBack} from '../../../components';
 
-import { useTheme } from '../../../theme';
-import { useFollowedAstrologers } from '../../../services/api/followedastrologersList/useFollowedAstrologers';
-import { API_BASE_URL } from '../../../constants/api.constants';
-import { ConsultationFlowLayer } from '../../../screens/main/consultation';
-import { Astrologer } from '../../../screens/main/chatcall/types';
-import { getAstrologerStatus } from '../../../screens/main/chat/utils/astrologerStatus';
+import {useTheme} from '../../../theme';
+import {useFollowedAstrologers} from '../../../services/api/followedastrologersList/useFollowedAstrologers';
+import {FollowedAstrologer} from '../../../services/api/followedastrologersList/followed-astrologers.types';
+import {API_BASE_URL} from '../../../constants/api.constants';
+import {ConsultationFlowLayer} from '../../../screens/main/consultation';
+import {getAstrologerStatus} from '../../../screens/main/chat/utils/astrologerStatus';
+import {formatDate} from '../../../utils/helpers';
+import {DATE_FORMATS} from '../../../constants/app.constants';
 
-// AstrologerProfileScreen
 interface MyFollowingScreenProps {
   onNavigateBack?: () => void;
-  onAstrologerPress: any
+  onAstrologerPress: any;
 }
+
+const AVATAR_BORDER = '#C9B6E8';
+const RATING_STAR = '#F5B301';
+const META_TEXT = '#8E8E9A';
+const FOLLOWED_TEXT = '#9A9AA8';
+
+const parseCreatedAt = (value: unknown): Date | null => {
+  if (value == null || value === '') {
+    return null;
+  }
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  if (typeof value === 'number') {
+    const ms = value < 1e12 ? value * 1000 : value;
+    const parsed = new Date(ms);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  const trimmed = String(value).trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (/^\d+$/.test(trimmed)) {
+    const numeric = Number(trimmed);
+    const ms = numeric < 1e12 ? numeric * 1000 : numeric;
+    const parsed = new Date(ms);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  const parsed = new Date(trimmed);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const getFollowedDateLabel = (
+  astrologer: FollowedAstrologer,
+): string | null => {
+  const parsed = parseCreatedAt(astrologer?.createdAt);
+  if (!parsed) {
+    return null;
+  }
+
+  return `Followed on ${formatDate(parsed, DATE_FORMATS.DISPLAY_DATE)}`;
+};
+
+const getSkillsLabel = (skills?: string[] | null): string | null => {
+  if (!Array.isArray(skills) || skills.length === 0) {
+    return null;
+  }
+
+  const visibleSkills = skills.filter(Boolean).slice(0, 2).join(', ');
+
+  if (!visibleSkills) {
+    return null;
+  }
+
+  return skills.length > 2 ? `${visibleSkills}...` : visibleSkills;
+};
+
+const resolveProfileImageUrl = (profilePic?: string | null): string => {
+  if (!profilePic) {
+    return '';
+  }
+
+  if (
+    profilePic.startsWith('http://') ||
+    profilePic.startsWith('https://')
+  ) {
+    return profilePic;
+  }
+
+  const normalizedPath = profilePic.startsWith('/')
+    ? profilePic
+    : `/${profilePic}`;
+
+  return `${API_BASE_URL.DEVELOPMENT}${normalizedPath}`;
+};
 
 const MyFollowingScreen: React.FC<MyFollowingScreenProps> = ({
   onNavigateBack,
-  onAstrologerPress
+  onAstrologerPress,
 }) => {
   const theme = useTheme();
   const colors = theme.colors;
@@ -39,518 +121,253 @@ const MyFollowingScreen: React.FC<MyFollowingScreenProps> = ({
   const {
     data,
     loading,
+    refreshing,
+    loadingMore,
+    error,
     hasMore,
     loadMore,
+    refresh,
   } = useFollowedAstrologers();
-
 
   return (
     <ConsultationFlowLayer>
-      {({ startChat, startCall }) => {
-        const mapAstrologer = (item: any): Astrologer => {
-          const chatPricing = item.pricing?.find((p: any) => p.type === 'CHAT');
-          const callPricing = item.pricing?.find((p: any) => p.type === 'CALL');
+      {() => (
+        <View
+          style={[
+            styles.container,
+            {
+              backgroundColor: colors.background.primary,
+            },
+          ]}>
+          <StatusBar
+            barStyle={theme.isDark ? 'light-content' : 'dark-content'}
+            backgroundColor={colors.background.primary}
+          />
 
-          return {
-            id: item.id,
-            name: item.displayName || item.name,
-            displayName: item.displayName,
-            rating: item.rating || 0,
-            reviewCount: 0,
-            experience: `${item.experience}+ years`,
-            languages: item.languages || [],
-            skills: item.skills || [],
-            image: item.profilePic,
-            availability: 'online',
-            // isAvailableForChat: true,
-            // isAvailableForCall: true,
-            chatRate: chatPricing?.price || 0,
-            callRate: callPricing?.price || 0,
-            activeOffer: item.activeOffer || null,
-            pricing: item.pricing || [],
-            isBusy: item?.isBusy,
-            isCallActive: item?.isCallActive,
-            isChatActive: item?.isChatActive,
-            isAvailableForCall: item?.isAvailableForCall,
-            isAvailableForChat: item?.isAvailableForChat,
-            isLiveActive: item?.isLiveActive,
-            isOnline: item?.isOnline,
-          };
-        };
+          <GoBack onBack={onNavigateBack} title="My Following" />
 
-
-
-        return (
-          <View
-            style={[
-              styles.container,
+          <ScrollView
+            contentContainerStyle={[
+              styles.scrollContent,
               {
-                backgroundColor: colors.background.primary,
+                paddingBottom: insets.bottom + 100,
               },
-            ]}>
-            <StatusBar
-              barStyle={
-                theme.isDark
-                  ? 'light-content'
-                  : 'dark-content'
-              }
-              backgroundColor={
-                colors.background.primary
-              }
-            />
+            ]}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={refresh}
+                colors={[colors.primary.main]}
+                tintColor={colors.primary.main}
+              />
+            }>
+            {loading && !refreshing && (
+              <View style={styles.loaderContainer}>
+                <ActivityIndicator
+                  size="large"
+                  color={colors.primary.main}
+                />
+              </View>
+            )}
 
-            <GoBack
-              onBack={onNavigateBack}
-              title="My Following"
-            />
+            {!loading && !!error && (
+              <View style={styles.emptyState}>
+                <Icon
+                  name="error-outline"
+                  size={64}
+                  color={colors.error.main}
+                  library="MaterialIcons"
+                />
 
-            <ScrollView
-              contentContainerStyle={[
-                styles.scrollContent,
-                {
-                  paddingBottom:
-                    insets.bottom + 100,
-                },
-              ]}
-              showsVerticalScrollIndicator={
-                false
-              }>
-              {/* Count */}
-              <View
-                style={styles.countContainer}>
+                <Text
+                  variant="h6"
+                  weight="semibold"
+                  style={{
+                    color: colors.text.secondary,
+                    marginTop: 16,
+                    textAlign: 'center',
+                  }}>
+                  Failed to load following
+                </Text>
+
                 <Text
                   variant="body"
                   style={{
-                    color:
-                      colors.text.secondary,
+                    color: colors.text.tertiary,
+                    marginTop: 8,
+                    textAlign: 'center',
                   }}>
-                  You are following{' '}
-                  <Text
-                    variant="body"
-                    weight="bold"
-                    style={{
-                      color:
-                        colors.primary.main,
-                    }}>
-                    {data.length}
-                  </Text>{' '}
-                  astrologers
+                  {error}
                 </Text>
+
+                <Button
+                  title="Retry"
+                  variant="outline"
+                  onPress={refresh}
+                  style={{marginTop: 16}}
+                />
               </View>
+            )}
 
-              {/* Loading */}
-              {loading && (
-                <View
-                  style={
-                    styles.loaderContainer
-                  }>
-                  <ActivityIndicator
-                    size="large"
-                    color={
-                      colors.primary.main
-                    }
-                  />
-                </View>
-              )}
+            {!loading &&
+              !error &&
+              data.map(astrologer => {
+                const imageUrl = resolveProfileImageUrl(
+                  astrologer.profilePic,
+                );
+                const {status, color: indicatorColor} =
+                  getAstrologerStatus(astrologer);
+                const showStatusDot =
+                  status === 'online' || status === 'busy';
+                const followedLabel = getFollowedDateLabel(astrologer);
+                const skillsLabel = getSkillsLabel(astrologer.skills);
 
-              {/* List */}
-              {!loading &&
-                data.map(astrologer => {
-                  const chatPricing =
-                    astrologer.pricing?.find(
-                      item =>
-                        item.type ===
-                        'CHAT',
-                    );
-
-                  const callPricing =
-                    astrologer.pricing?.find(
-                      item =>
-                        item.type ===
-                        'CALL',
-                    );
-
-                  const imageUrl =
-                    astrologer.profilePic
-                      ? astrologer.profilePic.startsWith(
-                        'http',
-                      )
-                        ? astrologer.profilePic
-                        : `${API_BASE_URL.DEVELOPMENT}${astrologer.profilePic}`
-                      : '';
-
-                  const mappedAstrologer = mapAstrologer(astrologer);
-
-                  const {
-                    status,
-                    color: indicatorColor,
-                    canChat,
-                    canCall,
-                  } = getAstrologerStatus(astrologer);
-                  const isOffline = !canChat && !canCall;
-
-                  const displayIndicatorColor = isOffline ? '#EF4444' : indicatorColor;
-                  // console.log("astrologer inmy follow",isOffline)
-                  return (
-                    <Card
-                      key={astrologer.id}
-                      style={
-                        styles.astrologerCard
-                      }
-                      onPress={() => {
-                        console.log('[MyFollowingScreen] Card pressed:', {
-                          astrologerId: astrologer?.id,
-                          astrologerName:
-                            astrologer?.displayName ||
-                            astrologer?.name,
-                        });
-                        console.log('[MyFollowingScreen] calling onAstrologerPress');
-                        onAstrologerPress(astrologer);
-                      }}
-                    >
-                      <View
-                        style={
-                          styles.astrologerHeader
-                        }>
-                        {/* Avatar */}
-                        <View
-                          style={
-                            styles.avatarContainer
-                          }>
-                          {imageUrl ? (
-                            <Image
-                              source={{
-                                uri: imageUrl,
-                              }}
-                              style={
-                                styles.avatar
-                              }
+                return (
+                  <Card
+                    key={astrologer.id}
+                    style={styles.astrologerCard}
+                    onPress={() => {
+                      onAstrologerPress(astrologer);
+                    }}>
+                    <View style={styles.astrologerHeader}>
+                      <View style={styles.avatarContainer}>
+                        {imageUrl ? (
+                          <Image
+                            source={{uri: imageUrl}}
+                            style={[
+                              styles.avatar,
+                              {borderColor: AVATAR_BORDER},
+                            ]}
+                          />
+                        ) : (
+                          <View
+                            style={[
+                              styles.avatar,
+                              styles.avatarPlaceholder,
+                              {
+                                backgroundColor:
+                                  colors.primary.light + '30',
+                                borderColor: AVATAR_BORDER,
+                              },
+                            ]}>
+                            <Icon
+                              name="person"
+                              size={28}
+                              color={colors.primary.main}
+                              library="MaterialIcons"
                             />
-                          ) : (
-                            <View
-                              style={[
-                                styles.avatar,
-                                {
-                                  backgroundColor:
-                                    colors
-                                      .primary
-                                      .light +
-                                    '30',
-                                },
-                              ]}>
-                              <Icon
-                                name="person"
-                                size={32}
-                                color={
-                                  colors
-                                    .primary
-                                    .main
-                                }
-                                library="MaterialIcons"
-                              />
-                            </View>
-                          )}
+                          </View>
+                        )}
 
+                        {showStatusDot && (
                           <View
                             style={[
                               styles.onlineIndicator,
                               {
-                                backgroundColor: displayIndicatorColor
-                                // colors
-                                //   .success
-                                //   .main,
+                                backgroundColor: indicatorColor,
+                                borderColor: colors.common.white,
                               },
                             ]}
                           />
-                        </View>
+                        )}
+                      </View>
 
-                        {/* Info */}
-                        <View
-                          style={
-                            styles.astrologerInfo
-                          }>
-                          <View>
-                            <Text
-                              variant="body"
-                              weight="semibold"
-                              style={{
-                                color:
-                                  colors
-                                    .text
-                                    .primary,
-                              }}>
-                              {astrologer.displayName ||
-                                astrologer.name ||
-                                'Astrologer'}
-                            </Text>
+                      <View style={styles.astrologerInfo}>
+                        <View style={styles.nameRow}>
+                          <Text
+                            variant="body"
+                            weight="bold"
+                            numberOfLines={1}
+                            style={[
+                              styles.nameText,
+                              {color: colors.text.primary},
+                            ]}>
+                            {astrologer.displayName ||
+                              astrologer.name ||
+                              'Astrologer'}
+                          </Text>
 
-                            {/* <Text
-                              variant="captionSmall"
-                              style={{
-                                color:
-                                  colors
-                                    .text
-                                    .secondary,
-                                marginTop: 2,
-                              }}>
-                              Astrology Expert
-                            </Text> */}
-
-                            <View
-                              style={
-                                styles.metaRow
-                              }>
-                              <View
-                                style={
-                                  styles.metaItem
-                                }>
-                                <Icon
-                                  name="star"
-                                  size={14}
-                                  color={
-                                    colors
-                                      .common
-                                      .yellow[500]
-                                  }
-                                  library="MaterialIcons"
-                                />
-
-                                <Text
-                                  variant="captionSmall"
-                                  style={{
-                                    color:
-                                      colors
-                                        .text
-                                        .secondary,
-                                    marginLeft: 2,
-                                  }}>
-                                  {Number(astrologer.rating ?? 0).toFixed(1)}
-                                </Text>
-                              </View>
-
-                              <View
-                                style={
-                                  styles.metaItem
-                                }>
-                                <Icon
-                                  name="work-outline"
-                                  size={14}
-                                  color={
-                                    colors
-                                      .text
-                                      .secondary
-                                  }
-                                  library="MaterialIcons"
-                                />
-
-                                <Text
-                                  variant="captionSmall"
-                                  style={{
-                                    color:
-                                      colors
-                                        .text
-                                        .secondary,
-                                    marginLeft: 2,
-                                  }}>
-                                  {
-                                    astrologer.experience
-                                  }{' '}
-                                  yrs
-                                </Text>
-                              </View>
-                            </View>
-
-                            {Array.isArray(mappedAstrologer.skills) &&
-                              mappedAstrologer.skills.length > 0 && (
-                                <View
-                                  style={
-                                    styles.skillsRow
-                                  }>
-                                  {mappedAstrologer.skills
-                                    .slice(
-                                      0,
-                                      3,
-                                    )
-                                    .map(
-                                      (skill: any, idx: number) => (
-                                        <View
-                                          key={`${skill}-${idx}`}
-                                          style={
-                                            styles.skillChip
-                                          }>
-                                          <Text
-                                            variant="captionSmall"
-                                            style={{
-                                              color:
-                                                colors.primary.main,
-
-                                            }}>
-                                            {skill}
-                                          </Text>
-                                        </View>
-                                      ),
-                                    )}
-
-                                  {mappedAstrologer.skills
-                                    .length > 3 && (
-                                      <View
-                                        style={
-                                          styles.skillChip
-                                        }>
-                                        <Text
-                                          variant="captionSmall"
-                                          style={{
-                                            color:
-                                              colors
-                                                .primary.main,
-                                          }}>
-                                          +more
-                                        </Text>
-                                      </View>
-                                    )}
-                                </View>
-                              )}
-                          </View>
-                        </View>
-
-                        <View
-                          style={
-                            styles.moreButton
-                          }>
                           <Icon
-                            name="favorite"
-                            size={22}
-                            color={
-                              colors
-                                .primary.main
-                            }
+                            name="verified"
+                            size={16}
+                            color={colors.primary.main}
+                            library="MaterialIcons"
+                            style={styles.verifiedIcon}
+                          />
+                        </View>
+
+                        <View style={styles.ratingRow}>
+                          <Icon
+                            name="star-border"
+                            size={15}
+                            color={RATING_STAR}
                             library="MaterialIcons"
                           />
+                          <Text
+                            variant="captionSmall"
+                            style={styles.ratingText}>
+                            {Number(astrologer.rating ?? 0).toFixed(1)}
+                          </Text>
                         </View>
+
+                        
+                        {!!followedLabel && (
+                          <Text
+                            variant="captionSmall"
+                            style={styles.followedText}>
+                            {followedLabel}
+                          </Text>
+                        )}
                       </View>
+                    </View>
+                  </Card>
+                );
+              })}
 
-                      {/* Bottom */}
-                      <View
-                        style={[
-                          styles.actionRow,
-                          {
-                            borderTopColor:
-                              colors.border
-                                .light,
-                          },
-                        ]}>
+            {!loading && !error && data.length === 0 && (
+              <View style={styles.emptyState}>
+                <Icon
+                  name="favorite-border"
+                  size={64}
+                  color={colors.icon.tertiary}
+                  library="MaterialIcons"
+                />
 
-                        {/* <View
-                          style={
-                            styles.actionButtons
-                          }>
-                          <Button
-                            title={`Chat ₹${chatPricing?.price ||
-                              0
-                              }`}
-                            disabled={!canChat}
-                            textStyle={{
-                              color: colors.primary.main,
+                <Text
+                  variant="h6"
+                  weight="semibold"
+                  style={{
+                    color: colors.text.secondary,
+                    marginTop: 16,
+                  }}>
+                  No Following Yet
+                </Text>
 
-                            }}
-                            variant="primary"
-                            size="small"
-                            onPress={() => startChat(mappedAstrologer)}
-                            style={{
-                              marginRight: 8,
-                              width: '48%',
-                              backgroundColor: canChat ? 'transparent' : '#00000010',
-                              borderColor: colors.primary.main,
-                              borderWidth: 1,
-                            }}
-                          />
+                <Text
+                  variant="body"
+                  style={{
+                    color: colors.text.tertiary,
+                    marginTop: 8,
+                    textAlign: 'center',
+                  }}>
+                  Start following astrologers to see them here
+                </Text>
+              </View>
+            )}
 
-                          <Button
-                            title={`Call ₹${callPricing?.price ||
-                              0
-                              }`}
-                            disabled={!canCall}
-                            textStyle={{
-                              color: colors.primary.main,
-                            }}
-                            variant="outline"
-                            size="small"
-                            onPress={() => startCall(mappedAstrologer)}
-                            style={{
-                              width: '48%',
-                              backgroundColor: canCall ? 'transparent' : '#00000010',
-                              borderColor: colors.primary.main,
-                              borderWidth: 1,
-                            }}
-                          />
-                        </View> */}
-                      </View>
-                    </Card>
-                  );
-                })}
-
-              {/* Empty */}
-              {!loading &&
-                data.length === 0 && (
-                  <View
-                    style={
-                      styles.emptyState
-                    }>
-                    <Icon
-                      name="favorite-border"
-                      size={64}
-                      color={
-                        colors.icon
-                          .tertiary
-                      }
-                      library="MaterialIcons"
-                    />
-
-                    <Text
-                      variant="h6"
-                      weight="semibold"
-                      style={{
-                        color:
-                          colors.text
-                            .secondary,
-                        marginTop: 16,
-                      }}>
-                      No Following Yet
-                    </Text>
-
-                    <Text
-                      variant="body"
-                      style={{
-                        color:
-                          colors.text
-                            .tertiary,
-                        marginTop: 8,
-                        textAlign:
-                          'center',
-                      }}>
-                      Start following
-                      astrologers to see
-                      them here
-                    </Text>
-                  </View>
-                )}
-
-              {/* Load More */}
-              {hasMore &&
-                !loading && (
-                  <Button
-                    title="Load More"
-                    variant="outline"
-                    onPress={loadMore}
-                    style={{
-                      marginTop: 16,
-                    }}
-                  />
-                )}
-            </ScrollView>
-          </View>
-        );
-      }}
+            {hasMore && !loading && !error && (
+              <Button
+                title={loadingMore ? 'Loading...' : 'Load More'}
+                variant="outline"
+                onPress={loadMore}
+                disabled={loadingMore}
+                style={{marginTop: 8}}
+              />
+            )}
+          </ScrollView>
+        </View>
+      )}
     </ConsultationFlowLayer>
   );
 };
@@ -563,11 +380,9 @@ const styles = StyleSheet.create({
   },
 
   scrollContent: {
-    padding: 16,
-  },
-
-  countContainer: {
-    marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 16,
   },
 
   loaderContainer: {
@@ -577,15 +392,20 @@ const styles = StyleSheet.create({
   },
 
   astrologerCard: {
-    padding: 16,
+    paddingVertical: 15,
+    paddingHorizontal: 15,
     marginBottom: 14,
     borderRadius: 20,
-
+    alignItems: 'stretch',
+    alignSelf: 'stretch',
+    width: '100%',
+    elevation: 1,
   },
 
   astrologerHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    width: '100%',
   },
 
   avatarContainer: {
@@ -593,97 +413,79 @@ const styles = StyleSheet.create({
   },
 
   avatar: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.10)',
+    borderWidth: 1.5,
+    borderColor: AVATAR_BORDER,
+  },
+
+  avatarPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   onlineIndicator: {
     position: 'absolute',
-    bottom: 3,
-    right: 3,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    bottom: 2,
+    right: 2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
     borderWidth: 2,
     borderColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.18,
-    shadowRadius: 6,
-    elevation: 2,
   },
 
   astrologerInfo: {
     flex: 1,
     marginLeft: 14,
-    paddingTop: 2,
+    justifyContent: 'center',
+    minWidth: 0,
   },
 
-  metaRow: {
+  nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
+    maxWidth: '100%',
   },
 
-  metaItem: {
+  nameText: {
+    flexShrink: 1,
+    fontSize: 16,
+    lineHeight: 22,
+  },
+
+  verifiedIcon: {
+    marginLeft: 6,
+  },
+
+  ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    marginRight: 10,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    marginTop: 4,
   },
 
-  skillsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 10,
+  ratingText: {
+    color: META_TEXT,
+    marginLeft: 4,
+    fontSize: 13,
+    lineHeight: 18,
   },
 
-  skillChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    marginRight: 10,
-    marginBottom: 6,
+  skillsText: {
+    color: META_TEXT,
+    marginTop: 3,
+    fontSize: 12,
+    lineHeight: 16,
   },
 
-  moreButton: {
-    padding: 6,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-  },
-
-  actionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 14,
-    paddingTop: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
-
-  languageContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  actionButtons: {
-    flexDirection: 'row',
+  followedText: {
+    color: FOLLOWED_TEXT,
+    marginTop: 3,
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '400',
   },
 
   emptyState: {
