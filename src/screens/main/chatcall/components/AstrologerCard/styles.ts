@@ -12,6 +12,7 @@ export const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 14,
     marginBottom: 14,
+
     elevation: 1,
     backgroundColor: colors.common.white,
   },
