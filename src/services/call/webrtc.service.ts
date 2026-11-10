@@ -15,22 +15,18 @@ import {socketService} from '../socket/socket.service';
 import {useCallStore} from './call.store';
 import InCallManager from 'react-native-incall-manager';
 
+const ICE_SERVERS = [
+  {
+    urls: 'stun:162.214.102.56:3478',
+  },
+  {
+    urls: 'turn:162.214.102.56:3478?transport=udp',
+    username: 'turnuser',
+    credential: 'Shiva@2025#',
+  },
+];
 const ICE_CONFIG: CallConfig = {
-  iceServers: [
-    {urls: 'stun:stun.l.google.com:19302'},
-    {urls: 'stun:stun1.l.google.com:19302'},
-    {urls: 'stun:stun2.l.google.com:19302'},
-    {
-      urls: 'turn:openrelay.metered.ca:80',
-      username: 'openrelayproject',
-      credential: 'openrelayproject',
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:443',
-      username: 'openrelayproject',
-      credential: 'openrelayproject',
-    },
-  ],
+  iceServers: ICE_SERVERS,
   iceCandidatePoolSize: 10,
   bundlePolicy: 'max-bundle' as any,
   rtcpMuxPolicy: 'require' as any,

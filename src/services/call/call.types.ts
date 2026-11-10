@@ -79,22 +79,23 @@ export interface CallConfig {
   rtcpMuxPolicy?: 'negotiate' | 'require';
 }
 
+
+const ICE_SERVERS = [
+  {
+    urls: 'stun:162.214.102.56:3478',
+  },
+  {
+    urls: 'turn:162.214.102.56:3478?transport=udp',
+    username: 'turnuser',
+    credential: 'Shiva@2025#',
+  },
+];
 export const DEFAULT_CALL_CONFIG: CallConfig = {
-  iceServers: [
-    {urls: 'stun:stun.l.google.com:19302'},
-    {urls: 'stun:stun1.l.google.com:19302'},
-  ],
+  iceServers: ICE_SERVERS,
   enableLogging: __DEV__,
 };
 
 export const TURN_CONFIG: CallConfig = {
-  iceServers: [
-    {urls: 'stun:stun.l.google.com:19302'},
-    {
-      urls: 'turn:your-turn-server.com:3478',
-      username: 'your-username',
-      credential: 'your-credential',
-    },
-  ],
+  iceServers: ICE_SERVERS,
   enableLogging: __DEV__,
 };
