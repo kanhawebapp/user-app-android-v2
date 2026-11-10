@@ -129,7 +129,7 @@ export const OnboardingSplash2: React.FC<
           benefits={benefits}
           iconTintColor={colors.common.white}
         />
-
+{/* 
         <View style={styles.buttonContainer}>
           <Button title="Continue" onPress={onContinue} />
           <Button
@@ -139,7 +139,7 @@ export const OnboardingSplash2: React.FC<
             textStyle={{color: SPLASH_COLORS.goldLight}}
             style={{marginTop: 20}}
           />
-        </View>
+        </View> */}
 
         <BottomDecoration />
       </Animated.View>

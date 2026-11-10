@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import DatePicker from 'react-native-date-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, useTheme } from '../../theme';
+import { useTheme } from '../../theme';
 import { Text } from '../../components/Text';
 import { Icon } from '../../components/Icon';
 import { Button } from '../../components/Button';
@@ -32,15 +32,18 @@ const genderOptions = [
 ];
 
 const formatDate = (d: Date): string => {
-  return d.toLocaleDateString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}-${month}-${year}`;
 };
 
 const formatTime = (d: Date): string => {
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
 };
 
 const PROFILE_IMAGE_MAX_SIZE = 2 * 1024 * 1024; // 2 MB
@@ -277,40 +280,25 @@ const UpdateProfileScreen = ({onNavigateBack, onNavigateToProfile}: any) => {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background.primary }}>
+    <View style={[styles.screen, {backgroundColor: colors.background.secondary}]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
-      {/* Premium Header */}
-      {/* <View
-        style={[
-          styles.header,
-          {
-            paddingTop: insets.top + 8,
-            // backgroundColor: colors.primary.main,
-          },
-        ]}>
-        <TouchableOpacity onPress={onNavigateBack} style={styles.headerBack}>
-          <Icon name="arrow-back" size={24} color={colors.common.black} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
-        <View style={{ width: 40 }} />
-      </View> */}
-      <GoBack onBack={onNavigateBack} title='Edit Profile' />
+      <GoBack onBack={onNavigateBack} title="Edit Profile" />
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}>
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.flex}>
         <ScrollView
-          contentContainerStyle={{
-            padding: 20,
-            paddingBottom: 100,
-          }}
-          showsVerticalScrollIndicator={false}>
+          style={styles.flex}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag">
           {/* Profile Avatar Section */}
           <View style={styles.avatarSection}>
             <View style={styles.avatarWrapper}>
               <View
-                style={[styles.avatar, { backgroundColor: colors.primary.main }]}>
+                style={[styles.avatar, {backgroundColor: colors.primary.main}]}>
                 {profileImageUri ? (
                   <Image
                     source={{uri: profileImageUri}}
@@ -321,7 +309,7 @@ const UpdateProfileScreen = ({onNavigateBack, onNavigateToProfile}: any) => {
                   <Text
                     style={[
                       styles.avatarText,
-                      { color: colors.primary.contrastText },
+                      {color: colors.primary.contrastText},
                     ]}>
                     {formData.name
                       ? formData.name.charAt(0).toUpperCase()
@@ -332,7 +320,7 @@ const UpdateProfileScreen = ({onNavigateBack, onNavigateToProfile}: any) => {
               <TouchableOpacity
                 style={[
                   styles.avatarEditIcon,
-                  { backgroundColor: colors.primary.main },
+                  {backgroundColor: colors.primary.main},
                 ]}
                 onPress={handleUploadProfileImage}
                 disabled={uploadingProfileImage}
@@ -352,37 +340,69 @@ const UpdateProfileScreen = ({onNavigateBack, onNavigateToProfile}: any) => {
                 )}
               </TouchableOpacity>
             </View>
-            <Text style={[styles.avatarHint, { color: colors.text.secondary }]}>
+            <Text style={[styles.avatarHint, {color: colors.text.tertiary}]}>
               {profile?.countryCode} {profile?.mobile}
             </Text>
           </View>
 
-          {/* Personal Information Card */}
+          {/* Personal Details Card */}
           <Card style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Personal Details</Text>
+            </View>
+            <View style={styles.cardDivider} />
+
             <View style={styles.formContent}>
-              {/* Name Input */}
+              {/* Full Name */}
               <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.text.secondary }]}>
-                  Full Name
-                </Text>
+                <Text style={styles.label}>Full Name</Text>
                 <InputBox
                   value={formData.name}
                   onChangeText={v => handleChange('name', v)}
                   placeholder="Enter your name"
+                  containerStyle={styles.inputBoxContainer}
                 />
+              </View>
+
+              {/* Date of Birth | Time of Birth */}
+              <View style={styles.row}>
+                <View style={styles.halfField}>
+                  <Text style={styles.label}>Date of Birth</Text>
+                  <TouchableOpacity
+                    style={styles.selectInput}
+                    onPress={() => setOpenDate(true)}
+                    activeOpacity={0.7}>
+                    <Text style={styles.selectText} numberOfLines={1}>
+                      {formatDate(birthDate)}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.halfField}>
+                  <Text style={styles.label}>Time of Birth</Text>
+                  <TouchableOpacity
+                    style={styles.selectInput}
+                    onPress={() => setOpenTime(true)}
+                    activeOpacity={0.7}>
+                    <Text style={styles.selectText} numberOfLines={1}>
+                      {formatTime(birthTime)}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
 
               {/* Gender Selection */}
               <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.text.secondary }]}>
+                <Text style={[styles.label, {color: colors.text.secondary}]}>
                   Gender
                 </Text>
                 <View style={styles.genderRow}>
-                  {/* {genderOptions.map(g => {
-                    const active = formData.gender === g;
+                  {genderOptions.map(item => {
+                    const active = formData.gender === item.value;
+
                     return (
                       <TouchableOpacity
-                        key={g}
+                        key={item.value}
                         style={[
                           styles.genderOption,
                           {
@@ -394,21 +414,18 @@ const UpdateProfileScreen = ({onNavigateBack, onNavigateToProfile}: any) => {
                               : 'transparent',
                           },
                         ]}
-                        onPress={() => handleChange('gender', g)}>
+                        onPress={() => handleChange('gender', item.value)}>
                         <Icon
-                          name={
-                            g === 'Male'
-                              ? 'male'
-                              : g === 'Female'
-                                ? 'female'
-                                : 'person-outline'
-                          }
+                          name={item.value === 'MALE' ? 'male' : 'female'}
                           size={18}
                           color={
-                            active ? colors.primary.main : colors.text.tertiary
+                            active
+                              ? colors.primary.main
+                              : colors.text.tertiary
                           }
                           library="Ionicons"
                         />
+
                         <Text
                           style={[
                             styles.genderText,
@@ -418,134 +435,22 @@ const UpdateProfileScreen = ({onNavigateBack, onNavigateToProfile}: any) => {
                                 : colors.text.primary,
                             },
                           ]}>
-                          {g}
+                          {item.label}
                         </Text>
                       </TouchableOpacity>
                     );
-                  })} */}
-                  <View style={styles.genderRow}>
-                    {genderOptions.map(item => {
-                      const active = formData.gender === item.value;
-
-                      return (
-                        <TouchableOpacity
-                          key={item.value}
-                          style={[
-                            styles.genderOption,
-                            {
-                              borderColor: active
-                                ? colors.primary.main
-                                : colors.border.light,
-                              backgroundColor: active
-                                ? colors.primary.main + '15'
-                                : 'transparent',
-                            },
-                          ]}
-                          onPress={() => handleChange('gender', item.value)}>
-
-                          <Icon
-                            name={
-                              item.value === 'MALE'
-                                ? 'male'
-                                : 'female'
-                            }
-                            size={18}
-                            color={
-                              active
-                                ? colors.primary.main
-                                : colors.text.tertiary
-                            }
-                            library="Ionicons"
-                          />
-
-                          <Text
-                            style={[
-                              styles.genderText,
-                              {
-                                color: active
-                                  ? colors.primary.main
-                                  : colors.text.primary,
-                              },
-                            ]}>
-                            {item.label}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                </View>
-              </View>
-              <View style={styles.datetimeCont}>
-                {/* Birth Date */}
-                <View style={styles.inputGroupw}>
-                  <Text style={[styles.label, { color: colors.text.secondary }]}>
-                    Birth Date
-                  </Text>
-                  <TouchableOpacity
-                    style={[
-                      styles.dateInput,
-                      { backgroundColor: colors.background.secondary },
-                    ]}
-                    onPress={() => setOpenDate(true)}>
-                    <Icon
-                      name="calendar-today"
-                      size={18}
-                      color={colors.primary.main}
-                      library="MaterialIcons"
-                    />
-                    <Text
-                      style={[styles.dateText, { color: colors.text.primary }]}>
-                      {formatDate(birthDate)}
-                    </Text>
-                    <Icon
-                      name="expand-more"
-                      size={20}
-                      color={colors.icon.tertiary}
-                      library="MaterialIcons"
-                    />
-                  </TouchableOpacity>
-                </View>
-
-                {/* Birth Time */}
-                <View style={styles.inputGroupw}>
-                  <Text style={[styles.label, { color: colors.text.secondary }]}>
-                    Birth Time
-                  </Text>
-                  <TouchableOpacity
-                    style={[
-                      styles.dateInput,
-                      { backgroundColor: colors.background.secondary },
-                    ]}
-                    onPress={() => setOpenTime(true)}>
-                    <Icon
-                      name="schedule"
-                      size={18}
-                      color={colors.primary.main}
-                      library="MaterialIcons"
-                    />
-                    <Text
-                      style={[styles.dateText, { color: colors.text.primary }]}>
-                      {formatTime(birthTime)}
-                    </Text>
-                    <Icon
-                      name="expand-more"
-                      size={20}
-                      color={colors.icon.tertiary}
-                      library="MaterialIcons"
-                    />
-                  </TouchableOpacity>
+                  })}
                 </View>
               </View>
 
               {/* Occupation */}
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.text.secondary }]}>
-                  Occupation
-                </Text>
+              <View style={[styles.inputGroup, styles.inputGroupLast]}>
+                <Text style={styles.label}>Occupation</Text>
                 <InputBox
                   value={formData.occupation}
                   onChangeText={v => handleChange('occupation', v)}
                   placeholder="Enter your occupation"
+                  containerStyle={styles.inputBoxContainer}
                 />
               </View>
             </View>
@@ -557,18 +462,17 @@ const UpdateProfileScreen = ({onNavigateBack, onNavigateToProfile}: any) => {
           style={[
             styles.footer,
             {
-              paddingBottom: insets.bottom + 16,
-              backgroundColor: colors.background.primary,
+              paddingBottom: Math.max(insets.bottom, 16),
+              backgroundColor: colors.background.secondary,
+              borderTopColor: colors.border.light,
             },
           ]}>
-          <View style={styles.footerShadow}>
-            <Button
-              title={updating ? 'Saving...' : 'Save Changes'}
-              onPress={handleSave}
-              loading={updating}
-              style={styles.saveButton}
-            />
-          </View>
+          <Button
+            title={updating ? 'Saving...' : 'Save Changes'}
+            onPress={handleSave}
+            loading={updating}
+            style={styles.saveButton}
+          />
         </View>
       </KeyboardAvoidingView>
 
@@ -607,38 +511,36 @@ const UpdateProfileScreen = ({onNavigateBack, onNavigateToProfile}: any) => {
 export default UpdateProfileScreen;
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
+
+  screen: {
+    flex: 1,
+  },
+
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
 
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  scrollContent: {
     paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-
-  headerBack: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-  },
-
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.common.black,
+    paddingTop: 16,
+    paddingBottom: 24,
+    flexGrow: 1,
   },
 
   avatarSection: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
+  },
+
+  avatarWrapper: {
+    position: 'relative',
+    alignSelf: 'center',
+    marginBottom: 8,
   },
 
   avatar: {
@@ -648,25 +550,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: '#fff',
-    marginBottom: 8,
+    borderColor: '#FFFFFF',
     overflow: 'hidden',
   },
 
   avatarImage: {
-    width: 80,
-    height: 80,
+    width: '100%',
+    height: '100%',
     borderRadius: 40,
-  },
-
-  avatarWrapper: {
-    position: 'relative',
-    alignSelf: 'center',
   },
 
   avatarEditIcon: {
     position: 'absolute',
-    bottom: 8,
+    bottom: 0,
     right: 0,
     width: 24,
     height: 24,
@@ -682,44 +578,103 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 22,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
 
   avatarHint: {
     fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 16,
   },
 
   card: {
-    borderRadius: 16,
+    borderRadius: 24,
     overflow: 'hidden',
+    padding: 0,
+    width: '100%',
+    backgroundColor: '#FFFFFF',
   },
 
   cardHeader: {
-    flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0,0,0,0.05)',
+    justifyContent: 'center',
+    paddingTop: 20,
+    paddingBottom: 14,
+    paddingHorizontal: 16,
   },
 
   cardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 10,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111111',
+    textAlign: 'center',
+  },
+
+  cardDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#E6E6E6',
+    marginHorizontal: 16,
   },
 
   formContent: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 18,
+    paddingBottom: 20,
   },
 
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 16,
     width: '100%',
+  },
+
+  inputGroupLast: {
+    marginBottom: 0,
   },
 
   label: {
     fontSize: 13,
     fontWeight: '500',
+    color: '#8A8A8A',
     marginBottom: 8,
+  },
+
+  row: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 14,
+    width: '100%',
+    marginBottom: 16,
+  },
+
+  halfField: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  inputBoxContainer: {
+    width: '100%',
+    minWidth: 0,
+    maxWidth: '100%',
+  },
+
+  selectInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 44,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    backgroundColor: '#FFFFFF',
+    width: '100%',
+  },
+
+  selectText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#111111',
+    minWidth: 0,
   },
 
   genderRow: {
@@ -744,44 +699,13 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  dateInput: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 8,
-    borderRadius: 12,
-    gap: 10,
-  },
-
-  dateText: {
-    flex: 1,
-    fontSize: 14,
-  },
-
   footer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-  },
-
-  footerShadow: {
-    backgroundColor: '#fff',
-    paddingTop: 16,
+    paddingHorizontal: 16,
+    paddingTop: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(0,0,0,0.1)',
   },
 
   saveButton: {
     borderRadius: 12,
-  },
-  datetimeCont: {
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  inputGroupw: {
-    width: '46%',
   },
 });
