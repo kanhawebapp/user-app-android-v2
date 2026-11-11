@@ -1,8 +1,8 @@
 import {NativeModules, Platform} from 'react-native';
 import ReactNativeBlobUtil from 'react-native-blob-util';
-import {Buffer} from 'buffer';
 import type {MediaStream} from 'react-native-webrtc';
 import {uploadCallRecording} from '../api/upload/upload.api';
+import {webRTCService} from './webrtc.service';
 
 // Lazy-load so a missing native binary does not crash module evaluation.
 const audioRecorderPkg = require('react-native-audio-recorder-player');
@@ -13,8 +13,18 @@ const {
   AudioSourceAndroidType,
   AVEncoderAudioQualityIOSType,
   AVEncodingOption,
+  AVModeIOSOption,
   OutputFormatAndroidType,
 } = audioRecorderPkg;
+
+type NativeMixerModule = {
+  isAvailable?: () => Promise<boolean>;
+  startRecorder: (path: string) => Promise<string>;
+  stopRecorder: () => Promise<string | null>;
+};
+
+const CallAudioMixerRecorder: NativeMixerModule | undefined =
+  NativeModules.CallAudioMixerRecorder;
 
 export type CallRecordingUploadMeta = {
   roomId: string;
@@ -31,55 +41,57 @@ type FinalizedRecording = {
   durationSec: number;
 };
 
-const NativeMediaRecorder: any = (globalThis as any).MediaRecorder;
+type StreamPair = {
+  local?: MediaStream | null;
+  remote?: MediaStream | null;
+};
 
 /**
- * Call recording lifecycle adapted from the MediaRecorder reference flow.
+ * Two-way call recording.
  *
- * react-native-webrtc does not implement browser MediaRecorder, so on native
- * we record via react-native-audio-recorder-player while the call audio session
- * is active (speaker defaults on, so remote audio is typically captured too).
- * If MediaRecorder is ever available, the same start/stop/upload guards apply.
+ * Android native mixer combines:
+ *   1) Local WebRTC mic PCM (SamplesReadyCallback)
+ *   2) Remote decoded playout PCM (TeeingAudioTrack — AudioTrackSink is absent
+ *      in org.jitsi:webrtc:124.0.0)
+ *
+ * iOS falls back to audio-recorder-player in measurement mode after remote audio
+ * is available.
  */
 class CallRecordingService {
-  private mediaRecorderRef: any = null;
-  private recordedChunksRef: any[] = [];
   private isRecordingRef = false;
   private callStartTimeRef = 0;
   private recordingInitializedRef = false;
-  private combinedStreamRef: MediaStream | null = null;
   private recordingUploadStartedRef = false;
   private recordingStoppedRef = false;
 
   private recordingPath: string | null = null;
+  private usingNativeMixer = false;
   private audioRecorderPlayer: InstanceType<
     typeof AudioRecorderPlayerCtor
   > | null = null;
   private stopPromise: Promise<FinalizedRecording | null> | null = null;
+  private startWaitAbort = false;
 
-  private assertNativeModuleLinked(): void {
+  private assertFallbackRecorderLinked(): void {
     if (!NativeModules.RNAudioRecorderPlayer) {
       throw new Error(
         'RNAudioRecorderPlayer native module is null. ' +
-          'Rebuild the app after installing react-native-audio-recorder-player ' +
-          '(Android: re-run react-native run-android; iOS: pod install && rebuild). ' +
-          'Metro reload alone is not enough.',
+          'Rebuild the app after installing react-native-audio-recorder-player.',
       );
     }
   }
 
   resetForNewCall(): void {
+    this.startWaitAbort = true;
     this.clearRecordingRefs();
     this.recordingUploadStartedRef = false;
     this.recordingStoppedRef = false;
     this.recordingInitializedRef = false;
     this.isRecordingRef = false;
     this.callStartTimeRef = 0;
-    this.recordedChunksRef = [];
-    this.combinedStreamRef = null;
-    this.mediaRecorderRef = null;
     this.recordingPath = null;
     this.stopPromise = null;
+    this.usingNativeMixer = false;
   }
 
   async startRecording(
@@ -96,18 +108,39 @@ class CallRecordingService {
     this.recordingInitializedRef = true;
     this.recordingStoppedRef = false;
     this.recordingUploadStartedRef = false;
+    this.startWaitAbort = false;
     this.callStartTimeRef = Date.now();
-    this.recordedChunksRef = [];
 
     try {
-      if (typeof NativeMediaRecorder === 'function') {
-        await this.startMediaRecorder(localStream, remoteStream);
-        console.log('[CallRecording] Recording started');
+      const streams = await this.waitForRemoteAudio({
+        local: localStream,
+        remote: remoteStream,
+      });
+
+      if (this.startWaitAbort || this.recordingStoppedRef) {
+        console.log('[CallRecording] start aborted while waiting for remote');
+        this.recordingInitializedRef = false;
         return;
       }
 
-      await this.startNativeRecorder();
-      console.log('[CallRecording] Recording started');
+      // Keep speaker on so remote WebRTC audio is audible to the ambient mic path.
+      try {
+        webRTCService.toggleSpeaker(true);
+      } catch (error) {
+        console.log('[CallRecording] toggleSpeaker failed:', error);
+      }
+
+      const startedNative = await this.tryStartNativeMixer();
+      if (!startedNative) {
+        await this.startFallbackRecorder();
+      }
+
+      this.isRecordingRef = true;
+      console.log('[CallRecording] Recording started', {
+        mode: this.usingNativeMixer ? 'native-mixer' : 'fallback-recorder',
+        localTracks: streams.local?.getAudioTracks?.()?.length ?? 0,
+        remoteTracks: streams.remote?.getAudioTracks?.()?.length ?? 0,
+      });
     } catch (error) {
       console.log('[CallRecording] start failed:', error);
       this.isRecordingRef = false;
@@ -121,6 +154,7 @@ class CallRecordingService {
    * Safe to call from both call_ended_by_astrologer and handleEndCall/endCall.
    */
   async stopAndUpload(meta: CallRecordingUploadMeta): Promise<void> {
+    this.startWaitAbort = true;
     const finalized = await this.stopRecording();
 
     if (!finalized) {
@@ -176,10 +210,7 @@ class CallRecordingService {
           recordingUrl: result.recording?.recordingUrl,
         });
       } else {
-        console.error(
-          '[CallRecording] Upload failed:',
-          result?.message,
-        );
+        console.error('[CallRecording] Upload failed:', result?.message);
       }
     } catch (error) {
       console.log(
@@ -188,6 +219,7 @@ class CallRecordingService {
       );
     } finally {
       // Clear in-memory refs only — do not delete the local file here.
+      // Never stop/disable remote WebRTC tracks from this service.
       this.clearRecordingRefs();
     }
   }
@@ -208,6 +240,154 @@ class CallRecordingService {
     } finally {
       this.stopPromise = null;
     }
+  }
+
+  private async waitForRemoteAudio(
+    initial: StreamPair,
+    timeoutMs = 15000,
+  ): Promise<{local: MediaStream | null; remote: MediaStream | null}> {
+    const startedAt = Date.now();
+
+    while (!this.startWaitAbort && Date.now() - startedAt < timeoutMs) {
+      const local =
+        webRTCService.getLocalMediaStream() ||
+        initial.local ||
+        null;
+      const remote =
+        webRTCService.getRemoteMediaStream() ||
+        initial.remote ||
+        null;
+
+      const remoteTracks = remote?.getAudioTracks?.() ?? [];
+      const liveRemote = remoteTracks.some(
+        (track: any) =>
+          track &&
+          track.readyState !== 'ended' &&
+          track.enabled !== false,
+      );
+
+      if (liveRemote) {
+        console.log('[CallRecording] Remote audio ready');
+        return {local, remote};
+      }
+
+      console.log('[CallRecording] Waiting for remote audio track...');
+      await new Promise(resolve => setTimeout(resolve, 400));
+    }
+
+    const local =
+      webRTCService.getLocalMediaStream() || initial.local || null;
+    const remote =
+      webRTCService.getRemoteMediaStream() || initial.remote || null;
+
+    if ((remote?.getAudioTracks?.()?.length ?? 0) === 0) {
+      throw new Error(
+        'Remote audio track not available — refusing mic-only recording',
+      );
+    }
+
+    return {local, remote};
+  }
+
+  private async tryStartNativeMixer(): Promise<boolean> {
+    if (Platform.OS !== 'android' || !CallAudioMixerRecorder?.startRecorder) {
+      return false;
+    }
+
+    try {
+      const available = CallAudioMixerRecorder.isAvailable
+        ? await CallAudioMixerRecorder.isAvailable()
+        : true;
+      if (!available) {
+        return false;
+      }
+
+      const dirs = ReactNativeBlobUtil.fs.dirs;
+      const requestedPath = `${dirs.CacheDir}/call_recording_${Date.now()}.wav`;
+      const startedPath = await CallAudioMixerRecorder.startRecorder(requestedPath);
+      // Keep the exact native path so upload uses the same file that was written.
+      this.recordingPath = startedPath || requestedPath;
+      this.usingNativeMixer = true;
+      console.log('[CallRecording] Native two-way mixer started:', this.recordingPath);
+      return true;
+    } catch (error) {
+      console.log('[CallRecording] Native mixer unavailable, falling back:', error);
+      this.usingNativeMixer = false;
+      this.recordingPath = null;
+      return false;
+    }
+  }
+
+  private async startFallbackRecorder(): Promise<void> {
+    this.assertFallbackRecorderLinked();
+
+    if (typeof AudioRecorderPlayerCtor !== 'function') {
+      throw new Error('AudioRecorderPlayer constructor is unavailable');
+    }
+
+    const dirs = ReactNativeBlobUtil.fs.dirs;
+    const ext = Platform.OS === 'ios' ? 'm4a' : 'mp4';
+    const path = `${dirs.CacheDir}/call_recording_${Date.now()}.${ext}`;
+    this.recordingPath = path;
+
+    if (!this.audioRecorderPlayer) {
+      this.audioRecorderPlayer = new AudioRecorderPlayerCtor();
+    }
+
+    if (!this.audioRecorderPlayer?.startRecorder) {
+      throw new Error('AudioRecorderPlayer.startRecorder is unavailable');
+    }
+
+    // Avoid VOICE_COMMUNICATION — its AEC strips remote speaker audio from the recording.
+    const iosAudioSet = {
+      AVEncoderAudioQualityKeyIOS: AVEncoderAudioQualityIOSType.high,
+      AVNumberOfChannelsKeyIOS: 1,
+      AVFormatIDKeyIOS: AVEncodingOption.aac,
+      AVModeIOS: AVModeIOSOption.measurement,
+      AVSampleRateKeyIOS: 44100,
+    };
+
+    if (Platform.OS === 'ios') {
+      await this.audioRecorderPlayer.startRecorder(path, iosAudioSet as any);
+    } else {
+      const androidSources = [
+        AudioSourceAndroidType.UNPROCESSED,
+        AudioSourceAndroidType.MIC,
+        AudioSourceAndroidType.CAMCORDER,
+        AudioSourceAndroidType.VOICE_RECOGNITION,
+      ];
+      let started = false;
+      let lastError: unknown;
+      for (const source of androidSources) {
+        try {
+          const audioSet = {
+            AudioEncoderAndroid: AudioEncoderAndroidType.AAC,
+            AudioSourceAndroid: source,
+            OutputFormatAndroid: OutputFormatAndroidType.MPEG_4,
+            AudioSamplingRateAndroid: 44100,
+            AudioEncodingBitRateAndroid: 128000,
+            AudioChannelsAndroid: 1,
+          };
+          await this.audioRecorderPlayer.startRecorder(path, audioSet as any);
+          console.log('[CallRecording] Fallback recorder source:', source);
+          started = true;
+          break;
+        } catch (error) {
+          lastError = error;
+          try {
+            await this.audioRecorderPlayer.stopRecorder();
+          } catch {
+            // ignore
+          }
+        }
+      }
+      if (!started) {
+        throw lastError || new Error('Unable to start fallback recorder');
+      }
+    }
+
+    this.usingNativeMixer = false;
+    console.log('[CallRecording] Fallback recorder started:', path);
   }
 
   private normalizeRecordingPath(uriOrPath: string): {
@@ -231,36 +411,17 @@ class CallRecordingService {
     try {
       console.log('[CallRecording] Recording stopped');
 
-      if (this.mediaRecorderRef) {
-        const blob = await this.stopMediaRecorder();
-        if (!blob || blob.size === 0) {
-          console.log('[CallRecording] Empty MediaRecorder chunks');
-          this.isRecordingRef = false;
-          return null;
-        }
-
-        const file = await this.persistBlobToCache(blob);
-        this.isRecordingRef = false;
-        console.log('[CallRecording] Recording file finalized', {
-          name: file.name,
-          type: file.type,
-          durationSec: Math.max(1, durationSec),
-        });
-        return {
-          ...file,
-          durationSec: Math.max(1, durationSec),
-        };
-      }
-
       if (!this.isRecordingRef && !this.recordingPath) {
         return null;
       }
 
-      const rawPath = await this.stopNativeRecorder();
+      const rawPath = this.usingNativeMixer
+        ? await this.stopNativeMixer()
+        : await this.stopFallbackRecorder();
       this.isRecordingRef = false;
 
       if (!rawPath) {
-        console.log('[CallRecording] Native recorder returned empty path');
+        console.log('[CallRecording] Recorder returned empty path');
         return null;
       }
 
@@ -271,19 +432,38 @@ class CallRecordingService {
         return null;
       }
 
-      const ext = Platform.OS === 'ios' ? 'm4a' : 'mp4';
+      const basename = normalizedPath.split('/').pop() || '';
+      const isWav = normalizedPath.toLowerCase().endsWith('.wav');
+      const ext = isWav
+        ? 'wav'
+        : basename.includes('.')
+          ? basename.split('.').pop() || (Platform.OS === 'ios' ? 'm4a' : 'mp4')
+          : Platform.OS === 'ios'
+            ? 'm4a'
+            : 'mp4';
+      const type = isWav
+        ? 'audio/wav'
+        : Platform.OS === 'ios'
+          ? 'audio/m4a'
+          : 'audio/mp4';
+
+      // Use the real on-disk basename — do not invent a new timestamped name.
       const finalized = {
         uri,
-        name: `call_recording_${Date.now()}.${ext}`,
-        type: Platform.OS === 'ios' ? 'audio/m4a' : 'audio/mp4',
+        name: basename || `call_recording.${ext}`,
+        type,
         durationSec: Math.max(1, durationSec),
       };
+
+      this.recordingPath = normalizedPath;
 
       console.log('[CallRecording] Recording file finalized', {
         name: finalized.name,
         type: finalized.type,
         durationSec: finalized.durationSec,
         uri: finalized.uri,
+        path: normalizedPath,
+        mode: this.usingNativeMixer ? 'native-mixer' : 'fallback-recorder',
       });
 
       return finalized;
@@ -294,150 +474,21 @@ class CallRecordingService {
     }
   }
 
-  private async startMediaRecorder(
-    localStream?: MediaStream | null,
-    remoteStream?: MediaStream | null,
-  ): Promise<void> {
-    const tracks: any[] = [];
-
-    localStream?.getAudioTracks?.().forEach((track: any) => {
-      if (track) {
-        tracks.push(track);
-      }
-    });
-    remoteStream?.getAudioTracks?.().forEach((track: any) => {
-      if (track) {
-        tracks.push(track);
-      }
-    });
-
-    if (tracks.length === 0) {
-      throw new Error('No audio tracks available for MediaRecorder');
+  private async stopNativeMixer(): Promise<string | null> {
+    if (!CallAudioMixerRecorder?.stopRecorder) {
+      return this.recordingPath;
     }
-
-    const CombinedStreamCtor =
-      (globalThis as any).MediaStream ||
-      // Fallback: reuse local stream container if constructor missing
-      null;
-
-    let combined: any = localStream || remoteStream;
-    if (CombinedStreamCtor) {
-      try {
-        combined = new CombinedStreamCtor(tracks);
-      } catch {
-        combined = localStream || remoteStream;
-      }
+    try {
+      const result = await CallAudioMixerRecorder.stopRecorder();
+      console.log('[CallRecording] Native mixer stopped:', result);
+      return result || this.recordingPath;
+    } catch (error) {
+      console.log('[CallRecording] Native mixer stop failed:', error);
+      return this.recordingPath;
     }
-
-    this.combinedStreamRef = combined;
-
-    const isTypeSupported = NativeMediaRecorder.isTypeSupported?.bind(
-      NativeMediaRecorder,
-    );
-    const mimeType = isTypeSupported?.('audio/webm;codecs=opus')
-      ? 'audio/webm;codecs=opus'
-      : isTypeSupported?.('audio/mp4')
-        ? 'audio/mp4'
-        : '';
-
-    const recorder = mimeType
-      ? new NativeMediaRecorder(combined, {mimeType})
-      : new NativeMediaRecorder(combined);
-
-    this.recordedChunksRef = [];
-    recorder.ondataavailable = (event: any) => {
-      if (event?.data && event.data.size > 0) {
-        this.recordedChunksRef.push(event.data);
-      }
-    };
-
-    this.mediaRecorderRef = recorder;
-    recorder.start(1000);
-    this.isRecordingRef = true;
-    console.log('[CallRecording] MediaRecorder started');
   }
 
-  private stopMediaRecorder(): Promise<any | null> {
-    return new Promise(resolve => {
-      const recorder = this.mediaRecorderRef;
-      if (!recorder) {
-        resolve(null);
-        return;
-      }
-
-      const finish = () => {
-        try {
-          if (this.recordedChunksRef.length === 0) {
-            resolve(null);
-            return;
-          }
-          const type = recorder.mimeType || 'audio/webm';
-          const BlobCtor = (globalThis as any).Blob;
-          if (!BlobCtor) {
-            resolve(null);
-            return;
-          }
-          resolve(new BlobCtor(this.recordedChunksRef, {type}));
-        } catch (error) {
-          console.log(
-            '[CallRecording] MediaRecorder blob build failed:',
-            error,
-          );
-          resolve(null);
-        }
-      };
-
-      recorder.onstop = finish;
-
-      try {
-        if (recorder.state !== 'inactive') {
-          recorder.requestData?.();
-          recorder.stop();
-        } else {
-          finish();
-        }
-      } catch (error) {
-        console.log('[CallRecording] MediaRecorder stop failed:', error);
-        finish();
-      }
-    });
-  }
-
-  private async startNativeRecorder(): Promise<void> {
-    this.assertNativeModuleLinked();
-
-    if (typeof AudioRecorderPlayerCtor !== 'function') {
-      throw new Error('AudioRecorderPlayer constructor is unavailable');
-    }
-
-    const dirs = ReactNativeBlobUtil.fs.dirs;
-    const ext = Platform.OS === 'ios' ? 'm4a' : 'mp4';
-    const path = `${dirs.CacheDir}/call_recording_${Date.now()}.${ext}`;
-    this.recordingPath = path;
-
-    if (!this.audioRecorderPlayer) {
-      this.audioRecorderPlayer = new AudioRecorderPlayerCtor();
-    }
-
-    if (!this.audioRecorderPlayer?.startRecorder) {
-      throw new Error('AudioRecorderPlayer.startRecorder is unavailable');
-    }
-
-    const audioSet = {
-      AudioEncoderAndroid: AudioEncoderAndroidType.AAC,
-      AudioSourceAndroid: AudioSourceAndroidType.VOICE_COMMUNICATION,
-      AVEncoderAudioQualityKeyIOS: AVEncoderAudioQualityIOSType.high,
-      AVNumberOfChannelsKeyIOS: 1,
-      AVFormatIDKeyIOS: AVEncodingOption.aac,
-      OutputFormatAndroid: OutputFormatAndroidType.MPEG_4,
-    };
-
-    await this.audioRecorderPlayer.startRecorder(path, audioSet as any);
-    this.isRecordingRef = true;
-    console.log('[CallRecording] Native recorder started:', path);
-  }
-
-  private async stopNativeRecorder(): Promise<string | null> {
+  private async stopFallbackRecorder(): Promise<string | null> {
     if (!this.audioRecorderPlayer) {
       return this.recordingPath;
     }
@@ -445,33 +496,12 @@ class CallRecordingService {
     try {
       const result = await this.audioRecorderPlayer.stopRecorder();
       this.audioRecorderPlayer.removeRecordBackListener();
-      console.log('[CallRecording] Native recorder stopped:', result);
+      console.log('[CallRecording] Fallback recorder stopped:', result);
       return result || this.recordingPath;
     } catch (error) {
-      console.log('[CallRecording] Native stop failed:', error);
+      console.log('[CallRecording] Fallback stop failed:', error);
       return this.recordingPath;
     }
-  }
-
-  private async persistBlobToCache(blob: any): Promise<{
-    uri: string;
-    name: string;
-    type: string;
-  }> {
-    const type = blob.type || 'audio/webm';
-    const ext = type.includes('mp4') || type.includes('m4a') ? 'm4a' : 'webm';
-    const name = `call_recording_${Date.now()}.${ext}`;
-    const path = `${ReactNativeBlobUtil.fs.dirs.CacheDir}/${name}`;
-
-    const buffer = await blob.arrayBuffer();
-    const base64 = Buffer.from(buffer).toString('base64');
-    await ReactNativeBlobUtil.fs.writeFile(path, base64, 'base64');
-
-    return {
-      uri: path.startsWith('file://') ? path : `file://${path}`,
-      name,
-      type,
-    };
   }
 
   private getRecordingDurationSec(): number {
@@ -485,23 +515,9 @@ class CallRecordingService {
   }
 
   private clearRecordingRefs(): void {
-    try {
-      if (this.mediaRecorderRef && this.mediaRecorderRef.state !== 'inactive') {
-        try {
-          this.mediaRecorderRef.stop();
-        } catch {
-          // already stopped
-        }
-      }
-    } catch {
-      // ignore
-    }
-
-    this.mediaRecorderRef = null;
-    this.recordedChunksRef = [];
-    this.combinedStreamRef = null;
     this.recordingPath = null;
     this.isRecordingRef = false;
+    this.usingNativeMixer = false;
   }
 }
 

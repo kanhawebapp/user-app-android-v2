@@ -490,6 +490,16 @@ export const useCall = () => {
     const {callDurationRemaining} = useCallStore.getState();
     startCountdown(callDurationRemaining);
 
+    // Prefer speaker during recording so remote WebRTC audio is present in the
+    // ambient capture path used for two-way mixing.
+    try {
+      webRTCService.toggleSpeaker(true);
+    } catch (error) {
+      console.log('[Call] toggleSpeaker for recording failed:', error);
+    }
+
+    // startRecording waits for a live remote audio track before arming the mixer
+    // (refuses mic-only capture, matching the web local+remote mix behavior).
     void callRecordingService.startRecording(
       webRTCService.getLocalMediaStream() ||
         useCallStore.getState().localStream,
