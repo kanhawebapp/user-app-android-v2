@@ -465,11 +465,13 @@ const AstrologerProfileScreen: React.FC<AstrologerProfileScreenProps> = ({
         style={[
           styles.actionContainer,
           {
-            backgroundColor: colors.background.primary,
+            backgroundColor: theme.isDark
+              ? colors.surface.elevated
+              : '#FFFFFF',
             borderTopColor: colors.border.light,
             borderTopWidth: 1,
             flexDirection: 'row',
-            gap: 12,
+            gap: 10,
             paddingBottom: Math.max(insets.bottom, 8),
           },
         ]}>

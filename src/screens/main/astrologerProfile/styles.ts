@@ -126,12 +126,12 @@ export const styles = StyleSheet.create({
 
   actionContainer: {
     paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingTop: 8,
     gap: 10,
   },
   actionButton: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 8,
     justifyContent: 'center',
     alignItems: 'center',
