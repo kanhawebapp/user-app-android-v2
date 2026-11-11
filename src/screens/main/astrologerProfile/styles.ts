@@ -148,9 +148,14 @@ export const styles = StyleSheet.create({
     borderColor: colors.primary.main,
     backgroundColor: colors.common.white,
   },
+  actionButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
   actionButtonText: {
     color: colors.primary.main,
-    marginLeft: 4,
     fontWeight: '700',
     fontSize: 13,
   },

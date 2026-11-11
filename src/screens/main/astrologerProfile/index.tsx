@@ -485,13 +485,18 @@ const AstrologerProfileScreen: React.FC<AstrologerProfileScreenProps> = ({
               styles.chatActionButton,
               !canChat && styles.disabledBtn,
             ]}>
-            <View style={styles.chatPriceRow}>
+            <View style={styles.actionButtonContent}>
+              <Icon
+                name="chatbubble-ellipses-outline"
+                size={20}
+                color={colors.primary.main}
+                library="Ionicons"
+              />
               <Text style={styles.actionButtonText}>
                 {isFreeCurrentPrice(chatPriceData.currentPrice)
                   ? 'Chat Free'
                   : 'Chat'}
               </Text>
-
             </View>
           </TouchableOpacity>
         )}
@@ -506,11 +511,19 @@ const AstrologerProfileScreen: React.FC<AstrologerProfileScreenProps> = ({
               styles.callActionButton,
               !canCall && styles.disabledBtn,
             ]}>
-            <Text style={styles.actionButtonText}>
-              {isFreeCurrentPrice(callPriceData.currentPrice)
-                ? 'Call Free'
-                : 'Call'}
-            </Text>
+            <View style={styles.actionButtonContent}>
+              <Icon
+                name="call-outline"
+                size={20}
+                color={colors.primary.main}
+                library="Ionicons"
+              />
+              <Text style={styles.actionButtonText}>
+                {isFreeCurrentPrice(callPriceData.currentPrice)
+                  ? 'Call Free'
+                  : 'Call'}
+              </Text>
+            </View>
           </TouchableOpacity>
         )}
 
@@ -531,7 +544,15 @@ const AstrologerProfileScreen: React.FC<AstrologerProfileScreenProps> = ({
             }
           }}
           style={[styles.actionButton, styles.chatActionButton]}>
-          <Text style={styles.actionButtonText}>Gift</Text>
+          <View style={styles.actionButtonContent}>
+            <Icon
+              name="gift-outline"
+              size={20}
+              color={colors.primary.main}
+              library="Ionicons"
+            />
+            <Text style={styles.actionButtonText}>Gift</Text>
+          </View>
         </TouchableOpacity>
       </View>
 
