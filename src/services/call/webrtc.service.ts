@@ -130,6 +130,14 @@ class WebRTCService {
     return this.calleeId;
   }
 
+  getLocalMediaStream(): MediaStream | null {
+    return this.localStream;
+  }
+
+  getRemoteMediaStream(): MediaStream | null {
+    return this.remoteStream;
+  }
+
   private _ensurePeerConnection(): RTCPeerConnection {
     if (this.peerConnection) {
       return this.peerConnection;

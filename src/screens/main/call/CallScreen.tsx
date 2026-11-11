@@ -97,8 +97,9 @@ export const CallScreen = () => {
           callerId: useCallStore.getState().callerId || '',
           calleeId: participant.id,
           room_id: useCallStore.getState().roomId || callId,
-          callerName: 'You',
-          callerImage: '',
+          // Stored as participant.name for UI + call-recording upload (astroName)
+          callerName: participant.name || 'Astrologer',
+          callerImage: participant.image || '',
         });
       })();
     }

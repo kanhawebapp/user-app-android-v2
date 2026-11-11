@@ -12,3 +12,5 @@ mutation UploadProfileImage($file: Upload!) {
   }
 }
 `;
+
+export {UPLOAD_CALL_RECORDING} from './call-recording.query';

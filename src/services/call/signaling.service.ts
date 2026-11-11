@@ -1,7 +1,6 @@
 import {socketService} from '../socket/socket.service';
 import {webRTCService} from './webrtc.service';
 import {CallRequestData} from './call.types';
-import {useCallStore} from './call.store';
 
 export interface SignalingCallbacks {
   onCallAccepted: (data: {callId: string}) => void;
@@ -68,10 +67,7 @@ class SignalingService {
     socket.on('call_cancel_by_astrologer', (data: {room_id: string}) => {
       console.log('[SIGNALING] call_cancel_by_astrologer RECEIVED:', data);
 
-      useCallStore.setState({
-        status: 'ended',
-      });
-
+      // Terminal status is set inside performCallCleanup after recording finalize.
       // CALLBACK delegates to handleCallEnded → performCallCleanup → full reset
       this.callbacks?.onCallEnded({
         callId: data.room_id,
@@ -81,10 +77,9 @@ class SignalingService {
     socket.on('call_ended_by_astrologer', (data: {room_id: string}) => {
       console.log('[SIGNALING] call_ended_by_astrologer RECEIVED:', data);
 
-      useCallStore.setState({
-        status: 'ended',
-      });
-
+      // Do not set status 'ended' here — performCallCleanup finalizes recording
+      // first, then sets terminal status so CallScreen does not navigate away
+      // before stop/upload completes.
       // CALLBACK delegates to handleCallEnded → performCallCleanup → full reset
       this.callbacks?.onCallEnded({
         callId: data.room_id,

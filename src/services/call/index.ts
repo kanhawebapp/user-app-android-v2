@@ -5,3 +5,4 @@ export * from './call.queue';
 export {webRTCService, setupWebRTCListeners} from './webrtc.service';
 export {signalingService} from './signaling.service';
 export {callTimerService, useCallTimer} from './call.timer';
+export {callRecordingService} from './call-recording.service';

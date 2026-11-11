@@ -30,8 +30,17 @@
 // };
 
 import {useState} from 'react';
-import {uploadImage, uploadProfileImage} from './upload.api';
-import type {UploadFile, UploadProfileImageResult} from './upload.types';
+import {
+  uploadImage,
+  uploadProfileImage,
+  uploadCallRecording,
+} from './upload.api';
+import type {
+  UploadFile,
+  UploadProfileImageResult,
+  UploadCallRecordingInput,
+  UploadCallRecordingResult,
+} from './upload.types';
 // import { uploadImage } from './upload.api';
 
 export const useUploadImage = () => {
@@ -72,6 +81,29 @@ export const useUploadProfileImage = () => {
       return result;
     } catch (error) {
       console.log('PROFILE IMAGE UPLOAD HOOK ERROR:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return {
+    upload,
+    loading,
+  };
+};
+
+export const useUploadCallRecording = () => {
+  const [loading, setLoading] = useState(false);
+
+  const upload = async (
+    input: UploadCallRecordingInput,
+  ): Promise<UploadCallRecordingResult> => {
+    try {
+      setLoading(true);
+      return await uploadCallRecording(input);
+    } catch (error) {
+      console.log('CALL RECORDING UPLOAD HOOK ERROR:', error);
       throw error;
     } finally {
       setLoading(false);

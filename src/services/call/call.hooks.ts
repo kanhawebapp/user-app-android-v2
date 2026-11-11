@@ -396,6 +396,7 @@ import {useNavigation} from '@react-navigation/native';
 import {useChatStore} from '../chat/chat.store';
 import {callTimerService} from './call.timer';
 import {resetCallReadyFlag} from './call.queue';
+import {callRecordingService} from './call-recording.service';
 
 const stopRingbackSafely = () => {
   try {
@@ -404,6 +405,16 @@ const stopRingbackSafely = () => {
     console.log('[Ringback] stopped safely');
   } catch (e) {
     console.log('[Ringback] stop error', e);
+  }
+};
+
+/** Stop ringback tone only — keep the in-call audio session alive for recording. */
+const stopRingbackToneOnly = () => {
+  try {
+    InCallManager.stopRingback();
+    console.log('[Ringback] tone stopped (audio session kept for recording)');
+  } catch (e) {
+    console.log('[Ringback] tone stop error', e);
   }
 };
 
@@ -466,9 +477,10 @@ export const useCall = () => {
     };
   }, []);
 
-  // ── Countdown ──────────────────────────────────────────────────────────
-  // Starts when status becomes 'connected', uses callDurationRemaining as
-  // the single source of truth. Clears cleanly on end / reject / unmount.
+  // ── Countdown + call recording ─────────────────────────────────────────
+  // Starts when status becomes 'connected' (after callAcceptedByAstrologer
+  // and WebRTC ontrack). Uses callDurationRemaining as the single source of
+  // truth for the timer. Recording starts once via callRecordingService guards.
 
   useEffect(() => {
     if (status !== 'connected') {
@@ -477,6 +489,13 @@ export const useCall = () => {
 
     const {callDurationRemaining} = useCallStore.getState();
     startCountdown(callDurationRemaining);
+
+    void callRecordingService.startRecording(
+      webRTCService.getLocalMediaStream() ||
+        useCallStore.getState().localStream,
+      webRTCService.getRemoteMediaStream() ||
+        useCallStore.getState().remoteStream,
+    );
 
     return () => {
       stopCountdown();
@@ -499,10 +518,28 @@ export const useCall = () => {
     });
   };
 
+  const buildRecordingUploadMeta = useCallback(() => {
+    const state = useCallStore.getState();
+    return {
+      roomId: state.roomId || webRTCService.getRoomId() || '',
+      astroId:
+        state.calleeId ||
+        state.participant?.id ||
+        webRTCService.getCalleeId() ||
+        '',
+      astroName: state.participant?.name || 'Astrologer',
+      userId: state.callerId || webRTCService.getCallerId() || '',
+      callType: 'audio',
+    };
+  }, []);
+
   // ── Unified call cleanup ────────────────────────────────────────────────
   // Single source of truth for end / reject / remote-end.  All three paths
   // below call this so nothing is ever missed.
-  const performCallCleanup = useCallback(() => {
+  // Recording is finalized + uploaded BEFORE WebRTC tracks are destroyed so
+  // the last audio chunks are not lost. Duplicate end paths share one upload
+  // via callRecordingService.recordingUploadStartedRef.
+  const performCallCleanup = useCallback(async () => {
     // Idempotency guard: timer expiry, user press, and socket echoes
     // (call_ended_by_user → server → call_ended_by_astrologer) can all race
     // into this same path. Only the first invocation must run the heavy
@@ -513,11 +550,23 @@ export const useCall = () => {
     }
     callEndedInProgressRef.current = true;
 
+    // Snapshot upload meta before store reset
+    const recordingMeta = buildRecordingUploadMeta();
+
     // Stop the live countdown
     stopCountdown();
 
-    // Hang up / stop ringback / audio session
-    stopRingbackSafely();
+    // Stop ringback tone only. Keep InCallManager + WebRTC tracks alive until
+    // recording is finalized so the last audio is not lost.
+    stopRingbackToneOnly();
+
+    try {
+      await callRecordingService.stopAndUpload(recordingMeta);
+    } catch (error) {
+      console.log('[Call] Recording stop/upload error:', error);
+    }
+
+    // Now safe to tear down audio session + WebRTC tracks
     webRTCService.cleanup();
 
     // Fully reset the service store (clears participant, callId, streams, …)
@@ -528,12 +577,12 @@ export const useCall = () => {
     // firing and leave the Call screen mounted on top of the idle screen.
     // Restore a terminal status so UI + navigation react correctly.
     useCallStore.setState({status: 'ended'});
-  }, []);
+  }, [buildRecordingUploadMeta]);
 
   // ── Rejected ─────────────────────────────────────────────────────────────
   const handleCallRejected = useCallback(
-    (data: {callId: string; reason?: string}) => {
-      performCallCleanup();
+    async (data: {callId: string; reason?: string}) => {
+      await performCallCleanup();
       webRTCService.emitState('rejected', {
         error: data.reason || 'Call rejected',
       });
@@ -541,9 +590,10 @@ export const useCall = () => {
     [performCallCleanup],
   );
 
-  // ── Remote / astrologer ended ────────────────────────────────────────────
-  const handleCallEnded = useCallback(() => {
-    performCallCleanup();
+  // ── Remote / astrologer ended (call_ended_by_astrologer) ─────────────────
+  const handleCallEnded = useCallback(async () => {
+    // stopRecording → finalize → UPLOAD_CALL_RECORDING → cleanup
+    await performCallCleanup();
     // optional safety broadcast
     webRTCService.emitState('ended');
   }, [performCallCleanup]);
@@ -552,6 +602,8 @@ export const useCall = () => {
     async (data: CallRequestData) => {
       try {
         peerJoinedReceived.current = false;
+        callEndedInProgressRef.current = false;
+        callRecordingService.resetForNewCall();
 
         console.log('[Call Hook] Starting call as caller');
         console.log('[Call Hook] Call data:', {
@@ -589,7 +641,9 @@ export const useCall = () => {
           webRTCService.getRoomId(),
         );
 
-        // Store call info in the store
+        // Store call info in the store.
+        // callerName is used as the displayed callee/astrologer name by callers
+        // that pass the astrologer name into startCall (see CallScreen).
         useCallStore.setState({
           callId: data.callId,
           callerId: data.callerId,
@@ -623,7 +677,7 @@ export const useCall = () => {
 
         (socket as any).off('call_rejected_by_astrologer');
 
-        const onRejectedByAstrologer = (eventData: any) => {
+        const onRejectedByAstrologer = async (eventData: any) => {
           console.log(
             '[USER CALL] call_rejected_by_astrologer received',
             eventData,
@@ -634,8 +688,8 @@ export const useCall = () => {
           // stop timer
           stopCountdown();
 
-          // cleanup everything
-          performCallCleanup();
+          // cleanup everything (no recording expected before connect)
+          await performCallCleanup();
 
           // update UI state
           useCallStore.setState({
@@ -730,8 +784,8 @@ export const useCall = () => {
     }
   }, []);
 
-  const rejectCall = useCallback(() => {
-    performCallCleanup();
+  const rejectCall = useCallback(async () => {
+    await performCallCleanup();
     webRTCService.emitState('rejected', {
       error: 'Call rejected',
     });
@@ -789,8 +843,8 @@ export const useCall = () => {
         // 1. Update local state and cleanup
         webRTCService.emitState('ended');
 
-        // 2. Cleanup
-        performCallCleanup();
+        // 2. Cleanup (recording finalize is a no-op if never started)
+        await performCallCleanup();
 
         // 3. Server emit
         const socket = socketService.getSocket();
@@ -821,12 +875,14 @@ export const useCall = () => {
     async ({roomId, astroId}: {roomId: any; astroId: any}) => {
       // Guard against duplicate end-call triggers (timer expiry, user press,
       // and socket echoes). Only the first invocation should emit to the server.
+      // Recording upload is also de-duped inside callRecordingService.
       if (callEndedInProgressRef.current) {
         console.log('[Call] endCall already in progress — skipping duplicate');
         return;
       }
       try {
-        performCallCleanup();
+        // handleEndCall path: stopRecording → finalize → UPLOAD → cleanup
+        await performCallCleanup();
         const socket = socketService.getSocket();
         console.log('i am here in end call', status);
         socket?.emit('call_ended_by_user', {
@@ -838,7 +894,7 @@ export const useCall = () => {
         stopRingbackSafely();
       }
     },
-    [performCallCleanup],
+    [performCallCleanup, status],
   );
 
   const toggleMute = useCallback(() => {
