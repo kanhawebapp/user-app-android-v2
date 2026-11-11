@@ -164,7 +164,7 @@ export const styles = StyleSheet.create({
     fontWeight: '700',
   },
   oldPriceText: {
-    color: colors.primary.main,
+    color: colors.text.primary ,
     fontSize: 12,
     fontWeight: '500',
     textDecorationLine: 'line-through',

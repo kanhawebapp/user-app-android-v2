@@ -62,7 +62,7 @@ const AstrologerProfileScreen: React.FC<AstrologerProfileScreenProps> = ({
 
   const { showSuccess, showError, showInfo } = useToast();
 
-// console.log('ASTROLOGER DATA =>>>', data);
+  // console.log('ASTROLOGER DATA =>>>', data);
 
   const astrologerData = useMemo(() => {
     if (!data) {
@@ -183,9 +183,9 @@ const AstrologerProfileScreen: React.FC<AstrologerProfileScreenProps> = ({
     canCall,
   } = getAstrologerStatus(data);
 
-const isOffline = !canChat && !canCall;
+  const isOffline = !canChat && !canCall;
 
-const displayIndicatorColor = isOffline ? '#EF4444' : indicatorColor;
+  const displayIndicatorColor = isOffline ? '#EF4444' : indicatorColor;
 
   const onRefresh = useCallback(async () => {
     try {
@@ -366,9 +366,11 @@ const displayIndicatorColor = isOffline ? '#EF4444' : indicatorColor;
                     style={[
                       styles.pricingText,
                       styles.currentPriceText,
-                      { color: colors.text.primary },
+                      {
+                        color: colors.primary.main,
+                      },
                     ]}>
-                    {isFreeCurrentPrice(chatPriceData.currentPrice)
+                    Charges : {isFreeCurrentPrice(chatPriceData.currentPrice)
                       ? 'Free'
                       : `${Currency}${chatPriceData.currentPrice}/min`}
                   </Text>
@@ -486,10 +488,10 @@ const displayIndicatorColor = isOffline ? '#EF4444' : indicatorColor;
             <View style={styles.chatPriceRow}>
               <Text style={styles.actionButtonText}>
                 {isFreeCurrentPrice(chatPriceData.currentPrice)
-                ? 'Chat Free'
-                : 'Chat'}
+                  ? 'Chat Free'
+                  : 'Chat'}
               </Text>
-       
+
             </View>
           </TouchableOpacity>
         )}
@@ -529,7 +531,7 @@ const displayIndicatorColor = isOffline ? '#EF4444' : indicatorColor;
             }
           }}
           style={[styles.actionButton, styles.chatActionButton]}>
-          <Text style={styles.actionButtonText}>Send Gift</Text>
+          <Text style={styles.actionButtonText}>Gift</Text>
         </TouchableOpacity>
       </View>
 
