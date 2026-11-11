@@ -485,7 +485,7 @@ const displayIndicatorColor = isOffline ? '#EF4444' : indicatorColor;
             <Text style={styles.actionButtonText}>
               {isFreeCurrentPrice(chatPriceData.currentPrice)
                 ? 'Chat Free'
-                : 'Chat Now'}
+                : 'Chat'}
             </Text>
           </TouchableOpacity>
         )}
@@ -503,7 +503,7 @@ const displayIndicatorColor = isOffline ? '#EF4444' : indicatorColor;
             <Text style={styles.actionButtonText}>
               {isFreeCurrentPrice(callPriceData.currentPrice)
                 ? 'Free'
-                : `${Currency}${callPriceData.currentPrice}`}
+                : "Call"}
             </Text>
           </TouchableOpacity>
         )}
