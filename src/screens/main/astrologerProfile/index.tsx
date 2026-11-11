@@ -132,8 +132,47 @@ const AstrologerProfileScreen: React.FC<AstrologerProfileScreenProps> = ({
   useEffect(() => {
     if (data?.id) {
       fetchFollowersCount(data.id);
+      checkFollowStatus(data.id);
     }
   }, [data?.id]);
+
+  const handleFollow = useCallback(async () => {
+    try {
+      if (!data?.id) {
+        showError('Astrologer not found');
+        return;
+      }
+
+      if (isFollowing) {
+        await unfollow(data.id);
+        showSuccess(
+          `You have unfollowed ${data?.displayName || data?.name || 'Astrologer'}`,
+        );
+      } else {
+        await follow(data.id);
+        showSuccess(
+          `You are now following ${data?.displayName || data?.name || 'Astrologer'}`,
+        );
+      }
+
+      await fetchFollowersCount(data.id);
+    } catch (error: any) {
+      console.log(error);
+      showError(
+        error?.message || 'Something went wrong. Please try again.',
+      );
+    }
+  }, [
+    data?.id,
+    data?.displayName,
+    data?.name,
+    isFollowing,
+    follow,
+    unfollow,
+    fetchFollowersCount,
+    showSuccess,
+    showError,
+  ]);
 
   const {
     status,
@@ -278,6 +317,8 @@ const displayIndicatorColor = isOffline ? '#EF4444' : indicatorColor;
             imageUrl={imageUrl}
             indicatorColor={displayIndicatorColor}
             status={status}
+            isFollowing={isFollowing}
+            onFollowPress={handleFollow}
           />
 
           <SkillsSection skills={astrologerData?.skills} />
@@ -334,8 +375,8 @@ const displayIndicatorColor = isOffline ? '#EF4444' : indicatorColor;
                 <Text
                   style={[styles.pricingText, { color: colors.text.primary }]}>
                   {isFreeCurrentPrice(callPriceData.currentPrice)
-                    ? 'Call - Free'
-                    : `Call - ${Currency}${callPriceData.currentPrice}/min`}
+                    ? 'Free'
+                    : `${Currency}${callPriceData.currentPrice}`}
                 </Text>
               )}
             </View>
@@ -461,8 +502,8 @@ const displayIndicatorColor = isOffline ? '#EF4444' : indicatorColor;
             ]}>
             <Text style={styles.actionButtonText}>
               {isFreeCurrentPrice(callPriceData.currentPrice)
-                ? 'Call Free'
-                : 'Call Now'}
+                ? 'Free'
+                : `${Currency}${callPriceData.currentPrice}`}
             </Text>
           </TouchableOpacity>
         )}

@@ -1,13 +1,15 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import type { AstrologerProfileScreenProps } from '../types';
-import { useTheme } from '../../../../theme';
+import { colors, useTheme } from '../../../../theme';
 
 type ProfileSectionProps = {
   astrologerData: NonNullable<AstrologerProfileScreenProps['astrologer']>;
   imageUrl: string | null;
   indicatorColor: any;
   status: any;
+  isFollowing: boolean;
+  onFollowPress: () => void;
 };
 
 const formatReviewCount = (count: number): string => {
@@ -24,9 +26,11 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
   astrologerData,
   imageUrl,
   indicatorColor,
+  isFollowing,
+  onFollowPress,
 }) => {
   const theme = useTheme();
-  const colors = theme.colors;
+  const themeColors = theme.colors;
   const reviewCount = astrologerData.reviews?.length ?? 0;
 
   return (
@@ -36,8 +40,8 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
           style={[
             styles.avatar,
             {
-              borderColor: colors.primary.main,
-              shadowColor: colors.primary.main,
+              borderColor: themeColors.primary.main,
+              shadowColor: themeColors.primary.main,
               elevation: 8,
             },
           ]}>
@@ -55,22 +59,47 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             styles.availabilityDot,
             {
               backgroundColor: indicatorColor,
-              borderColor: colors.common.white,
+              borderColor: themeColors.common.white,
             },
           ]}
         />
       </View>
 
-      <Text style={[styles.name, { color: colors.text.primary }]}>
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={onFollowPress}
+        style={[
+          styles.followButton,
+          {
+            backgroundColor: isFollowing
+              ? themeColors.primary.main
+              : colors.common.white,
+            borderColor: themeColors.primary.main,
+          },
+        ]}>
+        <Text
+          style={[
+            styles.followButtonText,
+            {
+              color: isFollowing
+                ? themeColors.primary.contrastText
+                : themeColors.primary.main,
+            },
+          ]}>
+          {isFollowing ? 'Following' : 'Follow'}
+        </Text>
+      </TouchableOpacity>
+
+      <Text style={[styles.name, { color: themeColors.text.primary }]}>
         {astrologerData.displayName || astrologerData.name || 'Astrologer'}
       </Text>
 
       <View style={styles.ratingRow}>
         <Text style={styles.starIcon}>★</Text>
-        <Text style={[styles.ratingText, { color: colors.text.primary }]}>
+        <Text style={[styles.ratingText, { color: themeColors.text.primary }]}>
           {Number(astrologerData.rating || 0).toFixed(1)}
         </Text>
-        <Text style={[styles.reviewText, { color: colors.text.secondary }]}>
+        <Text style={[styles.reviewText, { color: themeColors.text.secondary }]}>
           ({formatReviewCount(reviewCount)}{' '}
           {reviewCount === 1 ? 'review' : 'reviews'})
         </Text>
@@ -113,6 +142,19 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 3,
+  },
+  followButton: {
+    paddingHorizontal: 20,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    marginBottom: 10,
+  },
+  followButtonText: {
+    fontWeight: '700',
+    fontSize: 14,
   },
   name: {
     fontSize: 22,
