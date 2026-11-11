@@ -154,6 +154,22 @@ export const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 13,
   },
+  chatPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  currentPriceText: {
+    fontWeight: '700',
+  },
+  oldPriceText: {
+    color: colors.primary.main,
+    fontSize: 12,
+    fontWeight: '500',
+    textDecorationLine: 'line-through',
+    opacity: 0.55,
+  },
   disabledBtn: {
     opacity: 0.5,
   },

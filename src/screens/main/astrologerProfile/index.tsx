@@ -106,6 +106,8 @@ const AstrologerProfileScreen: React.FC<AstrologerProfileScreenProps> = ({
     [astrologerData],
   );
 
+
+  console.log('CHAT PRICE DATA =>', chatPriceData);
   const callPriceData = useMemo(
     () => getAstrologerPrice(astrologer, 'CALL'),
     [astrologerData],
@@ -359,25 +361,24 @@ const displayIndicatorColor = isOffline ? '#EF4444' : indicatorColor;
 
             <View style={styles.pricingRow}>
               {!!chatPricing && (
-                <Text
-                  style={[styles.pricingText, { color: colors.text.primary }]}>
-                  {isFreeCurrentPrice(chatPriceData.currentPrice)
-                    ? 'Chat - Free'
-                    : `Chat - ${Currency}${chatPriceData.currentPrice}/min`}
-                </Text>
-              )}
-
-              {!!chatPricing && !!callPricing && (
-                <View style={styles.pricingDivider} />
-              )}
-
-              {!!callPricing && (
-                <Text
-                  style={[styles.pricingText, { color: colors.text.primary }]}>
-                  {isFreeCurrentPrice(callPriceData.currentPrice)
-                    ? 'Free'
-                    : `${Currency}${callPriceData.currentPrice}`}
-                </Text>
+                <View style={styles.chatPriceRow}>
+                  <Text
+                    style={[
+                      styles.pricingText,
+                      styles.currentPriceText,
+                      { color: colors.text.primary },
+                    ]}>
+                    {isFreeCurrentPrice(chatPriceData.currentPrice)
+                      ? 'Free'
+                      : `${Currency}${chatPriceData.currentPrice}/min`}
+                  </Text>
+                  {!!chatPriceData.oldPrice && (
+                    <Text style={styles.oldPriceText}>
+                      {Currency}
+                      {chatPriceData.oldPrice}/min
+                    </Text>
+                  )}
+                </View>
               )}
             </View>
           </View>
@@ -482,11 +483,14 @@ const displayIndicatorColor = isOffline ? '#EF4444' : indicatorColor;
               styles.chatActionButton,
               !canChat && styles.disabledBtn,
             ]}>
-            <Text style={styles.actionButtonText}>
-              {isFreeCurrentPrice(chatPriceData.currentPrice)
+            <View style={styles.chatPriceRow}>
+              <Text style={styles.actionButtonText}>
+                {isFreeCurrentPrice(chatPriceData.currentPrice)
                 ? 'Chat Free'
                 : 'Chat'}
-            </Text>
+              </Text>
+       
+            </View>
           </TouchableOpacity>
         )}
 
@@ -502,8 +506,8 @@ const displayIndicatorColor = isOffline ? '#EF4444' : indicatorColor;
             ]}>
             <Text style={styles.actionButtonText}>
               {isFreeCurrentPrice(callPriceData.currentPrice)
-                ? 'Free'
-                : "Call"}
+                ? 'Call Free'
+                : 'Call'}
             </Text>
           </TouchableOpacity>
         )}
