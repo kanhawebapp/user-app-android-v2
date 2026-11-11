@@ -338,7 +338,7 @@ const MainNavigator: React.FC<MainNavigatorProps> = ({
 
   const handleJoinLive = useCallback(
     (joinData: LiveJoinResponse, session: UpcomingLive) => {
-      setLiveStreamParams({joinData, session});
+      setLiveStreamParams({ joinData, session });
     },
     [],
   );
