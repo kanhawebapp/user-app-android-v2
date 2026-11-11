@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Icon, Text, useTheme } from '../../../../components';
-import { colors } from '../../../../theme/colors';
+import { Text, useTheme } from '../../../../components';
 
 type SkillsSectionProps = {
   skills: string[];
@@ -15,30 +14,28 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({ skills }) => {
 
   return (
     <View style={styles.infoSection}>
-      <Icon name="star" size={20} color={colors.primary.main} />
-
       <View style={styles.skillsContainer}>
-        {skills.slice(0, 2).map((skill, index) => (
-          <View key={index} style={styles.skillBadge}>
+        {skills.map((skill, index) => (
+          <View
+            key={`${skill}-${index}`}
+            style={[
+              styles.skillBadge,
+              {
+                backgroundColor: colors.common.white,
+                shadowColor: '#000',
+              },
+            ]}>
             <Text
               style={[
                 styles.skillText,
                 {
-                  color: colors.primary.main,
+                  color: colors.text.primary,
                 },
               ]}>
               {skill}
             </Text>
           </View>
         ))}
-
-        {skills.length > 2 && (
-          <View style={styles.skillBadge}>
-            <Text style={styles.skillText}>
-              +{skills.length - 2} more
-            </Text>
-          </View>
-        )}
       </View>
     </View>
   );
@@ -47,33 +44,25 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({ skills }) => {
 const styles = StyleSheet.create({
   infoSection: {
     paddingHorizontal: 16,
-    // marginTop: 16,
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    gap: 1,
-    // marginBottom: 16,
-    marginTop: -10
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   skillsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'center',
     gap: 8,
   },
   skillBadge: {
     paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 10,
-    backgroundColor: colors.primary.light,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
   },
   skillText: {
     fontSize: 13,

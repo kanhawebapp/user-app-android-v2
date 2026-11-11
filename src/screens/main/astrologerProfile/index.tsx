@@ -23,7 +23,6 @@ import { ProfileSection } from './components/ProfileSection';
 import { SkillsSection } from './components/SkillsSection';
 import { LanguagesSection } from './components/LanguagesSection';
 import { ReviewsSection } from './components/ReviewsSection';
-import { SessionPricingCard } from './components/SessionPricingCard';
 import { useConsultationFlow } from '../call/hooks/useConsultationFlow';
 import { ChatRequestModal } from '../../../components/Modal';
 import { DEFAULTS } from '../../../constants/app.constants';
@@ -49,6 +48,7 @@ const AstrologerProfileScreen: React.FC<AstrologerProfileScreenProps> = ({
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const [refreshing, setRefreshing] = useState(false);
+  const [aboutExpanded, setAboutExpanded] = useState(false);
   const [showChatRequestModal, setShowChatRequestModal] = useState(false);
   const [consultationType, setConsultationType] = useState<'chat' | 'call'>(
     'chat',
@@ -274,8 +274,8 @@ const displayIndicatorColor = isOffline ? '#EF4444' : indicatorColor;
           />
 
           <ProfileSection
-            astrologerData={astrologerData} imageUrl={imageUrl}
-            followersCount={followersCount}
+            astrologerData={astrologerData}
+            imageUrl={imageUrl}
             indicatorColor={displayIndicatorColor}
             status={status}
           />
@@ -286,55 +286,129 @@ const displayIndicatorColor = isOffline ? '#EF4444' : indicatorColor;
         </View>
 
         <View style={styles.infoSection}>
+          <View style={styles.pricingCard}>
+            <View
+              style={[
+                styles.statusPill,
+                {
+                  backgroundColor:
+                    status === 'online'
+                      ? '#D1FAE5'
+                      : status === 'busy'
+                        ? '#FEF3C7'
+                        : '#F3F4F6',
+                },
+              ]}>
+              <Text
+                style={[
+                  styles.statusPillText,
+                  {
+                    color:
+                      status === 'online'
+                        ? '#059669'
+                        : status === 'busy'
+                          ? '#D97706'
+                          : '#6B7280',
+                    textTransform: 'capitalize',
+                  },
+                ]}>
+                {status}
+              </Text>
+            </View>
 
-          <View style={styles.pricingContainer}>
-            {!!chatPricing && (
-              <SessionPricingCard
-                pricing={chatPricing}
-                onPress={handleChatPress}
-                Currency={Currency}
-                astrologer={astrologer}
-              />
-            )}
+            <View style={styles.pricingRow}>
+              {!!chatPricing && (
+                <Text
+                  style={[styles.pricingText, { color: colors.text.primary }]}>
+                  {isFreeCurrentPrice(chatPriceData.currentPrice)
+                    ? 'Chat - Free'
+                    : `Chat - ${Currency}${chatPriceData.currentPrice}/min`}
+                </Text>
+              )}
 
-            {!!callPricing && (
-              <SessionPricingCard
-                pricing={callPricing}
-                onPress={handleCallPress}
-                Currency={Currency}
-                astrologer={astrologer}
-              />
-            )}
+              {!!chatPricing && !!callPricing && (
+                <View style={styles.pricingDivider} />
+              )}
+
+              {!!callPricing && (
+                <Text
+                  style={[styles.pricingText, { color: colors.text.primary }]}>
+                  {isFreeCurrentPrice(callPriceData.currentPrice)
+                    ? 'Call - Free'
+                    : `Call - ${Currency}${callPriceData.currentPrice}/min`}
+                </Text>
+              )}
+            </View>
           </View>
         </View>
 
         <View style={styles.infoSection}>
           <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
-            About Astrologer
+            About
           </Text>
 
-          <View
-            style={[
-              styles.infoCard,
-              {
-                backgroundColor: colors.background.secondary,
-                borderColor: colors.border.light,
-              },
-            ]}>
-            <RenderHTML
-              contentWidth={width}
-              source={{
-                html:
+          <View style={styles.infoCard}>
+            <View
+              style={
+                aboutExpanded
+                  ? undefined
+                  : { maxHeight: 72, overflow: 'hidden' }
+              }>
+              <RenderHTML
+                contentWidth={width - 64}
+                source={{
+                  html:
                     astrologerData?.about || '<p>No information available</p>',
-              }}
-              tagsStyles={{
-                p: {
-                  color: colors.text.secondary,
-                  fontSize: 15,
-                  lineHeight: 26,
-                },
-              }}
-            />
+                }}
+                tagsStyles={{
+                  p: {
+                    color: colors.text.secondary,
+                    fontSize: 15,
+                    lineHeight: 24,
+                    marginTop: 0,
+                    marginBottom: 0,
+                  },
+                }}
+              />
+            </View>
+
+            {!!astrologerData?.about && (
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setAboutExpanded(prev => !prev)}
+                style={styles.readMoreRow}>
+                <Text style={styles.readMoreText}>
+                  {aboutExpanded ? 'Read less' : 'Read more'}
+                </Text>
+                <Icon
+                  name={aboutExpanded ? 'chevron-up' : 'chevron-down'}
+                  size={16}
+                  color={colors.primary.main}
+                  library="Ionicons"
+                />
+              </TouchableOpacity>
+            )}
+
+            <View style={styles.aboutDivider} />
+
+            <View style={styles.aboutStatsRow}>
+              <View style={styles.aboutStatItem}>
+                <Text
+                  style={[
+                    styles.aboutStatValue,
+                    { color: colors.text.primary },
+                  ]}>
+                  {astrologerData?.experience || 0}+ Years
+                </Text>
+                <Text
+                  style={[
+                    styles.aboutStatLabel,
+                    { color: colors.text.secondary },
+                  ]}>
+                  Experience
+                </Text>
+              </View>
+            </View>
           </View>
         </View>
 
@@ -357,37 +431,6 @@ const displayIndicatorColor = isOffline ? '#EF4444' : indicatorColor;
         ]}>
 
 
-        {!!callPricing && (
-          <TouchableOpacity
-            activeOpacity={0.88}
-            onPress={handleCallPress}
-            disabled={!canCall}
-            style={[
-              styles.actionButton,
-              styles.callActionButton,
-              !canCall && styles.disabledBtn,
-            ]}>
-            <Icon
-              name="call"
-              size={20}
-              color={colors.primary.main}
-              library="Ionicons"
-            />
-            <Text style={styles.actionButtonText}>
-              {/* Call {Currency}{callPricing?.offerPrice || callPricing?.price}/m */}
-              {isFreeCurrentPrice(callPriceData.currentPrice) ? (
-                'Call Free'
-              ) : (
-                <>
-                  {/* Call {Currency}
-                  {callPriceData.currentPrice}/m */}
-                  Call
-                </>
-              )}
-            </Text>
-          </TouchableOpacity>
-        )}
-
         {!!chatPricing && (
           <TouchableOpacity
             activeOpacity={0.88}
@@ -398,23 +441,28 @@ const displayIndicatorColor = isOffline ? '#EF4444' : indicatorColor;
               styles.chatActionButton,
               !canChat && styles.disabledBtn,
             ]}>
-            <Icon
-              name="chatbubble-ellipses"
-              size={20}
-              color={colors.primary.main}
-              library="Ionicons"
-            />
             <Text style={styles.actionButtonText}>
-              {/* Chat {Currency}{chatPricing?.offerPrice || chatPricing?.price}/m */}
-              {isFreeCurrentPrice(chatPriceData.currentPrice) ? (
-                'Chat Free'
-              ) : (
-                <>
-                  {/* Chat {Currency}
-                  {chatPriceData.currentPrice}/m */}
-                  Chat
-                </>
-              )}
+              {isFreeCurrentPrice(chatPriceData.currentPrice)
+                ? 'Chat Free'
+                : 'Chat Now'}
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {!!callPricing && (
+          <TouchableOpacity
+            activeOpacity={0.88}
+            onPress={handleCallPress}
+            disabled={!canCall}
+            style={[
+              styles.actionButton,
+              styles.callActionButton,
+              !canCall && styles.disabledBtn,
+            ]}>
+            <Text style={styles.actionButtonText}>
+              {isFreeCurrentPrice(callPriceData.currentPrice)
+                ? 'Call Free'
+                : 'Call Now'}
             </Text>
           </TouchableOpacity>
         )}
@@ -436,12 +484,6 @@ const displayIndicatorColor = isOffline ? '#EF4444' : indicatorColor;
             }
           }}
           style={[styles.actionButton, styles.chatActionButton]}>
-          <Icon
-            name="gift"
-            size={20}
-            color={colors.primary.main}
-            library="Ionicons"
-          />
           <Text style={styles.actionButtonText}>Send Gift</Text>
         </TouchableOpacity>
       </View>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Icon, Text, useTheme } from '../../../../components';
+import { Icon, Text } from '../../../../components';
 
 type LanguagesSectionProps = {
   languages: string[];
@@ -9,60 +9,20 @@ type LanguagesSectionProps = {
 export const LanguagesSection: React.FC<LanguagesSectionProps> = ({
   languages,
 }) => {
-  const theme = useTheme();
-  const colors = theme.colors;
-
   if (!languages?.length) return null;
+
+  const languageLabel = languages.join(', ');
 
   return (
     <View style={styles.infoSection}>
-      <Icon name="language" size={20} color={colors.primary.main} />
-
-      <View style={styles.languagesContainer}>
-        {languages.slice(0, 2).map((language, index) => (
-          <View
-            key={index}
-            style={[
-              styles.languageBadge,
-              {
-                backgroundColor: colors.primary.light,
-                borderWidth: 1,
-                borderColor: colors.border.light,
-              },
-            ]}>
-            <Text
-              style={[
-                styles.languageText,
-                {
-                  color: colors.primary.main,
-                },
-              ]}>
-              {language}
-            </Text>
-          </View>
-        ))}
-
-        {languages.length > 2 && (
-          <View
-            style={[
-              styles.languageBadge,
-              {
-                backgroundColor: colors.primary.light,
-                borderWidth: 1,
-                borderColor: colors.border.light,
-              },
-            ]}>
-            <Text
-              style={[
-                styles.languageText,
-                {
-                  color: colors.primary.main,
-                },
-              ]}>
-              +{languages.length - 2} more
-            </Text>
-          </View>
-        )}
+      <View style={styles.languageBadge}>
+        <Icon
+          name="language"
+          size={16}
+          color="#B45309"
+          library="Ionicons"
+        />
+        <Text style={styles.languageText}>{languageLabel}</Text>
       </View>
     </View>
   );
@@ -71,32 +31,22 @@ export const LanguagesSection: React.FC<LanguagesSectionProps> = ({
 const styles = StyleSheet.create({
   infoSection: {
     paddingHorizontal: 16,
-    // marginTop: 16,
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 12,
-  },
-  languagesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+    marginBottom: 8,
   },
   languageBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#FEF3C7',
   },
   languageText: {
     fontSize: 13,
     fontWeight: '600',
+    color: '#B45309',
   },
 });
 
