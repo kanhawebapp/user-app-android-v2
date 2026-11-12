@@ -1,9 +1,9 @@
 import React from 'react';
-import {View, StyleSheet, Dimensions, TouchableOpacity} from 'react-native';
+import {View, StyleSheet, TouchableOpacity} from 'react-native';
 import {useTheme} from '../../../../../theme';
 import {Text} from '../../../../../components/Text';
 import {Icon} from '../../../../../components/Icon';
-import {TrustAuthorityProps} from '../../types';
+import {TrustAuthorityProps, TrustFeature} from '../../types';
 
 import Animated, {
   useSharedValue,
@@ -11,6 +11,20 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import {Card} from '../../../../../components';
+
+/** Presentation-only line breaks — does not mutate feature data. */
+const getDisplayTitle = (title: string): string => {
+  if (title === '10+ Years Experience') {
+    return '10+ Years\nExperience';
+  }
+  if (title === '10L+ Happy Customers') {
+    return '10L+ Happy\nCustomers';
+  }
+  if (title === 'Verified Astrologers') {
+    return 'Verified\nAstrologers';
+  }
+  return title;
+};
 
 export const TrustSection: React.FC<TrustAuthorityProps> = ({
   features = [],
@@ -39,8 +53,13 @@ export const TrustSection: React.FC<TrustAuthorityProps> = ({
   );
 };
 
-// 🔥 Separate Animated Card Component (clean code)
-const AnimatedCard = ({feature, colors}: any) => {
+const AnimatedCard = ({
+  feature,
+  colors,
+}: {
+  feature: TrustFeature;
+  colors: ReturnType<typeof useTheme>['colors'];
+}) => {
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -54,7 +73,6 @@ const AnimatedCard = ({feature, colors}: any) => {
       onPressIn={() => (scale.value = withSpring(0.94))}
       onPressOut={() => (scale.value = withSpring(1))}>
       <Animated.View style={[styles.card, animatedStyle]}>
-        {/* ICON */}
         <View
           style={[
             styles.iconContainer,
@@ -62,18 +80,18 @@ const AnimatedCard = ({feature, colors}: any) => {
           ]}>
           <Icon
             name={feature.icon}
-            library={feature.iconLibrary as any}
+            library={(feature.iconLibrary as 'MaterialIcons') || 'MaterialIcons'}
             size={26}
             color={colors.primary.main}
           />
         </View>
 
-        {/* TITLE */}
         <Text
           variant="label"
           weight="medium"
+          numberOfLines={2}
           style={[styles.itemTitle, {color: colors.text.primary}]}>
-          {feature.title}
+          {getDisplayTitle(feature.title)}
         </Text>
       </Animated.View>
     </TouchableOpacity>
@@ -83,7 +101,6 @@ const AnimatedCard = ({feature, colors}: any) => {
 const styles = StyleSheet.create({
   container: {
     borderRadius: 20,
-    marginHorizontal: 16,
     marginBottom: 32,
   },
 
@@ -95,49 +112,40 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    width: '100%',
   },
 
   item: {
-    width: '30%',
-    marginBottom: 16,
+    width: '31%',
+    marginBottom: 8,
   },
 
   card: {
+    width: '100%',
     borderRadius: 18,
-    paddingVertical: 18,
-    paddingHorizontal: 10,
-
+    paddingVertical: 16,
+    paddingHorizontal: 6,
     alignItems: 'center',
-    justifyContent: 'center',
-
-    // backgroundColor: '#fff',
-
-    // // ✨ premium shadow
-    // shadowColor: '#000',
-    // shadowOpacity: 0.08,
-    // shadowRadius: 14,
-    // shadowOffset: {width: 0, height: 6},
-    // elevation: 0.3,
-
-    // // subtle border
-    // borderWidth: 0.2,
-    // borderColor: 'rgba(0,0,0,0.04)',
+    justifyContent: 'flex-start',
   },
 
   iconContainer: {
     width: 56,
     height: 56,
     borderRadius: 28,
-
     alignItems: 'center',
     justifyContent: 'center',
-
     marginBottom: 10,
   },
 
   itemTitle: {
+    width: '100%',
     textAlign: 'center',
-    fontSize: 13,
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '600',
+    flexShrink: 1,
   },
 });
