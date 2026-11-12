@@ -193,6 +193,8 @@ export const SendGiftModal: React.FC<SendGiftModalProps> = ({
           <WalletBalanceCard
             balance={balanceCoins}
             loading={walletBalanceLoading}
+            astrologerName={astrologerName}
+            astrologerProfilePic={astrologerProfilePic}
           />
 
           <View

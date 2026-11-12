@@ -151,7 +151,7 @@ export const SendGiftScreen: React.FC<SendGiftScreenProps> = ({
           weight="semibold"
           style={styles.headerTitle}
           color={colors.text.primary}>
-          Send Gift
+           Gift
         </Text>
 
         <View style={styles.headerRight} />
@@ -164,6 +164,8 @@ export const SendGiftScreen: React.FC<SendGiftScreenProps> = ({
         <WalletBalanceCard
           balance={balanceCoins}
           loading={walletBalanceLoading}
+          astrologerName={astrologerName}
+          // astrologerProfilePic={astrologerProfilePic}
         />
 
         <View
@@ -193,7 +195,7 @@ export const SendGiftScreen: React.FC<SendGiftScreenProps> = ({
                   ? colors.primary.contrastText
                   : colors.text.secondary
               }>
-              Send Gift
+               Gift
             </Text>
 
           </TouchableOpacity>
@@ -290,21 +292,21 @@ export const SendGiftScreen: React.FC<SendGiftScreenProps> = ({
           }
         /> */}
         <Button
-          title="Send Gift"
+          title="Send"
           variant="primary"
           size="large"
           onPress={handleSendGift}
           loading={loading}
           disabled={sendGiftDisabled}
           style={styles.button}
-          leftIcon={
-            <Icon
-              name="send"
-              size={20}
-              color={colors.primary.contrastText}
-              library="MaterialIcons"
-            />
-          }
+          // leftIcon={
+          //   <Icon
+          //     name="send"
+          //     size={20}
+          //     color={colors.primary.contrastText}
+          //     library="MaterialIcons"
+          //   />
+          // }
         />
       </View>
     </SafeAreaView>
