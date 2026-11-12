@@ -1,4 +1,4 @@
-import React, {useMemo} from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -6,12 +6,12 @@ import {
   ScrollView,
   Dimensions,
 } from 'react-native';
-import {useTheme} from '../../../../../theme';
-import {Text} from '../../../../../components/Text';
-import {Icon} from '../../../../../components/Icon';
-import {ProblemCategoryProps, ProblemCategory} from '../../types';
+import { useTheme } from '../../../../../theme';
+import { Text } from '../../../../../components/Text';
+import { Icon } from '../../../../../components/Icon';
+import { ProblemCategoryProps, ProblemCategory } from '../../types';
 
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const HORIZONTAL_INSET = 16;
 const CARD_GAP = 12;
 const CARD_WIDTH = Math.min(112, (SCREEN_WIDTH - HORIZONTAL_INSET * 2 - CARD_GAP * 2) / 3.2);
@@ -50,7 +50,7 @@ export const ProblemCategories: React.FC<ProblemCategoryProps> = ({
   return (
     <View style={[styles.container, style]}>
       <Text variant="h6" weight="semibold" style={styles.title}>
-        Problem Based Category
+        Solve Your Problems
       </Text>
 
       <ScrollView
@@ -75,7 +75,7 @@ export const ProblemCategories: React.FC<ProblemCategoryProps> = ({
               <View
                 style={[
                   styles.iconContainer,
-                  {backgroundColor: getPastelBackground(category, index)},
+                  { backgroundColor: getPastelBackground(category, index) },
                 ]}>
                 <Icon
                   name={category.icon}
@@ -90,7 +90,7 @@ export const ProblemCategories: React.FC<ProblemCategoryProps> = ({
               <Text
                 variant="label"
                 weight="medium"
-                style={[styles.itemTitle, {color: colors.text.primary}]}
+                style={[styles.itemTitle, { color: colors.text.primary }]}
                 numberOfLines={2}>
                 {category.title}
               </Text>
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 2,

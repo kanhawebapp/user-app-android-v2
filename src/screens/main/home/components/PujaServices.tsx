@@ -48,9 +48,9 @@ const PujaCard = React.memo(({ item, onPress }: { item: PujaService; onPress: ()
         <Text variant="label" weight="semibold" numberOfLines={1} style={{ color: colors.text.primary }}>
           {item.title}
         </Text>
-        <Text variant="caption" numberOfLines={2} style={{ color: colors.text.secondary, marginTop: 4 }}>
+        {/* <Text variant="caption" numberOfLines={2} style={{ color: colors.text.secondary, marginTop: 4 }}>
           {item.shortDescription}
-        </Text>
+        </Text> */}
         <View style={styles.ratingRow}>
           <Icon library="Ionicons" name="star" size={14} color="#FFB300" />
           <Text variant="caption" style={{ color: colors.text.secondary, marginLeft: 4 }}>

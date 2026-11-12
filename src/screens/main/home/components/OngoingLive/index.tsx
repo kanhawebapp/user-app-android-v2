@@ -1,4 +1,4 @@
-import React, {useCallback, useState} from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   ScrollView,
@@ -6,13 +6,13 @@ import {
   Image,
   ActivityIndicator,
 } from 'react-native';
-import {useTheme} from '../../../../../theme';
-import {Text} from '../../../../../components/Text';
-import {Icon} from '../../../../../components/Icon';
-import {API_BASE_URL} from '../../../../../constants/api.constants';
-import {OngoingLiveProps, UpcomingLive} from './type';
-import {styles} from './styles';
-import {useOngoingLive} from './hooks/useOngoingLive';
+import { useTheme } from '../../../../../theme';
+import { Text } from '../../../../../components/Text';
+import { Icon } from '../../../../../components/Icon';
+import { API_BASE_URL } from '../../../../../constants/api.constants';
+import { OngoingLiveProps, UpcomingLive } from './type';
+import { styles } from './styles';
+import { useOngoingLive } from './hooks/useOngoingLive';
 
 const getProfilePicUrl = (profilePic?: string | null): string | null => {
   if (!profilePic) {
@@ -44,7 +44,7 @@ export const OngoingLive: React.FC<OngoingLiveProps> = ({
     () => new Set(),
   );
 
-  const {sessions: sessionsData, handleSessionPress, isLiveSession} =
+  const { sessions: sessionsData, handleSessionPress, isLiveSession } =
     useOngoingLive(sessions, onSessionPress, onViewAllPress);
 
   const handleAvatarError = useCallback((sessionId: string) => {
@@ -68,7 +68,8 @@ export const OngoingLive: React.FC<OngoingLiveProps> = ({
         <View style={styles.header}>
           <View style={styles.titleContainer}>
             <Text variant="h6" weight="semibold">
-              Ongoing Live
+              Ongoing Live Sessions
+
             </Text>
           </View>
         </View>
@@ -106,11 +107,11 @@ export const OngoingLive: React.FC<OngoingLiveProps> = ({
         <View
           style={[
             styles.thumbnail,
-            {backgroundColor: colors.background.tertiary},
+            { backgroundColor: colors.background.tertiary },
           ]}>
           {profilePicUrl ? (
             <Image
-              source={{uri: profilePicUrl}}
+              source={{ uri: profilePicUrl }}
               style={styles.thumbnailImage}
               resizeMode="cover"
               onError={() => handleAvatarError(item.id)}
@@ -142,7 +143,7 @@ export const OngoingLive: React.FC<OngoingLiveProps> = ({
           <Text
             variant="label"
             weight="semibold"
-            style={{color: colors.text.primary}}
+            style={{ color: colors.text.primary }}
             numberOfLines={1}>
             {item.title}
           </Text>
@@ -151,7 +152,7 @@ export const OngoingLive: React.FC<OngoingLiveProps> = ({
             <View style={styles.metaBlock}>
               <Text
                 variant="caption"
-                style={[styles.astrologerName, {color: colors.text.secondary}]}
+                style={[styles.astrologerName, { color: colors.text.secondary }]}
                 numberOfLines={1}>
                 {getAstrologerName(item)}
               </Text>
@@ -166,7 +167,7 @@ export const OngoingLive: React.FC<OngoingLiveProps> = ({
                   <Text
                     variant="captionSmall"
                     weight="medium"
-                    style={{color: colors.text.secondary, marginLeft: 2}}>
+                    style={{ color: colors.text.secondary, marginLeft: 2 }}>
                     {Number(rating).toFixed(1)}
                   </Text>
                 </View>
@@ -176,7 +177,7 @@ export const OngoingLive: React.FC<OngoingLiveProps> = ({
             <TouchableOpacity
               style={[
                 styles.joinButton,
-                {borderColor: colors.primary.main},
+                { borderColor: colors.primary.main },
                 isJoining && styles.joinButtonDisabled,
               ]}
               onPress={() => handleJoin(item)}
@@ -188,7 +189,7 @@ export const OngoingLive: React.FC<OngoingLiveProps> = ({
                 <Text
                   variant="caption"
                   weight="medium"
-                  style={{color: colors.primary.main}}>
+                  style={{ color: colors.primary.main }}>
                   Join Now
                 </Text>
               )}
@@ -204,7 +205,7 @@ export const OngoingLive: React.FC<OngoingLiveProps> = ({
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <Text variant="h6" weight="semibold">
-            Ongoing Live
+            Ongoing Live Sessions
           </Text>
         </View>
       </View>
