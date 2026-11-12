@@ -312,25 +312,29 @@ export const Shop: React.FC<ShopProps> = ({items = [], style}) => {
       {/* SHOP BANNER */}
       <TouchableOpacity activeOpacity={0.9} onPress={openShop}>
         <LinearGradient
-          colors={['#7f59d8', '#7649cc']}
+          colors={['#5B2CA5', '#5B2CA5']}
           start={{x: 0, y: 0}}
           end={{x: 1, y: 1}}
           style={styles.bannerContainer}>
+          <View style={styles.topEllipse} pointerEvents="none" />
+          <View style={styles.bottomEllipse} pointerEvents="none" />
+
           <CustomImage
             source={images.Logo}
-            width={100}
-            height={100}
+            width={70}
+            height={70}
             borderRadius={0}
             resizeMode="contain"
             showLoading={false}
+            style={styles.logo}
           />
 
           <Text style={styles.title}>
-            Shop Abhimantrit & Certified Products
+            Shop Abhimantrit &{'\n'}Certified Products
           </Text>
 
           <Text style={styles.subtitle}>
-            Get genuine gemstones, yantras & rudraksha blessed by experts
+            Get genuine gemstones, yantras, and rudrakshas blessed by experts.
           </Text>
 
           <View style={styles.button}>
@@ -389,43 +393,87 @@ export default Shop;
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 8,
-    marginTop: 16,
+    marginTop: 8,
+    marginBottom: 8,
   },
 
   bannerContainer: {
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: 28,
+    paddingVertical: 28,
+    paddingHorizontal: 24,
     alignItems: 'center',
+    justifyContent: 'center',
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    shadowOffset: {width: 0, height: 6},
+    elevation: 4,
+  },
+
+  topEllipse: {
+    position: 'absolute',
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: 'rgba(0, 0, 0, 0.12)',
+    top: -55,
+    right: -45,
+  },
+
+  bottomEllipse: {
+    position: 'absolute',
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    bottom: -45,
+    left: -35,
+  },
+
+  logo: {
+    marginBottom: 4,
   },
 
   title: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#FFF',
+    color: '#FFFFFF',
     textAlign: 'center',
-    marginTop: 10,
+    marginTop: 12,
+    lineHeight: 28,
   },
 
   subtitle: {
-    fontSize: 13,
-    color: '#E0D4FF',
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#D4C6EE',
     textAlign: 'center',
-    marginTop: 6,
+    marginTop: 10,
+    lineHeight: 20,
+    paddingHorizontal: 8,
   },
 
   button: {
-    marginTop: 12,
-    backgroundColor: '#FF7A1A',
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 10,
+    marginTop: 20,
+    backgroundColor: '#FF701F',
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    shadowOffset: {width: 0, height: 2},
+    elevation: 2,
   },
 
   buttonText: {
-    color: '#FFF',
-    fontWeight: '600',
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 15,
+    textAlign: 'center',
   },
 
   header: {
