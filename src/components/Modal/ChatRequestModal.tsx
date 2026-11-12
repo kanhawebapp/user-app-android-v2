@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   FlatList,
   Animated,
+  Platform,
 } from 'react-native';
 
 import { useTheme } from '../../theme';
@@ -26,7 +27,10 @@ import { SkeletonLoader } from '../SkeletonLoader/ShimmerLoader';
 import { useAuthStore } from '../../stores/auth.store';
 import { useChatStore } from '../../services/chat/chat.store';
 import { useRecentIntakes } from '../../services/api/recentIntake/recentIntakes.hook';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  useSafeAreaInsets,
+  initialWindowMetrics,
+} from 'react-native-safe-area-context';
 
 export interface ChatRequestData {
   name: string;
@@ -66,6 +70,12 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
   const theme = useTheme();
   const colors = theme.colors;
   const insets = useSafeAreaInsets();
+  // Modals can report 0 bottom inset on some Android API levels; fall back safely.
+  const bottomInset = Math.max(
+    insets.bottom,
+    initialWindowMetrics?.insets.bottom ?? 0,
+    Platform.OS === 'android' ? 16 : 8,
+  );
   const [name, setName] = useState('');
   const [gender, setGender] = useState<Gender | null>(null);
   const [dateOfBirth, setDateOfBirth] = useState('');
@@ -463,7 +473,13 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
       dismissOnBackdropPress={true}
       showCloseButton={false}
       avoidKeyboard
-      contentStyle={styles.modalContent}>
+      contentStyle={[
+        styles.modalContent,
+        {
+          paddingBottom: bottomInset,
+          maxHeight: '92%',
+        },
+      ]}>
       <HeaderSection
         astrologer={astrologer}
         onClose={handleClose}
@@ -472,9 +488,12 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
 
       <ScrollView
         style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        automaticallyAdjustKeyboardInsets>
+        keyboardDismissMode="on-drag"
+        automaticallyAdjustKeyboardInsets
+        bounces={false}>
         <Text style={[styles.subtitle, { color: colors.text.secondary }]}>
           {type === 'call'
             ? 'Please provide your birth details to start the call consultation'
@@ -687,14 +706,7 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
       </ScrollView>
 
       {(showNewForm || intakes.length === 0) && (
-        <View
-          style={[
-            styles.buttonContainer,
-            {
-              paddingBottom: Math.max(insets.bottom, 8),
-            },
-          ]}>
-
+        <View style={styles.buttonContainer}>
           <Button
             title="Cancel"
             variant="outline"
@@ -730,12 +742,18 @@ export const ChatRequestModal: React.FC<ChatRequestModalProps> = ({
 
 const styles = StyleSheet.create({
   modalContent: {
-    maxHeight: '95%',
-    paddingBottom: 2,
+    maxHeight: '92%',
+    overflow: 'hidden',
   },
 
   scrollView: {
+    flexGrow: 0,
     maxHeight: 400,
+  },
+
+  scrollContent: {
+    paddingBottom: 8,
+    flexGrow: 1,
   },
 
   subtitle: {
