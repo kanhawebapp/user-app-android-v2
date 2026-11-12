@@ -4,6 +4,10 @@
  */
 
 import {ViewStyle} from 'react-native';
+import type {
+  LiveJoinResponse,
+  UpcomingLive,
+} from '../../../../services/api/liveSessions/live-sessions.types';
 
 // ==================== Problem Category Types ====================
 export interface ProblemCategory {
@@ -41,6 +45,7 @@ export interface HomeScreenProps {
   onNavigateToServiceDetails?: any;
   onNavigateToBlogListing?: () => void;
   onNavigateToFreeServices?: () => void;
+  onJoinLive?: (joinData: LiveJoinResponse, session: UpcomingLive) => void;
 }
 
 // ==================== Auth Handler Type ====================

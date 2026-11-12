@@ -1,21 +1,14 @@
 import {ViewStyle} from 'react-native';
+import type {UpcomingLive} from '../../../../../services/api/liveSessions/live-sessions.types';
 
-// ==================== Live Session Types ====================
-export interface LiveSession {
-  id: string;
-  title: string;
-  astrologerName: string;
-  astrologerImage?: any;
-  viewerCount?: number;
-  status: 'live' | 'upcoming' | 'ended';
-  thumbnail?: any;
-  scheduledTime?: string;
-  duration?: string;
-}
+export type {UpcomingLive};
 
 export interface OngoingLiveProps {
-  sessions?: LiveSession[];
-  onSessionPress?: (session: LiveSession) => void;
+  sessions?: UpcomingLive[];
+  loading?: boolean;
+  joiningSessionId?: string | null;
+  onSessionPress?: (session: UpcomingLive) => void;
+  onJoinPress?: (session: UpcomingLive) => void;
   onViewAllPress?: () => void;
   style?: ViewStyle;
 }

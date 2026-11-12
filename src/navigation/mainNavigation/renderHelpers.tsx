@@ -208,6 +208,7 @@ export const renderScreen = ({
             onNavigateToServiceDetails={onNavigateToServiceDetails}
             onNavigateToBlogListing={onNavigateToBlogListing}
             onNavigateToFreeServices={onNavigateToFreeServices}
+            onJoinLive={onJoinLive}
           />
         </Suspense>
       );

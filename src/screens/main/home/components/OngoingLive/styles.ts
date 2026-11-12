@@ -1,8 +1,9 @@
 import {StyleSheet, Dimensions} from 'react-native';
-import {colors} from '../../../../../theme';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
-export const CARD_WIDTH = 200;
+export const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.6, 228);
+const THUMBNAIL_HEIGHT = 118;
+const CARD_CONTENT_HEIGHT = 72;
 
 export const styles = StyleSheet.create({
   container: {
@@ -12,113 +13,96 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
     marginBottom: 12,
   },
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  liveBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FF0000',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginLeft: 8,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#FFF',
-    marginRight: 4,
-  },
-  liveText: {
-    color: '#FFF',
-  },
   scrollContent: {
-    // paddingHorizontal: 12,
+    paddingRight: 4,
+    paddingTop: 4,
+    paddingBottom: 6,
   },
   card: {
     width: CARD_WIDTH,
-    // height: 120,
+    height: THUMBNAIL_HEIGHT + CARD_CONTENT_HEIGHT,
     borderRadius: 12,
-    marginHorizontal: 4,
+    marginRight: 10,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.05)',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.07,
+    shadowRadius: 5,
+    elevation: 2,
   },
   thumbnail: {
-    height: 150,
     width: '100%',
-    justifyContent: 'center',
+    height: THUMBNAIL_HEIGHT,
+    overflow: 'hidden',
+  },
+  thumbnailImage: {
+    width: '100%',
+    height: '100%',
+  },
+  thumbnailPlaceholder: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   liveBadgeCard: {
     position: 'absolute',
     top: 8,
     left: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#EF4444',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 4,
-  },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#FFF',
-    marginRight: 4,
   },
   liveBadgeText: {
     color: '#FFF',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  viewerBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 12,
-  },
-  viewerCount: {
-    color: '#FFF',
-    marginLeft: 4,
+    fontSize: 10,
+    letterSpacing: 0.3,
   },
   cardContent: {
-    padding: 10,
+    height: CARD_CONTENT_HEIGHT,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    justifyContent: 'space-between',
+  },
+  contentFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 28,
+  },
+  metaBlock: {
+    flex: 1,
+    marginRight: 6,
+    justifyContent: 'center',
   },
   astrologerName: {
     marginBottom: 2,
-    fontWeight: '600',
-    // color: colors.primary.main,
   },
-  sessionTitle: {
-    marginBottom: 6,
-  },
-  statusIndicator: {
-    borderWidth: 1,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 6,
-    paddingVertical: 6,
-  },
-  joinNowText: {
-    color: colors.primary.main,
-  },
-  joinCont: {
-    display: 'flex',
+  ratingRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  joinButton: {
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    minWidth: 72,
+    minHeight: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  joinButtonDisabled: {
+    opacity: 0.7,
+  },
+  loadingContainer: {
+    height: 160,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

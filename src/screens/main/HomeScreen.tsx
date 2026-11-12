@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { View, StyleSheet, ScrollView, StatusBar, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme';
@@ -36,6 +36,12 @@ import { useServices } from '../../services/api/healingServices/getServices/useS
 import { useCategories } from '../../services/api/healingServices/serviceCategory/useCategories';
 import { useBlogs } from '../../services/api/blogs/useBlogs';
 import useDoubleBackExit from '../../hooks/useDoubleBackExit';
+import { useUpcomingLives } from '../../services/api/liveSessions/useUpcomingLives';
+import {
+  getLiveJoinRtcError,
+  joinLive,
+} from '../../services/api/liveSessions/live-sessions.api';
+import type { UpcomingLive as LiveSessionItem } from '../../services/api/liveSessions/live-sessions.types';
 
 const HomeScreen: React.FC<HomeScreenProps> = ({
   onNavigateToTab,
@@ -43,7 +49,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   onNavigateToSignup,
   onNavigateToChat,
   onNavigateToCall: _onNavigateToCall,
-  onNavigateToLive,
+  onNavigateToLive: _onNavigateToLive,
   onNavigateToAstrologerProfile: onNavigateToAstrologerProfile,
   onNavigateToProduct,
   onNavigateToTestimonial,
@@ -54,6 +60,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   onNavigateToServiceDetails: _onNavigateToServiceDetails,
   onNavigateToBlogListing,
   onNavigateToFreeServices,
+  onJoinLive,
 }) => {
   const theme = useTheme();
   const colors = theme.colors;
@@ -76,8 +83,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
 
     // Data
     // heroBanners,
-    ongoingLives,
-    upcomingLives,
     problemCategories,
     remedies,
     testimonials,
@@ -91,6 +96,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     setShowLoginModal,
   } = useHomeData();
   const { data: bannerResponse = [], refresh: refreshBanners } = useBanners('en');
+  const {
+    data: liveSessions = [],
+    loading: liveSessionsLoading,
+    refresh: refreshLiveSessions,
+  } = useUpcomingLives();
+
+  const ongoingLiveSessions = useMemo(
+    () => liveSessions.filter(session => session.status === 'LIVE'),
+    [liveSessions],
+  );
 
   const user = useAuthStore(state => state.user);
   const [chatTargetAstrologer, setChatTargetAstrologer] = useState<any>(null);
@@ -99,6 +114,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     'chat',
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [joiningSessionId, setJoiningSessionId] = useState<string | null>(null);
+  const joiningRef = useRef(false);
 
   const { submitConsultationRequest, loading: consultationLoading } =
     useConsultationFlow({
@@ -115,9 +132,17 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
       refreshServices(),
       refreshCategories(),
       refreshAstrologers(),
+      refreshLiveSessions(),
     ]);
     setRefreshing(false);
-  }, [refreshAstrologers, refreshBanners, refreshBlogs, refreshCategories, refreshServices]);
+  }, [
+    refreshAstrologers,
+    refreshBanners,
+    refreshBlogs,
+    refreshCategories,
+    refreshLiveSessions,
+    refreshServices,
+  ]);
 
   // --- Handlers ---
 
@@ -134,13 +159,45 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     [handleRestrictedAction, onNavigateToTab],
   );
 
-  const handleLiveSessionPress = useCallback(
-    (session: any) => {
-      handleRestrictedAction('Please login to join live session', () => {
-        onNavigateToLive?.(session.id);
-      });
+  const handleJoinLiveSession = useCallback(
+    async (session: LiveSessionItem) => {
+      if (joiningRef.current) {
+        return;
+      }
+      if (!session.channelName) {
+        showError('This live session is not available right now.');
+        return;
+      }
+
+      joiningRef.current = true;
+      setJoiningSessionId(session.id);
+      try {
+        const joinData = await joinLive(session.channelName);
+        const rtcError = getLiveJoinRtcError(joinData, session.channelName);
+        if (rtcError) {
+          showError(rtcError);
+          return;
+        }
+        onJoinLive?.(joinData, session);
+      } catch (err: any) {
+        showError(
+          err?.message || 'Unable to join the live session. Please try again.',
+        );
+      } finally {
+        joiningRef.current = false;
+        setJoiningSessionId(null);
+      }
     },
-    [handleRestrictedAction, onNavigateToLive],
+    [onJoinLive, showError],
+  );
+
+  const handleLiveSessionPress = useCallback(
+    (session: LiveSessionItem) => {
+      handleRestrictedAction('Please login to join live sessions', () =>
+        handleJoinLiveSession(session),
+      );
+    },
+    [handleRestrictedAction, handleJoinLiveSession],
   );
 
   const handleViewAllLive = useCallback(() => {
@@ -350,17 +407,21 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           />
         )}
 
-        {/* 4. Ongoing Live Sessions */}
-        {/* <OngoingLive
-          sessions={ongoingLives}
-          onSessionPress={handleLiveSessionPress}
-          onViewAllPress={handleViewAllLive}
-          style={styles.section}
-        /> */}
+      
 
         {/* Free Services Row */}
         <FreeServicesRow
           onViewAllPress={onNavigateToFreeServices}
+          style={styles.section}
+        />
+
+          {/* 4. Ongoing Live Sessions */}
+        <OngoingLive
+          sessions={ongoingLiveSessions}
+          loading={liveSessionsLoading}
+          joiningSessionId={joiningSessionId}
+          onSessionPress={handleLiveSessionPress}
+          onJoinPress={handleLiveSessionPress}
           style={styles.section}
         />
 

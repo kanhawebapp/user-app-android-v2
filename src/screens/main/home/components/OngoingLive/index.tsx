@@ -1,252 +1,214 @@
-// import React from 'react';
-// import {View, ScrollView, TouchableOpacity, Image, ImageBackground} from 'react-native';
-// import {useTheme} from '../../../../../theme';
-// import {Text} from '../../../../../components/Text';
-// import {Icon} from '../../../../../components/Icon';
-// import {Button} from '../../../../../components/Button';
-// import {OngoingLiveProps, LiveSession} from './type';
-// import {styles} from './styles';
-// import {useOngoingLive} from './hooks/useOngoingLive';
-// import images from '../../../../../assets/images';
-
-// export const OngoingLive: React.FC<OngoingLiveProps> = ({
-//   sessions = [],
-//   onSessionPress,
-//   onViewAllPress,
-//   style,
-// }) => {
-//   const theme = useTheme();
-//   const colors = theme.colors;
-
-//   const {
-//     sessions: sessionsData,
-//     handleSessionPress,
-//     handleViewAllPress,
-//     isLiveSession,
-//   } = useOngoingLive(sessions, onSessionPress, onViewAllPress);
-
-//   if (!sessionsData.length) return null;
-
-//   const renderCard = ({item}: {item: LiveSession}) => (
-//     <TouchableOpacity
-//       style={[styles.card, {backgroundColor: colors.card.background}]}
-//       onPress={() => handleSessionPress(item)}
-//       activeOpacity={0.9}>
-//       <ImageBackground
-//         source={{uri: images.Logo}}
-//         style={[
-//           styles.thumbnail,
-//           {backgroundColor: colors.background.secondary},
-//         ]}>
-//         {/* Placeholder for actual image */}
-//         <Image
-//           source={require('../../../../../assets/images/Logo.png')}
-//           style={{ width: 40, height: 40, borderRadius: 20 }}
-//         />
-
-//         {/* LIVE Badge on card */}
-//         {isLiveSession(item) && (
-//           <View style={styles.liveBadgeCard}>
-//             <View style={styles.liveDot} />
-//             <Text variant="captionSmall" style={styles.liveBadgeText}>
-//               LIVE
-//             </Text>
-//           </View>
-//         )}
-
-//         {/* Viewer count badge */}
-//         <View style={styles.viewerBadge}>
-//           <Icon
-//             name="visibility"
-//             size={12}
-//             color="#FFF"
-//             library="MaterialIcons"
-//           />
-//           <Text variant="captionSmall" style={styles.viewerCount}>
-//             {item.viewerCount || 0}
-//           </Text>
-//         </View>
-//       </ImageBackground>
-
-//       <View style={styles.cardContent}>
-//         <Text
-//           variant="label"
-//           weight="semibold"
-//           style={styles.astrologerName}
-//           numberOfLines={1}>
-//           {item.astrologerName}
-//         </Text>
-//         <Text
-//           variant="caption"
-//           style={[styles.sessionTitle, {color: colors.text.secondary}]}
-//           numberOfLines={1}>
-//           {item.title}
-//         </Text>
-//         <View style={[styles.statusIndicator, {borderColor: '#4CAF50'}]}>
-//           <Text variant="captionSmall" style={styles.joinNowText}>
-//             Join Now
-//           </Text>
-//         </View>
-//       </View>
-//     </TouchableOpacity>
-//   );
-
-//   return (
-//     <View style={[styles.container, style]}>
-//       <View style={styles.header}>
-//         <View style={styles.titleContainer}>
-//           <Text variant="h6" weight="semibold">
-//             Ongoing Live
-//           </Text>
-//           <View style={styles.liveBadge}>
-//             <View style={styles.dot} />
-//             <Text variant="captionSmall" weight="bold" style={styles.liveText}>
-//               LIVE
-//             </Text>
-//           </View>
-//         </View>
-//         <Button
-//           title="View All"
-//           variant="ghost"
-//           size="small"
-//           onPress={handleViewAllPress}
-//         />
-//       </View>
-
-//       <ScrollView
-//         horizontal
-//         showsHorizontalScrollIndicator={false}
-//         contentContainerStyle={styles.scrollContent}>
-//         {sessionsData.map(session => (
-//           <View key={session.id}>{renderCard({item: session})}</View>
-//         ))}
-//       </ScrollView>
-//     </View>
-//   );
-// };
-
-// export default OngoingLive;
-
-import React from 'react';
+import React, {useCallback, useState} from 'react';
 import {
   View,
   ScrollView,
   TouchableOpacity,
-  ImageBackground,
+  Image,
+  ActivityIndicator,
 } from 'react-native';
 import {useTheme} from '../../../../../theme';
 import {Text} from '../../../../../components/Text';
 import {Icon} from '../../../../../components/Icon';
-import {Button} from '../../../../../components/Button';
-import {OngoingLiveProps, LiveSession} from './type';
+import {API_BASE_URL} from '../../../../../constants/api.constants';
+import {OngoingLiveProps, UpcomingLive} from './type';
 import {styles} from './styles';
 import {useOngoingLive} from './hooks/useOngoingLive';
-import images from '../../../../../assets/images';
+
+const getProfilePicUrl = (profilePic?: string | null): string | null => {
+  if (!profilePic) {
+    return null;
+  }
+  if (profilePic.startsWith('http')) {
+    return profilePic;
+  }
+  return `${API_BASE_URL.DEVELOPMENT}${profilePic.replace(/^\/+/, '')}`;
+};
+
+const getAstrologerName = (session: UpcomingLive): string =>
+  session.astrologer?.displayName?.trim() ||
+  session.astrologer?.name?.trim() ||
+  '';
 
 export const OngoingLive: React.FC<OngoingLiveProps> = ({
   sessions = [],
+  loading = false,
+  joiningSessionId = null,
   onSessionPress,
+  onJoinPress,
   onViewAllPress,
   style,
 }) => {
   const theme = useTheme();
   const colors = theme.colors;
+  const [failedAvatarIds, setFailedAvatarIds] = useState<Set<string>>(
+    () => new Set(),
+  );
 
-  const {
-    sessions: sessionsData,
-    handleSessionPress,
-    handleViewAllPress,
-    isLiveSession,
-  } = useOngoingLive(sessions, onSessionPress, onViewAllPress);
+  const {sessions: sessionsData, handleSessionPress, isLiveSession} =
+    useOngoingLive(sessions, onSessionPress, onViewAllPress);
 
-  if (!sessionsData?.length) {
+  const handleAvatarError = useCallback((sessionId: string) => {
+    setFailedAvatarIds(prev => new Set(prev).add(sessionId));
+  }, []);
+
+  const handleJoin = useCallback(
+    (session: UpcomingLive) => {
+      if (onJoinPress) {
+        onJoinPress(session);
+        return;
+      }
+      handleSessionPress(session);
+    },
+    [handleSessionPress, onJoinPress],
+  );
+
+  if (loading && sessionsData.length === 0) {
+    return (
+      <View style={[styles.container, style]}>
+        <View style={styles.header}>
+          <View style={styles.titleContainer}>
+            <Text variant="h6" weight="semibold">
+              Ongoing Live
+            </Text>
+          </View>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" color={colors.primary.main} />
+        </View>
+      </View>
+    );
+  }
+
+  if (!sessionsData.length) {
     return null;
   }
 
-  const renderCard = (item: LiveSession) => (
-    <TouchableOpacity
-      key={item.id}
-      style={[styles.card, {backgroundColor: colors.card.background}]}
-      onPress={() => handleSessionPress(item)}
-      activeOpacity={0.9}>
-      <ImageBackground
-        source={images.AstrologerCard1}
+  const renderCard = (item: UpcomingLive) => {
+    const profilePicUrl = failedAvatarIds.has(item.id)
+      ? null
+      : getProfilePicUrl(item.astrologer?.profilePic);
+    const isJoining = joiningSessionId === item.id;
+    const rating = item.astrologer?.rating;
+
+    return (
+      <TouchableOpacity
+        key={item.id}
         style={[
-          styles.thumbnail,
-          {backgroundColor: colors.background.secondary},
+          styles.card,
+          {
+            backgroundColor: colors.card.background,
+            shadowColor: colors.common.black,
+          },
         ]}
-        imageStyle={{borderTopLeftRadius: 12, borderTopRightRadius: 12}}>
-        {/* LIVE Badge */}
-        {isLiveSession(item) && (
-          <View style={styles.liveBadgeCard}>
-            {/* <View style={styles.liveDot} /> */}
-            <Text variant="captionSmall" style={styles.liveBadgeText}>
-              LIVE
-            </Text>
-          </View>
-        )}
-
-        {/* Viewer Count */}
-        <View style={styles.viewerBadge}>
-          <Icon name="users" size={12} color="#FFF" library="Feather" />
-          <Text variant="captionSmall" style={styles.viewerCount}>
-            {item.viewerCount ?? 0}
-          </Text>
-        </View>
-      </ImageBackground>
-
-      <View style={styles.cardContent}>
-        <Text
-          variant="h6"
+        onPress={() => handleJoin(item)}
+        activeOpacity={0.9}
+        disabled={isJoining}>
+        <View
           style={[
-            styles.sessionTitle,
-            {color: colors.text.primary, fontWeight: '600'},
-          ]}
-          numberOfLines={1}>
-          {item.title}
-        </Text>
-        <View style={styles.joinCont}>
+            styles.thumbnail,
+            {backgroundColor: colors.background.tertiary},
+          ]}>
+          {profilePicUrl ? (
+            <Image
+              source={{uri: profilePicUrl}}
+              style={styles.thumbnailImage}
+              resizeMode="cover"
+              onError={() => handleAvatarError(item.id)}
+            />
+          ) : (
+            <View style={styles.thumbnailPlaceholder}>
+              <Icon
+                name="person"
+                size={36}
+                color={colors.text.secondary}
+                library="MaterialIcons"
+              />
+            </View>
+          )}
+
+          {isLiveSession(item) && (
+            <View style={styles.liveBadgeCard}>
+              <Text
+                variant="captionSmall"
+                weight="bold"
+                style={styles.liveBadgeText}>
+                LIVE
+              </Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.cardContent}>
           <Text
             variant="label"
-            // weight="semibold"
-            style={styles.astrologerName}
+            weight="semibold"
+            style={{color: colors.text.primary}}
             numberOfLines={1}>
-            {item.astrologerName}
+            {item.title}
           </Text>
 
-          <View
-            style={[
-              styles.statusIndicator,
-              {borderColor: colors.primary.main},
-            ]}>
-            <Text variant="captionSmall" style={styles.joinNowText}>
-              Join Now
-            </Text>
+          <View style={styles.contentFooter}>
+            <View style={styles.metaBlock}>
+              <Text
+                variant="caption"
+                style={[styles.astrologerName, {color: colors.text.secondary}]}
+                numberOfLines={1}>
+                {getAstrologerName(item)}
+              </Text>
+              {rating != null && (
+                <View style={styles.ratingRow}>
+                  <Icon
+                    name="star"
+                    size={11}
+                    color={colors.warning.main}
+                    library="MaterialIcons"
+                  />
+                  <Text
+                    variant="captionSmall"
+                    weight="medium"
+                    style={{color: colors.text.secondary, marginLeft: 2}}>
+                    {Number(rating).toFixed(1)}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            <TouchableOpacity
+              style={[
+                styles.joinButton,
+                {borderColor: colors.primary.main},
+                isJoining && styles.joinButtonDisabled,
+              ]}
+              onPress={() => handleJoin(item)}
+              disabled={isJoining}
+              activeOpacity={0.7}>
+              {isJoining ? (
+                <ActivityIndicator size="small" color={colors.primary.main} />
+              ) : (
+                <Text
+                  variant="caption"
+                  weight="medium"
+                  style={{color: colors.primary.main}}>
+                  Join Now
+                </Text>
+              )}
+            </TouchableOpacity>
           </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={[styles.container, style]}>
-      {/* Header */}
       <View style={styles.header}>
         <View style={styles.titleContainer}>
-          <Text variant="h6" weight="semibold" style={{fontWeight: '600'}}>
-            Ongoing Live Sessions
+          <Text variant="h6" weight="semibold">
+            Ongoing Live
           </Text>
         </View>
-
-        <Button
-          title="View All"
-          variant="ghost"
-          size="small"
-          onPress={handleViewAllPress}
-        />
       </View>
 
-      {/* Live Sessions */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
