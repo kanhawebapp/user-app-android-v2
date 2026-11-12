@@ -96,7 +96,7 @@ export const FeatureHealings: React.FC<FeaturedRemediesProps> = ({
                 <Text
                   weight="semibold"
                   numberOfLines={1}
-                  color={colors.primary.main}
+                  color={colors.text.primary}
                   style={styles.title}>
                   {remedy.name || remedy.title}
                 </Text>
