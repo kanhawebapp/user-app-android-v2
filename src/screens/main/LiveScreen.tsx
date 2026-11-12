@@ -5,7 +5,6 @@ import {
   ScrollView,
   StatusBar,
   TouchableOpacity,
-  FlatList,
   Dimensions,
   RefreshControl,
   Image,
@@ -13,19 +12,17 @@ import {
   NativeScrollEvent,
   NativeSyntheticEvent,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme';
 import { Text } from '../../components/Text';
 import { Icon } from '../../components/Icon';
 import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
 import { LoginRequiredModal } from '../../components/Modal';
 import { LiveScreenShimmer } from '../../components/Shimmer';
 import { useAuthStore } from '../../stores';
 import { useToast } from '../../context/ToastContext';
 import { API_BASE_URL } from '../../constants/api.constants';
-import { DATE_FORMATS } from '../../constants/app.constants';
-import { formatDate } from '../../utils/helpers';
 import { useUpcomingLives } from '../../services/api/liveSessions/useUpcomingLives';
 import {
   getLiveJoinRtcError,
@@ -34,32 +31,15 @@ import {
 import type {
   LiveJoinResponse,
   UpcomingLive,
-  UpcomingLiveStatus,
 } from '../../services/api/liveSessions/live-sessions.types';
 
-export interface FilterOption {
-  key: 'all' | 'live' | 'upcoming';
-  label: string;
-  icon?: string;
-}
-
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2;
+/** Shared dimensions so LIVE and UPCOMING cards stay identical */
+const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.6, 228);
+const THUMBNAIL_HEIGHT = 118;
+const CARD_CONTENT_HEIGHT = 72;
+const CARD_HEIGHT = THUMBNAIL_HEIGHT + CARD_CONTENT_HEIGHT;
 const LOAD_MORE_THRESHOLD = 200;
-
-const FILTER_OPTIONS: FilterOption[] = [
-  { key: 'all', label: 'All' },
-  { key: 'live', label: 'Live', icon: 'radio-button-checked' },
-  { key: 'upcoming', label: 'Upcoming', icon: 'schedule' },
-];
-
-const FILTER_STATUS: Record<
-  Exclude<FilterOption['key'], 'all'>,
-  UpcomingLiveStatus
-> = {
-  live: 'LIVE',
-  upcoming: 'SCHEDULED',
-};
 
 const getProfilePicUrl = (profilePic?: string | null): string | null => {
   if (!profilePic) {
@@ -71,17 +51,53 @@ const getProfilePicUrl = (profilePic?: string | null): string | null => {
   return `${API_BASE_URL.DEVELOPMENT}${profilePic.replace(/^\/+/, '')}`;
 };
 
-const formatScheduledAt = (scheduledAt?: string | null): string => {
+const parseScheduledDate = (scheduledAt?: string | null): Date | null => {
   if (!scheduledAt) {
-    return '';
+    return null;
   }
   const timestamp = Number(scheduledAt);
   const date = Number.isFinite(timestamp)
     ? new Date(timestamp)
     : new Date(scheduledAt);
-  return isNaN(date.getTime())
-    ? ''
-    : formatDate(date, DATE_FORMATS.DISPLAY_DATE_TIME);
+  return isNaN(date.getTime()) ? null : date;
+};
+
+const formatSessionTiming = (scheduledAt?: string | null): string => {
+  const date = parseScheduledDate(scheduledAt);
+  if (!date) {
+    return '';
+  }
+
+  const now = new Date();
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  );
+  const startOfTarget = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+  );
+  const dayDiff = Math.round(
+    (startOfTarget.getTime() - startOfToday.getTime()) / (1000 * 60 * 60 * 24),
+  );
+
+  const hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const hour12 = hours % 12 || 12;
+  const timeLabel = `${String(hour12).padStart(2, '0')}:${minutes} ${ampm}`;
+
+  if (dayDiff === 0) {
+    return `Today, ${timeLabel}`;
+  }
+  if (dayDiff === 1) {
+    return `Tomorrow, ${timeLabel}`;
+  }
+
+  const month = date.toLocaleString('en-US', { month: 'short' });
+  return `${date.getDate()} ${month}, ${timeLabel}`;
 };
 
 const getAstrologerName = (session: UpcomingLive): string =>
@@ -103,9 +119,6 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
   const theme = useTheme();
   const colors = theme.colors;
   const insets = useSafeAreaInsets();
-  const [activeFilter, setActiveFilter] = useState<'all' | 'live' | 'upcoming'>(
-    'all',
-  );
   const {
     data: liveSessions,
     loading,
@@ -134,17 +147,10 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
     [liveSessions],
   );
 
-  const scheduledSessionsCount = useMemo(
-    () => liveSessions.filter(s => s.status === 'SCHEDULED').length,
+  const upcomingSessionsOnly = useMemo(
+    () => liveSessions.filter(s => s.status === 'SCHEDULED'),
     [liveSessions],
   );
-
-  const filteredSessions = useMemo(() => {
-    if (activeFilter === 'all') {
-      return liveSessions;
-    }
-    return liveSessions.filter(s => s.status === FILTER_STATUS[activeFilter]);
-  }, [liveSessions, activeFilter]);
 
   const onRefresh = useCallback(() => {
     refresh();
@@ -211,17 +217,11 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
     [onJoinLive, showError],
   );
 
-  const handleJoinOrReminderPress = useCallback(
+  const handleJoinPress = useCallback(
     (session: UpcomingLive) => {
-      if (session.status === 'LIVE') {
-        handleRestrictedAction('Please login to join live sessions', () =>
-          handleJoinLive(session),
-        );
-      } else {
-        handleRestrictedAction(
-          'Please login to set reminders for upcoming sessions',
-        );
-      }
+      handleRestrictedAction('Please login to join live sessions', () =>
+        handleJoinLive(session),
+      );
     },
     [handleRestrictedAction, handleJoinLive],
   );
@@ -240,241 +240,206 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
     onNavigateToSignup?.();
   }, [onNavigateToSignup]);
 
-  const renderFilterButton = (filter: FilterOption) => {
-    const isActive = activeFilter === filter.key;
-    return (
-      <TouchableOpacity
-        key={filter.key}
-        style={[
-          styles.filterButton,
-          {
-            backgroundColor: isActive
-              ? colors.primary.main
-              : colors.background.secondary,
-          },
-        ]}
-        onPress={() => setActiveFilter(filter.key)}>
-        {filter.icon && (
-          <Icon
-            name={filter.icon}
-            size={16}
-            color={
-              isActive ? colors.primary.contrastText : colors.text.secondary
-            }
-            library="MaterialIcons"
-          />
-        )}
-        <Text
-          variant="label"
-          weight="medium"
-          style={{
-            color: isActive
-              ? colors.primary.contrastText
-              : colors.text.secondary,
-            marginLeft: filter.icon ? 6 : 0,
-          }}>
-          {filter.label}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
-
-  const renderLiveBadge = () => (
-    <View
-      style={[styles.liveBadgeContainer, { backgroundColor: colors.error.main }]}>
-      <View style={styles.liveDot} />
-      <Text
-        variant="captionSmall"
-        weight="bold"
-        style={{ color: colors.common.white }}>
-        LIVE
-      </Text>
-    </View>
-  );
-
-  const renderUpcomingBadge = () => (
-    <View
-      style={[
-        styles.liveBadgeContainer,
-        { backgroundColor: colors.primary.main },
-      ]}>
-      <Icon
-        name="schedule"
-        size={12}
-        color={colors.common.white}
-        library="MaterialIcons"
-      />
-      <Text
-        variant="captionSmall"
-        weight="bold"
-        style={{ color: colors.common.white, marginLeft: 4 }}>
-        UPCOMING
-      </Text>
-    </View>
-  );
-
   const renderRating = (rating?: number | null) => (
-    <View style={styles.ratingContainer}>
+    <View style={styles.ratingRow}>
       <Icon
         name="star"
-        size={12}
+        size={11}
         color={colors.warning.main}
         library="MaterialIcons"
       />
       <Text
         variant="captionSmall"
         weight="medium"
-        style={{ color: colors.text.secondary }}>
+        style={{ color: colors.text.secondary, marginLeft: 2 }}>
         {(rating ?? 0).toFixed(1)}
       </Text>
     </View>
   );
 
-  const renderSessionCard = (session: UpcomingLive) => {
-    const isLive = session.status === 'LIVE';
+  const renderThumbnail = (
+    session: UpcomingLive,
+    profilePicUrl: string | null,
+    overlay?: React.ReactNode,
+  ) => (
+    <View
+      style={[
+        styles.thumbnail,
+        { backgroundColor: colors.background.tertiary },
+      ]}>
+      {profilePicUrl ? (
+        <Image
+          source={{ uri: profilePicUrl }}
+          style={styles.thumbnailImage}
+          resizeMode="cover"
+          onError={() => handleAvatarError(session.id)}
+        />
+      ) : (
+        <View style={styles.thumbnailPlaceholder}>
+          <Icon
+            name="person"
+            size={36}
+            color={colors.text.secondary}
+            library="MaterialIcons"
+          />
+        </View>
+      )}
+      {overlay}
+    </View>
+  );
+
+  const renderOngoingCard = (session: UpcomingLive) => {
     const profilePicUrl = failedAvatarIds.has(session.id)
       ? null
       : getProfilePicUrl(session.astrologer?.profilePic);
+    const isJoining = joiningSessionId === session.id;
 
     return (
-      <Card key={session.id} style={styles.sessionCard} variant="elevated">
-        <View
-          style={[
-            styles.thumbnail,
-            { backgroundColor: colors.background.tertiary },
-          ]}>
-          {profilePicUrl ? (
-            <Image
-              source={{ uri: profilePicUrl }}
-              style={styles.thumbnailImage}
-              resizeMode="cover"
-              onError={() => handleAvatarError(session.id)}
-            />
-          ) : (
-            <Icon
-              name="person"
-              size={40}
-              color={colors.text.secondary}
-              library="MaterialIcons"
-            />
-          )}
-          {isLive && renderLiveBadge()}
-          {session.status === 'SCHEDULED' && renderUpcomingBadge()}
-        </View>
-        <View style={styles.sessionInfo}>
-          <Text variant="subtitle" weight="semibold" numberOfLines={2}>
-            {session.title}
-          </Text>
-          <View style={styles.astrologerRow}>
-            <View
-              style={[
-                styles.smallAvatar,
-                { backgroundColor: colors.background.secondary },
-              ]}>
-              {profilePicUrl ? (
-                <Image
-                  source={{ uri: profilePicUrl }}
-                  style={styles.smallAvatarImage}
-                  onError={() => handleAvatarError(session.id)}
-                />
-              ) : (
-                <Icon
-                  name="person"
-                  size={12}
-                  color={colors.text.secondary}
-                  library="MaterialIcons"
-                />
-              )}
-            </View>
-            <Text
-              variant="captionSmall"
-              style={{ color: colors.text.secondary, flex: 1, marginLeft: 4 }}
-              numberOfLines={1}>
-              {getAstrologerName(session)}
-            </Text>
-            {renderRating(session.astrologer?.rating)}
-          </View>
-          <View style={styles.sessionMeta}>
-            <View style={[styles.metaItem, styles.shrink]}>
-              <Icon
-                name="schedule"
-                size={12}
-                color={colors.text.tertiary}
-                library="MaterialIcons"
-              />
+      <View
+        key={session.id}
+        style={[
+          styles.sessionCard,
+          {
+            backgroundColor: colors.card.background,
+            shadowColor: colors.common.black,
+          },
+        ]}>
+        {renderThumbnail(
+          session,
+          profilePicUrl,
+          <>
+            <View style={styles.liveBadge}>
               <Text
                 variant="captionSmall"
-                style={[
-                  styles.shrink,
-                  { color: colors.text.tertiary, marginLeft: 4 },
-                ]}
-                numberOfLines={1}>
-                {formatScheduledAt(session.scheduledAt)}
+                weight="bold"
+                style={styles.liveBadgeText}>
+                LIVE
               </Text>
             </View>
+            {/* <View style={styles.viewerBadge}>
+              <Icon name="users" size={11} color="#FFF" library="Feather" />
+              <Text variant="captionSmall" style={styles.viewerCount}>
+                0
+              </Text>
+            </View> */}
+          </>,
+        )}
+
+        <View style={styles.cardContent}>
+          <Text
+            variant="label"
+            weight="semibold"
+            style={{ color: colors.text.primary }}
+            numberOfLines={1}>
+            {session.title}
+          </Text>
+
+          <View style={styles.contentFooter}>
+            <View style={styles.metaBlock}>
+              <Text
+                variant="caption"
+                style={[styles.astrologerName, { color: colors.text.secondary }]}
+                numberOfLines={1}>
+                {getAstrologerName(session)}
+              </Text>
+              {renderRating(session.astrologer?.rating)}
+            </View>
+
+            <TouchableOpacity
+              style={[
+                styles.joinButton,
+                { borderColor: colors.primary.main },
+                isJoining && styles.joinButtonDisabled,
+              ]}
+              onPress={() => handleJoinPress(session)}
+              disabled={isJoining}
+              activeOpacity={0.7}>
+              {isJoining ? (
+                <ActivityIndicator size="small" color={colors.primary.main} />
+              ) : (
+                <Text
+                  variant="caption"
+                  weight="medium"
+                  style={{ color: colors.primary.main }}>
+                  Join
+                </Text>
+              )}
+            </TouchableOpacity>
           </View>
-          {isLive && (
-            <Button
-              title="Join Now"
-              variant="primary"
-              size="small"
-              style={{ marginTop: 8 }}
-              loading={joiningSessionId === session.id}
-              disabled={joiningSessionId === session.id}
-              onPress={() => handleJoinOrReminderPress(session)}
-            />
-          )}
         </View>
-      </Card>
+      </View>
     );
   };
 
-  const renderHeader = () => (
-    <View style={styles.header}>
-      <View style={styles.headerTextContainer}>
-        <Text variant="h5" weight="bold">
-          Live Sessions
-        </Text>
-        <Text
-          variant="bodySmall"
-          style={{ color: colors.text.secondary, marginTop: 4 }}>
-          Watch expert astrologers live
-        </Text>
-      </View>
-      <View style={styles.statsRow}>
-        <View style={styles.statItem}>
-          <Text variant="h6" weight="bold" style={{ color: colors.primary.main }}>
-            {liveSessionsOnly.length}
-          </Text>
-          <Text variant="caption" style={{ color: colors.text.secondary }}>
-            Live Now
-          </Text>
-        </View>
-        <View
-          style={[styles.statDivider, { backgroundColor: colors.border.light }]}
-        />
-        <View style={styles.statItem}>
-          <Text variant="h6" weight="bold" style={{ color: colors.primary.main }}>
-            {scheduledSessionsCount}
-          </Text>
-          <Text variant="caption" style={{ color: colors.text.secondary }}>
-            Upcoming
-          </Text>
-        </View>
-      </View>
-    </View>
-  );
+  const renderUpcomingCard = (session: UpcomingLive) => {
+    const profilePicUrl = failedAvatarIds.has(session.id)
+      ? null
+      : getProfilePicUrl(session.astrologer?.profilePic);
+    const timing = formatSessionTiming(session.scheduledAt);
 
-  const renderFilterSection = () => (
-    <View style={styles.filterSection}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterScroll}>
-        {FILTER_OPTIONS.map(renderFilterButton)}
-      </ScrollView>
-    </View>
-  );
+    return (
+      <View
+        key={session.id}
+        style={[
+          styles.sessionCard,
+          {
+            backgroundColor: colors.card.background,
+            shadowColor: colors.common.black,
+          },
+        ]}>
+        {renderThumbnail(
+          session,
+          profilePicUrl,
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.7)']}
+            style={styles.titleOverlay}>
+            <Text
+              variant="label"
+              weight="bold"
+              style={styles.overlayTitle}
+              numberOfLines={1}>
+              {session.title}
+            </Text>
+          </LinearGradient>,
+        )}
+
+        <View style={styles.cardContent}>
+          <View style={styles.timingRow}>
+            <Icon
+              name="schedule"
+              size={13}
+              color={colors.text.tertiary}
+              library="MaterialIcons"
+            />
+            <Text
+              variant="caption"
+              style={{ color: colors.text.tertiary, marginLeft: 5, flex: 1 }}
+              numberOfLines={1}>
+              {timing || '—'}
+            </Text>
+          </View>
+
+          <View style={styles.contentFooter}>
+            <View style={styles.metaBlock}>
+              <View style={styles.hostRow}>
+                <Text variant="caption" style={{ color: colors.text.secondary }}>
+                  Host:{' '}
+                </Text>
+                <Text
+                  variant="caption"
+                  weight="semibold"
+                  style={{ color: colors.primary.main, flexShrink: 1 }}
+                  numberOfLines={1}>
+                  {getAstrologerName(session)}
+                </Text>
+              </View>
+              {renderRating(session.astrologer?.rating)}
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  };
 
   const renderEmptyState = () =>
     error && liveSessions.length === 0 ? (
@@ -524,44 +489,12 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
       </View>
     );
 
-  const renderSessionsList = () => (
-    <FlatList
-      data={filteredSessions}
-      renderItem={({ item }) => renderSessionCard(item)}
-      keyExtractor={item => item.id}
-      numColumns={2}
-      contentContainerStyle={[
-        styles.listContent,
-        { paddingBottom: insets.bottom + 100 },
-      ]}
-      showsVerticalScrollIndicator={false}
-      columnWrapperStyle={styles.row}
-      ListHeaderComponent={
-        filteredSessions.length > 0 ? (
-          <Text variant="label" weight="medium" style={styles.listHeader}>
-            {activeFilter === 'all'
-              ? 'All Sessions'
-              : activeFilter === 'live'
-                ? 'Live Now'
-                : 'Upcoming Sessions'}
-          </Text>
-        ) : null
-      }
-      ListEmptyComponent={renderEmptyState()}
-      ListFooterComponent={
-        loadingMore ? (
-          <ActivityIndicator
-            style={styles.footerLoader}
-            color={colors.primary.main}
-          />
-        ) : null
-      }
-    />
-  );
-
   if (loading && liveSessions.length === 0) {
     return <LiveScreenShimmer />;
   }
+
+  const hasAnySessions =
+    liveSessionsOnly.length > 0 || upcomingSessionsOnly.length > 0;
 
   return (
     <View
@@ -574,6 +507,7 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={16}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -582,10 +516,52 @@ const LiveScreen: React.FC<LiveScreenProps> = ({
             colors={[colors.primary.main]}
           />
         }>
-        {renderHeader()}
-        {renderFilterSection()}
-        {renderSessionsList()}
+        {!hasAnySessions ? (
+          renderEmptyState()
+        ) : (
+          <>
+            {liveSessionsOnly.length > 0 && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text variant="h6" weight="bold">
+                    Ongoing Live Sessions
+                  </Text>
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.horizontalContent}>
+                  {liveSessionsOnly.map(renderOngoingCard)}
+                </ScrollView>
+              </View>
+            )}
+
+            {upcomingSessionsOnly.length > 0 && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text variant="h6" weight="bold">
+                    Upcoming Live Sessions
+                  </Text>
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.horizontalContent}>
+                  {upcomingSessionsOnly.map(renderUpcomingCard)}
+                </ScrollView>
+              </View>
+            )}
+          </>
+        )}
+
+        {loadingMore ? (
+          <ActivityIndicator
+            style={styles.footerLoader}
+            color={colors.primary.main}
+          />
+        ) : null}
       </ScrollView>
+
       <LoginRequiredModal
         visible={showLoginModal}
         onClose={handleCloseModal}
@@ -601,129 +577,141 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
+  section: {
+    marginTop: 14,
+    marginBottom: 4,
+  },
+  sectionHeader: {
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
+    marginBottom: 10,
   },
-  headerTextContainer: {
-    marginBottom: 16,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(98, 0, 238, 0.05)',
-    borderRadius: 12,
-    padding: 12,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statDivider: {
-    width: 1,
-    marginVertical: 4,
-  },
-  filterSection: {
-    marginVertical: 8,
-  },
-  filterScroll: {
+  horizontalContent: {
     paddingHorizontal: 16,
-  },
-  filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    marginRight: 8,
-  },
-  liveBadgeContainer: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#fff',
-    marginRight: 6,
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-  listContent: {
-    paddingHorizontal: 16,
-  },
-  listHeader: {
-    marginBottom: 12,
-  },
-  row: {
-    justifyContent: 'space-between',
+    paddingRight: 16,
+    paddingTop: 4,
+    paddingBottom: 10,
   },
   sessionCard: {
     width: CARD_WIDTH,
-    padding: 12,
-    marginBottom: 12,
+    height: CARD_HEIGHT,
+    borderRadius: 12,
+    marginRight: 10,
+    overflow: 'hidden',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.07,
+    shadowRadius: 5,
+    elevation: 2,
   },
   thumbnail: {
     width: '100%',
-    height: 135,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 10,
+    height: THUMBNAIL_HEIGHT,
+    overflow: 'hidden',
   },
-    thumbnailImage: {
-      width: '100%',
-      height: '100%',
-      borderRadius: 8,
-    },
-    sessionInfo: {
+  thumbnailImage: {
+    width: '100%',
+    height: '100%',
+  },
+  thumbnailPlaceholder: {
     flex: 1,
-  },
-  astrologerRow: {
-    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
-  },
-  smallAvatar: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
     justifyContent: 'center',
-    alignItems: 'center',
   },
-  smallAvatarImage: {
-    width: 20,
-    height: 20,
+  liveBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: '#EF4444',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  liveBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    letterSpacing: 0.3,
+  },
+  viewerBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
     borderRadius: 10,
   },
-  sessionMeta: {
-    flexDirection: 'row',
-    marginTop: 8,
+  viewerCount: {
+    color: '#FFFFFF',
+    marginLeft: 3,
   },
-  metaItem: {
+  titleOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 10,
+    paddingTop: 18,
+    paddingBottom: 8,
+    justifyContent: 'flex-end',
+  },
+  overlayTitle: {
+    color: '#FFFFFF',
+  },
+  cardContent: {
+    height: CARD_CONTENT_HEIGHT,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    justifyContent: 'space-between',
+  },
+  contentFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 12,
+    justifyContent: 'space-between',
+    minHeight: 28,
   },
-  shrink: {
-    flexShrink: 1,
+  metaBlock: {
+    flex: 1,
+    marginRight: 6,
+    justifyContent: 'center',
+  },
+  astrologerName: {
+    marginBottom: 2,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  joinButton: {
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    minWidth: 52,
+    minHeight: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  joinButtonDisabled: {
+    opacity: 0.7,
+  },
+  timingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 18,
+  },
+  hostRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
   },
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 40,
+    paddingTop: 80,
     paddingBottom: 40,
+    paddingHorizontal: 24,
   },
   footerLoader: {
     paddingVertical: 16,
@@ -731,70 +719,3 @@ const styles = StyleSheet.create({
 });
 
 export default LiveScreen;
-
-
-
-
-// import React from 'react';
-// import {View, StyleSheet, StatusBar} from 'react-native';
-// import {useTheme} from '../../theme';
-// import {Text} from '../../components/Text';
-
-// interface LiveScreenProps {
-//   onNavigateToLogin?: () => void;
-//   onNavigateToSignup?: () => void;
-// }
-
-// const LiveScreen: React.FC<LiveScreenProps> = () => {
-//   const theme = useTheme();
-//   const colors = theme.colors;
-
-//   return (
-//     <View
-//       style={[
-//         styles.container,
-//         {backgroundColor: colors.background.primary},
-//       ]}>
-//       <StatusBar
-//         barStyle={theme.isDark ? 'light-content' : 'dark-content'}
-//         backgroundColor={colors.background.primary}
-//       />
-
-//       <View style={styles.content}>
-//         <Text variant="h4" weight="bold" style={styles.title}>
-//           Coming Soon
-//         </Text>
-
-//         <Text
-//           variant="body"
-//           style={[
-//             styles.subtitle,
-//             {color: colors.text.secondary},
-//           ]}>
-//           Live Sessions are coming soon.
-//         </Text>
-//       </View>
-//     </View>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//   },
-//   content: {
-//     flex: 1,
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//     paddingHorizontal: 24,
-//   },
-//   title: {
-//     textAlign: 'center',
-//   },
-//   subtitle: {
-//     marginTop: 8,
-//     textAlign: 'center',
-//   },
-// });
-
-// export default LiveScreen;
