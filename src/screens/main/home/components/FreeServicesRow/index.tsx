@@ -159,11 +159,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
     marginBottom: 12,
   },
   scrollContent: {
-    paddingHorizontal: 12,
     paddingBottom: 8,
   },
   serviceCard: {
@@ -172,15 +170,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 14,
     alignItems: 'center',
-    marginHorizontal: 4,
-    // borderWidth: 1,
+    marginRight: 8,
   },
   loaderRow: {
-    paddingHorizontal: 16,
     paddingVertical: 20,
   },
   errorText: {
-    paddingHorizontal: 16,
     fontSize: 14,
   },
 });

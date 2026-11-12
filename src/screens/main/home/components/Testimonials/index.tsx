@@ -154,7 +154,7 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
         <View>
           <Text
             variant="h6"
-            weight="bold"
+            weight="semibold"
             style={[
               styles.title,
               {
@@ -379,9 +379,7 @@ const styles = StyleSheet.create({
   },
 
   headerRow: {
-    paddingHorizontal: 16,
-    marginBottom: 20,
-
+    marginBottom: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -400,7 +398,6 @@ const styles = StyleSheet.create({
   },
 
   scrollContent: {
-    paddingHorizontal: 16,
     paddingTop: 34,
     paddingBottom: 8,
   },

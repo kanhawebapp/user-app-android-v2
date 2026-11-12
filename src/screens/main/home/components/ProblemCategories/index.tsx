@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
   },
   title: {
-    marginBottom: 14,
+    marginBottom: 12,
     textAlign: 'left',
   },
   row: {

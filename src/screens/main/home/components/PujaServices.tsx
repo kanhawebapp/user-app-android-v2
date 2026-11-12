@@ -98,40 +98,40 @@ const PujaServices: React.FC<PujaServicesProps> = ({onBookPress}) => {
   if (loading) {
     return (
       <View style={styles.container}>
-        <Text variant="h6" weight="semibold" style={{ color: colors.text.primary, paddingHorizontal: 16 }}>
+        <Text variant="h6" weight="semibold" style={{ color: colors.text.primary, marginBottom: 12 }}>
           Puja Services
         </Text>
-        <Text style={{ paddingHorizontal: 16, marginTop: 8, color: colors.text.secondary }}>Loading...</Text>
+        <Text style={{ marginTop: 8, color: colors.text.secondary }}>Loading...</Text>
       </View>
     );
   }
   if (error) {
     return (
       <View style={styles.container}>
-        <Text variant="h6" weight="semibold" style={{ color: colors.text.primary, paddingHorizontal: 16 }}>
+        <Text variant="h6" weight="semibold" style={{ color: colors.text.primary, marginBottom: 12 }}>
           Puja Services
         </Text>
-        <Text style={{ paddingHorizontal: 16, marginTop: 8, color: colors.text.secondary }}>Unable to load puja services</Text>
+        <Text style={{ marginTop: 8, color: colors.text.secondary }}>Unable to load puja services</Text>
       </View>
     );
   }
   if (!services || services.length === 0) {
     return (
       <View style={styles.container}>
-        <Text variant="h6" weight="semibold" style={{ color: colors.text.primary, paddingHorizontal: 16, }}>
+        <Text variant="h6" weight="semibold" style={{ color: colors.text.primary, marginBottom: 12 }}>
           Puja Services
         </Text>
-        <Text style={{ paddingHorizontal: 16, marginTop: 8, color: colors.text.secondary }}>No puja services available</Text>
+        <Text style={{ marginTop: 8, color: colors.text.secondary }}>No puja services available</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <Text variant="h6" weight="semibold" style={{ color: colors.text.primary, paddingHorizontal: 16, marginBottom: 12, marginTop: 8 }}>
+      <Text variant="h6" weight="semibold" style={{ color: colors.text.primary, marginBottom: 12 }}>
         Puja Services
       </Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 4 }}>
         {services.map(item => (
           <PujaCard key={item.id} item={item} onPress={() => handlePress(item.slug)} />
         ))}
@@ -142,7 +142,7 @@ const PujaServices: React.FC<PujaServicesProps> = ({onBookPress}) => {
 
 const styles = StyleSheet.create({
   container: { marginBottom: 24 },
-  card: { width: 220, marginHorizontal: 4, overflow: 'hidden', padding: 0 },
+  card: { width: 220, marginRight: 12, overflow: 'hidden', padding: 0 },
   image: { width: '100%', height: 140 },
   discountBadge: { position: 'absolute', top: 8, right: 8, backgroundColor: '#E53935', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2 },
   discountText: { color: '#fff', fontSize: 11, fontWeight: '700' },
