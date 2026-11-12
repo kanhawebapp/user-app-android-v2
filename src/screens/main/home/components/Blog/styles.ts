@@ -3,7 +3,7 @@ import {StyleSheet, Dimensions} from 'react-native';
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 export const BLOG_CARD_GAP = 12;
 export const BLOG_CARD_WIDTH = Math.min(240, SCREEN_WIDTH * 0.62);
-export const BLOG_IMAGE_HEIGHT = Math.round(BLOG_CARD_WIDTH * 0.58);
+export const BLOG_IMAGE_HEIGHT = Math.round(BLOG_CARD_WIDTH * 0.62);
 
 export const blogStyles = StyleSheet.create({
   container: {
@@ -19,7 +19,6 @@ export const blogStyles = StyleSheet.create({
 
   scrollContent: {
     alignItems: 'stretch',
-    paddingVertical: 2,
   },
 
   card: {
@@ -39,6 +38,8 @@ export const blogStyles = StyleSheet.create({
     height: BLOG_IMAGE_HEIGHT,
     overflow: 'hidden',
     backgroundColor: '#ECECEC',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
   },
 
   image: {
@@ -46,23 +47,20 @@ export const blogStyles = StyleSheet.create({
     height: '100%',
   },
 
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.28)',
-  },
-
-  imageContent: {
-    position: 'absolute',
-    bottom: 12,
-    left: 12,
-    right: 12,
-  },
-
   content: {
     width: '100%',
     paddingHorizontal: 12,
-    paddingTop: 10,
+    paddingTop: 12,
     paddingBottom: 12,
+  },
+
+  cardTitle: {
+    width: '100%',
+    fontSize: 14,
+    lineHeight: 20,
+    minHeight: 40,
+    fontWeight: '600',
+    marginBottom: 8,
   },
 
   metaRow: {
@@ -129,7 +127,7 @@ export const blogStyles = StyleSheet.create({
 
   loadingCard: {
     width: BLOG_CARD_WIDTH,
-    height: BLOG_IMAGE_HEIGHT + 72,
+    height: BLOG_IMAGE_HEIGHT + 96,
     marginRight: BLOG_CARD_GAP,
     borderRadius: 16,
     backgroundColor: '#E0E0E0',

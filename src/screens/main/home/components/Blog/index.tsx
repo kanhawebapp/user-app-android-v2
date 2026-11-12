@@ -73,8 +73,6 @@ const BlogCard = React.memo(
             />
           )}
 
-          <View style={blogStyles.overlay} pointerEvents="none" />
-
           <View style={blogStyles.badge}>
             <Icon
               library="Ionicons"
@@ -86,19 +84,18 @@ const BlogCard = React.memo(
               {Math.floor(Math.random() * 900 + 100)}
             </Text>
           </View>
-
-          <View style={blogStyles.imageContent}>
-            <Text
-              variant="label"
-              weight="semibold"
-              numberOfLines={2}
-              style={{color: '#fff'}}>
-              {post.title}
-            </Text>
-          </View>
         </View>
 
         <View style={blogStyles.content}>
+          <Text
+            variant="label"
+            weight="semibold"
+            numberOfLines={2}
+            ellipsizeMode="tail"
+            style={[blogStyles.cardTitle, {color: colors.text.primary}]}>
+            {post.title}
+          </Text>
+
           {post.categories?.length > 0 && (
             <View style={blogStyles.categoryContainer}>
               {post.categories.slice(0, 2).map(cat => (
