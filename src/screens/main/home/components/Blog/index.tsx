@@ -31,7 +31,15 @@ const formatDate = (timestamp: string) => {
 };
 
 const BlogCard = React.memo(
-  ({ post, onPress }: { post: BlogPost; onPress: () => void }) => {
+  ({
+    post,
+    onPress,
+    isLast,
+  }: {
+    post: BlogPost;
+    onPress: () => void;
+    isLast?: boolean;
+  }) => {
     const theme = useTheme();
     const colors = theme.colors;
     const imageUrl = useMemo(
@@ -48,20 +56,24 @@ const BlogCard = React.memo(
         style={[
           blogStyles.card,
           {
+            backgroundColor: colors.card.background,
             overflow: 'hidden',
             padding: 0,
           },
+          isLast && blogStyles.lastCard,
         ]}
         onPress={onPress}>
         <View style={blogStyles.imageWrapper}>
-          <Image
-            source={{ uri: imageUrl }}
-            style={blogStyles.image}
-            resizeMode="cover"
-            onError={e => console.log('Image error:', e.nativeEvent)}
-          />
+          {!!imageUrl && (
+            <Image
+              source={{uri: imageUrl}}
+              style={blogStyles.image}
+              resizeMode="cover"
+              onError={e => console.log('Image error:', e.nativeEvent)}
+            />
+          )}
 
-          <View style={blogStyles.overlay} />
+          <View style={blogStyles.overlay} pointerEvents="none" />
 
           <View style={blogStyles.badge}>
             <Icon
@@ -80,7 +92,7 @@ const BlogCard = React.memo(
               variant="label"
               weight="semibold"
               numberOfLines={2}
-              style={{ color: '#fff' }}>
+              style={{color: '#fff'}}>
               {post.title}
             </Text>
           </View>
@@ -98,10 +110,10 @@ const BlogCard = React.memo(
           )}
 
           <View style={blogStyles.dateContainer}>
-            <RNText style={{ fontSize: 12, color: colors.text.secondary }}>
+            <RNText style={{fontSize: 12, color: colors.text.secondary}}>
               {dateText}
             </RNText>
-            <Icon name="arrow-forward" size={26} color={colors.primary.main} />
+            <Icon name="arrow-forward" size={22} color={colors.primary.main} />
           </View>
         </View>
       </Card>
@@ -197,10 +209,11 @@ export const Blog: React.FC<BlogProps> = ({
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={blogStyles.scrollContent}>
-          {posts.map(post => (
+          {posts.map((post, index) => (
             <BlogCard
               key={post.id}
               post={post}
+              isLast={index === posts.length - 1}
               onPress={() => handleCardPress(post)}
             />
           ))}

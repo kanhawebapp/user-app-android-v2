@@ -1,4 +1,9 @@
-import { StyleSheet } from 'react-native';
+import {StyleSheet, Dimensions} from 'react-native';
+
+const {width: SCREEN_WIDTH} = Dimensions.get('window');
+export const BLOG_CARD_GAP = 12;
+export const BLOG_CARD_WIDTH = Math.min(240, SCREEN_WIDTH * 0.62);
+export const BLOG_IMAGE_HEIGHT = Math.round(BLOG_CARD_WIDTH * 0.58);
 
 export const blogStyles = StyleSheet.create({
   container: {
@@ -9,26 +14,31 @@ export const blogStyles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
     marginBottom: 12,
   },
 
   scrollContent: {
-    paddingHorizontal: 12,
+    alignItems: 'stretch',
+    paddingVertical: 2,
   },
 
   card: {
-    width: 240,
-    marginHorizontal: 6,
-    borderRadius: 14,
+    width: BLOG_CARD_WIDTH,
+    marginRight: BLOG_CARD_GAP,
+    borderRadius: 16,
     overflow: 'hidden',
+    padding: 0,
+  },
+
+  lastCard: {
+    marginRight: 0,
   },
 
   imageWrapper: {
-    height: 140,
     width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
+    height: BLOG_IMAGE_HEIGHT,
+    overflow: 'hidden',
+    backgroundColor: '#ECECEC',
   },
 
   image: {
@@ -38,18 +48,21 @@ export const blogStyles = StyleSheet.create({
 
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: 'rgba(0,0,0,0.28)',
   },
 
   imageContent: {
     position: 'absolute',
-    bottom: 10,
-    left: 10,
-    right: 10,
+    bottom: 12,
+    left: 12,
+    right: 12,
   },
 
   content: {
-    padding: 10,
+    width: '100%',
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 12,
   },
 
   metaRow: {
@@ -91,11 +104,11 @@ export const blogStyles = StyleSheet.create({
   categoryContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: 6,
+    alignItems: 'center',
   },
 
   categoryChip: {
-    backgroundColor: 'rgba(124, 58, 237, 0.85)',
+    backgroundColor: 'rgba(91, 44, 165, 0.9)',
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -111,19 +124,18 @@ export const blogStyles = StyleSheet.create({
 
   loadingContainer: {
     flexDirection: 'row',
-    gap: 12,
+    alignItems: 'stretch',
   },
 
   loadingCard: {
-    width: 240,
-    height: 220,
-    marginHorizontal: 6,
-    borderRadius: 14,
+    width: BLOG_CARD_WIDTH,
+    height: BLOG_IMAGE_HEIGHT + 72,
+    marginRight: BLOG_CARD_GAP,
+    borderRadius: 16,
     backgroundColor: '#E0E0E0',
   },
 
   errorContainer: {
-    paddingHorizontal: 16,
     marginTop: 12,
     alignItems: 'center',
   },
@@ -132,10 +144,10 @@ export const blogStyles = StyleSheet.create({
     fontSize: 14,
     color: '#FF4D4F',
     marginBottom: 8,
+    textAlign: 'center',
   },
 
   emptyContainer: {
-    paddingHorizontal: 16,
     marginTop: 12,
   },
 
