@@ -55,12 +55,12 @@ export const DEFAULT_MENU_ITEMS: SidebarMenuItem[] = [
   //   icon: 'notifications',
   //   iconLibrary: 'Ionicons',
   // },
-  {
-    key: 'daily_puja',
-    label: 'Daily Puja',
-    icon: 'settings',
-    iconLibrary: 'MaterialIcons',
-  },
+  // {
+  //   key: 'daily_puja',
+  //   label: 'Daily Puja',
+  //   icon: 'settings',
+  //   iconLibrary: 'MaterialIcons',
+  // },
   // {
   //   key: 'game',
   //   label: 'Game',
