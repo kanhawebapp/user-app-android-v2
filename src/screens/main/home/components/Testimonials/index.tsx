@@ -164,7 +164,7 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
             Happy Customers
           </Text>
 
-          <Text
+          {/* <Text
             variant="bodySmall"
             style={{
               color: colors.text.secondary,
@@ -172,7 +172,7 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
               marginTop: 2,
             }}>
             Trusted by thousands of users
-          </Text>
+          </Text> */}
         </View>
 
         {/* REVIEW BADGE */}
@@ -220,7 +220,7 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
               style={[
                 styles.card,
                 {
-                  backgroundColor: colors.background.secondary,
+                  backgroundColor: '#FFFFFF',
                   borderColor: colors.border.light,
                 },
               ]}>
