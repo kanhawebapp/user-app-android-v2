@@ -16,6 +16,10 @@ class MainActivity : ReactActivity() {
   /**
    * Returns the instance of the [ReactActivityDelegate]. We use [DefaultReactActivityDelegate]
    * which allows you to enable New Architecture with a single boolean flags [fabricEnabled]
+   *
+   * Note: Do not apply WindowInsets IME padding on android.R.id.content here — that breaks
+   * React Native root layout on API 35+. ChatScreen handles Android 15+ keyboard offset in JS.
+   * Android 14 continues to use windowSoftInputMode=adjustResize from AndroidManifest.
    */
   override fun createReactActivityDelegate(): ReactActivityDelegate =
       DefaultReactActivityDelegate(this, mainComponentName, fabricEnabled)

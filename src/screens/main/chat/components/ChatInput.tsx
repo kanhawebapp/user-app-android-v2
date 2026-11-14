@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
 import {
   View,
   TextInput,
@@ -6,6 +6,8 @@ import {
   Text,
   StyleSheet,
   Animated,
+  Keyboard,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../../theme';
@@ -39,6 +41,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const colors = theme.colors;
   const insets = useSafeAreaInsets();
   const { showError } = useToast();
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   const { upload, loading: uploading } = useUploadImage();
 
@@ -47,6 +50,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const sendScaleAnim = useRef(new Animated.Value(1)).current;
   const sendOpacityAnim = useRef(new Animated.Value(0.5)).current;
   const inputFocusAnim = useRef(new Animated.Value(0)).current;
+
+  // Keyboard open: ChatScreen (API 35+) / adjustResize (API 14) lifts the
+  // screen — use 0 so nav inset does not stack above the keyboard.
+  // Keyboard closed: clear the Android navigation bar / home indicator only.
+  const containerPaddingBottom = isKeyboardVisible
+    ? 0
+    : Math.max(insets.bottom, 8);
 
   // ================= IMAGE PICK =================
   const handlePickImage = useCallback(async () => {
@@ -166,6 +176,25 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     onInputChange(text);
   };
 
+  useEffect(() => {
+    const showEvent =
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent =
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const onShow = Keyboard.addListener(showEvent, () => {
+      setIsKeyboardVisible(true);
+    });
+    const onHide = Keyboard.addListener(hideEvent, () => {
+      setIsKeyboardVisible(false);
+    });
+
+    return () => {
+      onShow.remove();
+      onHide.remove();
+    };
+  }, []);
+
   // ================= FOCUS ANIMATION =================
   useEffect(() => {
     Animated.timing(inputFocusAnim, {
@@ -200,7 +229,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       style={[
         styles.container,
         {
-          paddingBottom: Math.max(insets.bottom, 8) + 8,
+          paddingBottom: containerPaddingBottom,
           backgroundColor: theme.isDark
             ? colors.background.primary
             : '#FFFFFF',

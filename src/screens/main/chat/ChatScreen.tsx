@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -66,6 +67,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   const flatListRef = useRef<FlatList>(null);
   const profileAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  // Android 15+ edge-to-edge disables adjustResize. Lift ChatScreen in JS.
+  // Android 14 keeps adjustResize from the manifest — do not pad there.
+  const isAndroid15Plus =
+    Platform.OS === 'android' && Platform.Version >= 35;
+  const [androidKeyboardHeight, setAndroidKeyboardHeight] = useState(0);
 
   // Store selectors
   const user = useAuthStore(state => state.user);
@@ -297,7 +303,26 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   ]);
 
   // console.log('selectedImage', selectedImage);
-  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (!isAndroid15Plus) {
+      return;
+    }
+
+    const onShow = Keyboard.addListener('keyboardDidShow', event => {
+      setAndroidKeyboardHeight(event.endCoordinates.height);
+    });
+    const onHide = Keyboard.addListener('keyboardDidHide', () => {
+      setAndroidKeyboardHeight(0);
+    });
+
+    return () => {
+      onShow.remove();
+      onHide.remove();
+      setAndroidKeyboardHeight(0);
+    };
+  }, [isAndroid15Plus]);
+
+  // Auto-scroll to bottom when messages change / keyboard opens
   useEffect(() => {
     if (messages.length > 0) {
       const timer = setTimeout(() => {
@@ -305,7 +330,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [messages]);
+  }, [messages, androidKeyboardHeight]);
 
   const renderMessage = useCallback(
     ({ item, index }: { item: ChatMessage; index: number }) => {
@@ -337,11 +362,35 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     ? colors.background.primary
     : '#F5F6FF';
 
+  // RN keyboard height on Android edge-to-edge is typically IME minus
+  // system bars. ChatInput clears insets.bottom while the keyboard is open,
+  // so add it back here to sit flush above the keyboard.
+  const androidKeyboardOffset =
+    isAndroid15Plus && androidKeyboardHeight > 0
+      ? androidKeyboardHeight + insets.bottom
+      : 0;
+
+  // iOS: KeyboardAvoidingView. Android: View + API 35+ keyboard offset only.
+  // Android 14: adjustResize only (androidKeyboardOffset stays 0).
+  const Container = Platform.OS === 'ios' ? KeyboardAvoidingView : View;
+  const containerProps =
+    Platform.OS === 'ios'
+      ? {
+          behavior: 'padding' as const,
+          keyboardVerticalOffset: 0,
+        }
+      : {};
+
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: chatBackground }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'android' ? -insets.bottom : 0}>
+    <Container
+      style={[
+        styles.container,
+        { backgroundColor: chatBackground },
+        androidKeyboardOffset > 0
+          ? { paddingBottom: androidKeyboardOffset }
+          : null,
+      ]}
+      {...containerProps}>
       <StatusBar
         barStyle={theme.isDark ? 'light-content' : 'dark-content'}
         backgroundColor={theme.isDark ? colors.background.primary : '#FFFFFF'}
@@ -482,7 +531,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
           </TouchableWithoutFeedback>
         </View>
       </Modal>
-    </KeyboardAvoidingView>
+    </Container>
   );
 };
 
