@@ -51,12 +51,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const sendOpacityAnim = useRef(new Animated.Value(0.5)).current;
   const inputFocusAnim = useRef(new Animated.Value(0)).current;
 
-  // Keyboard open: ChatScreen (API 35+) / adjustResize (API 14) lifts the
-  // screen — use 0 so nav inset does not stack above the keyboard.
-  // Keyboard closed: clear the Android navigation bar / home indicator only.
+  // Open: small gap above keyboard. Closed: nav inset only (no extra stack).
   const containerPaddingBottom = isKeyboardVisible
-    ? 0
-    : Math.max(insets.bottom, 8);
+    ? 6
+    : insets.bottom > 0
+      ? insets.bottom
+      : 8;
 
   // ================= IMAGE PICK =================
   const handlePickImage = useCallback(async () => {
@@ -426,7 +426,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: '#EDEDF3',
   },
@@ -486,11 +486,11 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     borderWidth: 1,
     paddingHorizontal: 6,
-    paddingVertical: 6,
+    paddingVertical: 4,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 8,
     elevation: 2,
-    minHeight: 52,
+    minHeight: 48,
   },
   inputWrapperDark: {
     borderWidth: 1,
@@ -515,9 +515,10 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     maxHeight: 120,
-    paddingVertical: 10,
+    // Android TextInput grows extra with large paddingVertical — keep compact.
+    paddingVertical: Platform.OS === 'ios' ? 10 : 6,
     paddingHorizontal: 8,
-    minHeight: 40,
+    minHeight: 36,
     letterSpacing: 0.1,
   },
   sendButton: {
