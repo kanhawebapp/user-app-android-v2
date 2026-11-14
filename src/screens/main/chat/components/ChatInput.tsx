@@ -200,8 +200,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       style={[
         styles.container,
         {
-          paddingBottom: insets.bottom + 12,
-          backgroundColor: colors.background.primary,
+          paddingBottom: Math.max(insets.bottom, 8) + 8,
+          backgroundColor: theme.isDark
+            ? colors.background.primary
+            : '#FFFFFF',
+          borderTopColor: theme.isDark ? colors.border.light : '#EDEDF3',
         },
       ]}>
       {/* REPLY PREVIEW */}
@@ -394,7 +397,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#EDEDF3',
   },
   replyPreview: {
     flexDirection: 'row',
@@ -449,22 +454,22 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    borderRadius: 24,
-    borderWidth: 1.5,
+    borderRadius: 28,
+    borderWidth: 1,
     paddingHorizontal: 6,
     paddingVertical: 6,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 12,
-    elevation: 5,
-    minHeight: 56,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 8,
+    elevation: 2,
+    minHeight: 52,
   },
   inputWrapperDark: {
     borderWidth: 1,
   },
   actionButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 4,
@@ -481,15 +486,15 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     maxHeight: 120,
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 8,
     minHeight: 40,
     letterSpacing: 0.1,
   },
   sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 4,

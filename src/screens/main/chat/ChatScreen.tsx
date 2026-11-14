@@ -333,14 +333,18 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     outputRange: [0, 140],
   });
 
+  const chatBackground = theme.isDark
+    ? colors.background.primary
+    : '#F5F6FF';
+
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: colors.background.primary }]}
+      style={[styles.container, { backgroundColor: chatBackground }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'android' ? -insets.bottom : 0}>
       <StatusBar
         barStyle={theme.isDark ? 'light-content' : 'dark-content'}
-        backgroundColor={colors.background.primary}
+        backgroundColor={theme.isDark ? colors.background.primary : '#FFFFFF'}
       />
 
       <ChatHeader
@@ -497,7 +501,8 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   messagesList: {
-    paddingVertical: 8,
+    paddingVertical: 12,
+    paddingBottom: 20,
     flexGrow: 1,
   },
   emptyContainer: {

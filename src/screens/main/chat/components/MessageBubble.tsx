@@ -7,8 +7,8 @@ import {
   StyleSheet,
   Animated,
 } from 'react-native';
+import { Reply } from 'lucide-react-native';
 import { useTheme } from '../../../../theme';
-import { Icon } from '../../../../components/Icon';
 import { ChatMessage } from '../types';
 
 interface MessageBubbleProps {
@@ -32,32 +32,33 @@ const truncateText = (text: string, maxLength: number): string => {
 };
 
 const MAX_LINES = 3;
-const LINE_HEIGHT = 20;
+
+const CHAT_BUBBLE = {
+  outgoing: '#6221A8',
+  incoming: '#FFFFFF',
+  meta: '#8E8E93',
+};
 
 export const MessageBubble: React.FC<MessageBubbleProps> = memo(
   ({
     item,
     astrologerName,
     astrologerImage,
-    onLike,
+    onLike: _onLike,
     onReply,
-    isLiked = false,
+    isLiked: _isLiked = false,
     isGrouped = false,
     onImagePress,
   }) => {
     const theme = useTheme();
     const colors = theme.colors;
     const isUser = item.sender === 'user';
-    const Astro = item.sender === 'astrologer';
-    // console.log("iteeeeee----=-=-=-=-,",astrologerImage)
 
     const [expanded, setExpanded] = useState(false);
     const [showToggle, setShowToggle] = useState(false);
-    const [textHeight, setTextHeight] = useState(0);
 
     const scaleAnim = useRef(new Animated.Value(0.95)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
-    const imageToShow = item.image || item.replyTo?.image;
 
     useEffect(() => {
       Animated.parallel([
@@ -75,12 +76,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = memo(
       ]).start();
     }, []);
 
-    // const handleTextLayout = (event: any) => {
-    //   const height = event.nativeEvent.layout.height;
-    //   setTextHeight(height);
-    //   setShowToggle(height > MAX_LINES * LINE_HEIGHT);
-    // };
-
     const handleTextLayout = (event: any) => {
       const lines = event.nativeEvent.lines;
       if (lines.length > MAX_LINES) {
@@ -88,80 +83,30 @@ export const MessageBubble: React.FC<MessageBubbleProps> = memo(
       }
     };
 
-    // console.log('all data getting in MessageBubble-------', item);
-
     const formatTime = (date: Date) => {
       if (!(date instanceof Date) || isNaN(date.getTime())) {
         return '--:--';
       }
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    };
-
-    const renderReadReceipt = () => {
-      if (!isUser) {
-        return null;
-      }
-
-      const status = item.status;
-      // const status = item.status;
-      const isRead = true;
-      // const isRead = item.read === true;
-
-      let iconName = 'done';
-      let iconColor = 'rgba(255,255,255,0.5)';
-
-      // if (status === 'sending') {
-      //   iconName = 'schedule';
-      //   iconColor = 'rgba(255,255,255,0.5)';
-      // } else if (status === 'sent') {
-      //   iconName = 'done';
-      //   iconColor = 'rgba(255,255,255,0.5)';
-      // } else if (status === 'delivered' || !isRead) {
-      //   iconName = 'done-all';
-      //   iconColor = 'rgba(255,255,255,0.5)';
-      // }
-      if (isRead) {
-        iconName = 'done-all';
-        iconColor = '#53bdeb';
-      }
-
-      return (
-        <Icon
-          name={iconName}
-          size={14}
-          color={iconColor}
-          style={{ marginLeft: 3 }}
-        />
-      );
+      return date.toLocaleTimeString([], {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
     };
 
     const renderMessageText = () => {
       const textStyle = [
         styles.text,
         {
-          color: isUser ? '#fff' : colors.text.primary,
+          color: isUser ? '#FFFFFF' : colors.text.primary,
         },
       ];
 
-      if (!showToggle) {
-        return (
-          <Text style={textStyle} numberOfLines={undefined}>
-            {item.text}
-          </Text>
-        );
-      }
-
       return (
         <>
-          {/* <Text
-            style={textStyle}
-            numberOfLines={expanded ? undefined : MAX_LINES}
-            onLayout={handleTextLayout}>
-            {item.text}
-          </Text> */}
           <Text
             style={textStyle}
-            numberOfLines={expanded ? undefined : MAX_LINES}
+            numberOfLines={showToggle && !expanded ? MAX_LINES : undefined}
             onTextLayout={handleTextLayout}>
             {item.text}
           </Text>
@@ -191,62 +136,36 @@ export const MessageBubble: React.FC<MessageBubbleProps> = memo(
         return null;
       }
 
-      const replySender =
-        item.replyTo.sender === 'user' ? 'You' : item.replyTo.sender;
-
       return (
         <View
           style={[
             styles.replyBox,
             {
-              // 👇 User message ke andar light transparent white
-              // 👇 Astrologer message ke andar light dark
               backgroundColor: isUser
                 ? 'rgba(255,255,255,0.15)'
                 : 'rgba(0,0,0,0.05)',
-
-              // 👇 Left border bhi message ke according
               borderLeftColor: isUser
                 ? 'rgba(255,255,255,0.9)'
                 : colors.primary.main,
             },
           ]}>
-
-          {/* <Text style={styles.replyBoxSender}>{replySender}</Text> */}
-
-          {/* ✅ IMAGE FIRST */}
-
-          {/* {item.replyTo.image ? (
-            <Image
-              source={{uri: item.replyTo.image}}
-              style={{
-                width: 120,
-                height: 120,
-                borderRadius: 8,
-                marginTop: 4,
-                marginBottom: 4,
-              }}
-            />
-          ) : null} */}
           {item.replyTo.image && (
             <TouchableOpacity
               onPress={() => onImagePress?.(item.replyTo.image!)}>
               <Image
                 source={{ uri: item.replyTo.image }}
-                style={{
-                  width: 120,
-                  height: 120,
-                  borderRadius: 8,
-                  marginTop: 4,
-                  marginBottom: 4,
-                }}
+                style={styles.replyImage}
               />
             </TouchableOpacity>
           )}
 
-          {/*  TEXT */}
           {item.replyTo.message ? (
-            <Text style={styles.replyBoxMessage} numberOfLines={1}>
+            <Text
+              style={[
+                styles.replyBoxMessage,
+                { color: isUser ? '#FFFFFF' : colors.text.secondary },
+              ]}
+              numberOfLines={1}>
               {truncateText(item.replyTo.message, MAX_REPLY_LENGTH)}
             </Text>
           ) : null}
@@ -265,123 +184,68 @@ export const MessageBubble: React.FC<MessageBubbleProps> = memo(
             transform: [{ scale: scaleAnim }],
           },
         ]}>
-        {!isUser && !isGrouped && (
-          <View style={styles.avatarWrapper}>
-            {astrologerImage ? (
-              <Image source={{ uri: astrologerImage }} style={styles.avatar} />
-            ) : (
-              <View
-                style={[
-                  styles.avatarPlaceholder,
-                  { backgroundColor: colors.primary.light },
-                ]}>
-                <Text
-                  style={{
-                    color: colors.primary.main,
-                    fontWeight: '700',
-                    fontSize: 16,
-                  }}>
-                  {astrologerName.charAt(0).toUpperCase()}
-                </Text>
-              </View>
-            )}
+        {!isUser && (
+          <View
+            style={[
+              styles.avatarWrapper,
+              isGrouped && styles.avatarPlaceholderSpace,
+            ]}>
+            {!isGrouped &&
+              (astrologerImage ? (
+                <Image
+                  source={{ uri: astrologerImage }}
+                  style={styles.avatar}
+                />
+              ) : (
+                <View
+                  style={[
+                    styles.avatarFallback,
+                    { backgroundColor: colors.primary.light },
+                  ]}>
+                  <Text
+                    style={{
+                      color: colors.primary.main,
+                      fontWeight: '700',
+                      fontSize: 14,
+                    }}>
+                    {astrologerName.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              ))}
           </View>
         )}
 
         <View
-          style={[styles.bubbleWrapper, isUser && { alignItems: 'flex-end' }]}>
+          style={[
+            styles.bubbleColumn,
+            isUser && styles.userBubbleColumn,
+          ]}>
           <View
             style={[
               styles.bubble,
-              {
-                backgroundColor: isUser
-                  ? colors.primary.main
-                  : colors.background.secondary,
-                borderColor: isUser ? colors.primary.main : colors.border.light,
-                borderBottomRightRadius: isUser ? 6 : 18,
-                borderBottomLeftRadius: isUser ? 18 : 6,
-                borderTopLeftRadius: 18,
-                borderTopRightRadius: 18,
-              },
+              isUser ? styles.userBubble : styles.astroBubble,
             ]}>
             {renderReplyBox()}
-            {renderMessageText()}
-            {/* {item.image && (
-              <Image
-                source={{uri: item.image}}
-                style={{
-                  width: 200,
-                  height: 200,
-                  borderRadius: 12,
-                  marginTop: 5,
-                }}
-              />
-            )} */}
+            {!!item.text && renderMessageText()}
             {item.image && (
               <TouchableOpacity
                 onPress={() => onImagePress?.(item.image!)}
                 activeOpacity={0.9}>
                 <Image
                   source={{ uri: item.image }}
-                  style={{
-                    width: 200,
-                    height: 200,
-                    borderRadius: 12,
-                    marginTop: 5,
-                  }}
+                  style={styles.messageImage}
                 />
               </TouchableOpacity>
             )}
-
-            <View style={styles.footer}>
-              <Text
-                style={[
-                  styles.time,
-                  {
-                    color: isUser
-                      ? 'rgba(255,255,255,0.6)'
-                      : colors.text.tertiary,
-                  },
-                ]}>
-                <Text style={{ color: 'gray' }}>
-                  {' '}
-                  {Astro && formatTime(item.timestamp)}{' '}
-                </Text>
-                <Text style={{ color: 'white' }}>
-                  {isUser && formatTime(item.timestamp)}{' '}
-                </Text>
-              </Text>
-              {isUser && renderReadReceipt()}
-            </View>
           </View>
 
-          {/* {item.image && (
-            <Image
-              source={{uri: item.image}}
-              style={{width: 200, height: 200, borderRadius: 12, marginTop: 5}}
-            />
-          )} */}
-
-          {/* {item.text ? <Text>{item.text}</Text> : null} */}
-
-          <View style={styles.actions}>
-            <TouchableOpacity
-              onPress={() => onLike(item.id)}
-              style={styles.actionBtn}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              {/* <Icon
-                name={isLiked ? 'heart' : 'heart-outline'}
-                size={18}
-                color={isLiked ? '#ff3b30' : colors.text.tertiary}
-                library="Ionicons"
-              /> */}
-            </TouchableOpacity>
-
+          <View style={styles.metaRow}>
+            <Text style={styles.metaTime}>{formatTime(item.timestamp)}</Text>
             <TouchableOpacity
               onPress={() => onReply(item)}
-              style={styles.actionBtn}
+              style={styles.metaAction}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Icon name="reply" size={20} color={colors.primary.main} />
+              <Reply size={16} color={CHAT_BUBBLE.meta} />
             </TouchableOpacity>
           </View>
         </View>
@@ -395,7 +259,7 @@ MessageBubble.displayName = 'MessageBubble';
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    marginVertical: 3,
+    marginVertical: 8,
     paddingHorizontal: 16,
     alignItems: 'flex-end',
   },
@@ -413,17 +277,24 @@ const styles = StyleSheet.create({
   },
 
   avatarWrapper: {
+    width: 32,
     marginRight: 8,
-    alignSelf: 'flex-end',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+
+  avatarPlaceholderSpace: {
+    opacity: 0,
   },
 
   avatar: {
-    width: 32,
-    height: 32,
+    width: 20,
+    height: 20,
     borderRadius: 16,
+    marginBottom: 30,
   },
 
-  avatarPlaceholder: {
+  avatarFallback: {
     width: 32,
     height: 32,
     borderRadius: 16,
@@ -431,20 +302,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  bubbleWrapper: {
-    maxWidth: '75%',
+  bubbleColumn: {
+    maxWidth: '78%',
+    alignItems: 'flex-start',
+  },
+
+  userBubbleColumn: {
+    alignSelf: 'flex-end',
+    marginLeft: 'auto',
   },
 
   bubble: {
     paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 18,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    paddingVertical: 12,
+  },
+
+  astroBubble: {
+    backgroundColor: CHAT_BUBBLE.incoming,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    borderBottomRightRadius: 16,
+    borderBottomLeftRadius: 4,
+  },
+
+  userBubble: {
+    backgroundColor: CHAT_BUBBLE.outgoing,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 4,
   },
 
   replyBox: {
@@ -455,21 +341,22 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
 
-  replyBoxSender: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 2,
+  replyImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 8,
+    marginTop: 4,
+    marginBottom: 4,
   },
 
   replyBoxMessage: {
     fontSize: 13,
-    opacity: 0.8,
-    color: 'white',
+    opacity: 0.85,
   },
 
   text: {
     fontSize: 15,
-    lineHeight: 20,
+    lineHeight: 22,
   },
 
   showMoreText: {
@@ -478,26 +365,26 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
+  messageImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 12,
     marginTop: 6,
   },
 
-  time: {
-    fontSize: 10.5,
-    opacity: 0.8,
-  },
-
-  actions: {
+  metaRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 4,
-    gap: 12,
+    alignItems: 'center',
+    marginTop: 6,
+    gap: 10,
   },
 
-  actionBtn: {
-    padding: 4,
+  metaTime: {
+    fontSize: 10,
+    color: CHAT_BUBBLE.meta,
+  },
+
+  metaAction: {
+    padding: 2,
   },
 });

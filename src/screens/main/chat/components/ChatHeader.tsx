@@ -64,7 +64,19 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   const isLastTenSeconds = timeLeft > 0 && timeLeft <= 10;
 
   return (
-    <View style={[styles.header, {paddingTop: insets.top + 8}]}>
+    <View
+      style={[
+        styles.header,
+        {
+          paddingTop: insets.top + 8,
+          backgroundColor: theme.isDark
+            ? colors.background.primary
+            : '#FFFFFF',
+          borderBottomColor: theme.isDark
+            ? colors.border.light
+            : '#EDEDF3',
+        },
+      ]}>
       {/* <TouchableOpacity onPress={onBack} style={styles.backButton}>
         <Icon name="arrow-back" size={24} color={colors.text.primary} />
       </TouchableOpacity> */}
@@ -161,7 +173,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingBottom: 8,
+    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
   },
@@ -172,7 +184,8 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: 8,
+    marginLeft: 4,
+    marginRight: 8,
   },
   avatarSmallContainer: {
     position: 'relative',
