@@ -7,10 +7,10 @@ import {
   StyleSheet,
   Animated,
 } from 'react-native';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {useTheme} from '../../../../theme';
-import {Icon} from '../../../../components/Icon';
-import {Button} from '../../../../components';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../../../theme';
+import { Icon } from '../../../../components/Icon';
+import { Button } from '../../../../components';
 
 interface ChatHeaderProps {
   astrologerName: string;
@@ -87,17 +87,17 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         activeOpacity={0.8}>
         <View style={styles.avatarSmallContainer}>
           {astrologerImage ? (
-            <Image source={{uri: astrologerImage}} style={styles.avatarSmall} />
+            <Image source={{ uri: astrologerImage }} style={styles.avatarSmall} />
           ) : (
             <View
               style={[
                 styles.avatarSmallPlaceholder,
-                {backgroundColor: colors.primary.light},
+                { backgroundColor: colors.primary.light },
               ]}>
               <Text
                 style={[
                   styles.avatarSmallInitial,
-                  {color: colors.primary.main},
+                  { color: colors.primary.main },
                 ]}>
                 {astrologerName.charAt(0).toUpperCase()}
               </Text>
@@ -108,14 +108,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             <Animated.View
               style={[
                 styles.onlineDot,
-                {backgroundColor: colors.success.main},
-                {transform: [{scale: pulseAnim}]},
+                { backgroundColor: colors.success.main },
+                { transform: [{ scale: pulseAnim }] },
               ]}
             />
           )}
         </View>
         <View style={styles.headerTextContainer}>
-          <Text style={[styles.astrologerName, {color: colors.text.primary}]}>
+          <Text style={[styles.astrologerName, { color: colors.text.primary }]}>
             {astrologerName}
           </Text>
           <View style={styles.statusContainer}>
@@ -128,7 +128,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                     fontWeight: '600',
                   },
                   isLastTenSeconds && {
-                    transform: [{scale: pulseAnim}],
+                    transform: [{ scale: pulseAnim }],
                   },
                 ]}>
                 {`⏳ ${formatTime(timeLeft)}`}
@@ -150,12 +150,12 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 <View
                   style={[
                     styles.dotSeparator,
-                    {backgroundColor: colors.text.tertiary},
+                    { backgroundColor: colors.text.tertiary },
                   ]}
                 />
                 <Icon name="star" size={12} color={colors.common.yellow[500]} />
                 <Text
-                  style={[styles.ratingText, {color: colors.text.secondary}]}>
+                  style={[styles.ratingText, { color: colors.text.secondary }]}>
                   {astrologerRating}
                 </Text>
               </>
@@ -163,7 +163,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           </View>
         </View>
       </TouchableOpacity>
-      <Button style={{height: 35}} onPress={onEndChat} title="End Chat" />
+      <Button style={{ height: 30, borderRadius: 20, }} size="small"
+        onPress={onEndChat} title="End Chat" />
     </View>
   );
 };
