@@ -144,8 +144,8 @@ export const AstrologerCard: React.FC<AstrologerCardProps> = ({
                 ★
               </Text>
               <Text style={styles.rating}>{rating.toFixed(1)}</Text>
-              <Text style={styles.statsSeparator}>|</Text>
-              <Text style={styles.statsText}>{reviewCount} orders</Text>
+              {/* <Text style={styles.statsSeparator}>|</Text> */}
+              {/* <Text style={styles.statsText}>{reviewCount} orders</Text> */}
               <Text style={styles.statsSeparator}>|</Text>
               <Text style={styles.statsText}>
                 {CHAT_CALL_LABELS.CARD_EXPERIENCE} {experience}
