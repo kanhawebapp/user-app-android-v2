@@ -44,14 +44,14 @@ export const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
-  // Button Container
+  // Button Container — bottom padding applied at runtime via safe-area insets
   buttonContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     paddingHorizontal: 16,
-    paddingVertical: 20,
+    paddingTop: 10,
     gap: 12,
     backgroundColor: 'white',
     borderTopWidth: 1,

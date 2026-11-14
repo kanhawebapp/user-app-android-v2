@@ -1,6 +1,9 @@
 import React, { useCallback, useMemo } from 'react';
 import { View, ScrollView, TouchableOpacity, StatusBar } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { WalletBalanceCard } from './astrologerProfile/components/SendGiftModal/components/WalletBalanceCard';
 import { GiftGrid } from './astrologerProfile/components/SendGiftModal/components/GiftGrid';
 import { RechargeSection } from './astrologerProfile/components/SendGiftModal/components/RechargeSection';
@@ -35,6 +38,7 @@ export const SendGiftScreen: React.FC<SendGiftScreenProps> = ({
 }) => {
   const theme = useTheme();
   const colors = theme.colors;
+  const insets = useSafeAreaInsets();
 
   // Wallet
   const { wallet, loading: walletBalanceLoading, refresh: refreshWallet } =
@@ -150,8 +154,9 @@ export const SendGiftScreen: React.FC<SendGiftScreenProps> = ({
           variant="h6"
           weight="semibold"
           style={styles.headerTitle}
-          color={colors.text.primary}>
-           Gift
+          color={colors.primary.main}
+        >
+          Gift
         </Text>
 
         <View style={styles.headerRight} />
@@ -159,13 +164,16 @@ export const SendGiftScreen: React.FC<SendGiftScreenProps> = ({
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: 100 + insets.bottom },
+        ]}
       >
         <WalletBalanceCard
           balance={balanceCoins}
           loading={walletBalanceLoading}
           astrologerName={astrologerName}
-          // astrologerProfilePic={astrologerProfilePic}
+        // astrologerProfilePic={astrologerProfilePic}
         />
 
         <View
@@ -195,7 +203,7 @@ export const SendGiftScreen: React.FC<SendGiftScreenProps> = ({
                   ? colors.primary.contrastText
                   : colors.text.secondary
               }>
-               Gift
+              Gift
             </Text>
 
           </TouchableOpacity>
@@ -272,8 +280,12 @@ export const SendGiftScreen: React.FC<SendGiftScreenProps> = ({
         )}
       </ScrollView>
 
-      {/* Button Container - Sticky at bottom */}
-      <View style={styles.buttonContainer}>
+      {/* Button Container - Sticky at bottom, above system nav / home indicator */}
+      <View
+        style={[
+          styles.buttonContainer,
+          { paddingBottom: insets.bottom + 10 },
+        ]}>
         {/* <Button
           title="Recharge Wallet"
           variant="outline"
@@ -299,14 +311,14 @@ export const SendGiftScreen: React.FC<SendGiftScreenProps> = ({
           loading={loading}
           disabled={sendGiftDisabled}
           style={styles.button}
-          // leftIcon={
-          //   <Icon
-          //     name="send"
-          //     size={20}
-          //     color={colors.primary.contrastText}
-          //     library="MaterialIcons"
-          //   />
-          // }
+        // leftIcon={
+        //   <Icon
+        //     name="send"
+        //     size={20}
+        //     color={colors.primary.contrastText}
+        //     library="MaterialIcons"
+        //   />
+        // }
         />
       </View>
     </SafeAreaView>
