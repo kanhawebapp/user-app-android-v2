@@ -6,6 +6,7 @@ import { graphqlRequest } from '../graphql.client';
 import loggingService from '../../logging';
 import { LoginResult, AuthWithOTPResponse } from './auth.types';
 import { Platform } from 'react-native';
+import { oneSignalService } from '../../notifications/OneSignalService';
 
 const REQUEST_OTP_MUTATION = `mutation RequestOtp($countryCode: String!, $mobile: String!) {
   requestOtp(countryCode: $countryCode, mobile: $mobile) {
@@ -14,33 +15,20 @@ const REQUEST_OTP_MUTATION = `mutation RequestOtp($countryCode: String!, $mobile
   }
 }`;
 
-// const AUTH_WITH_OTP_MUTATION = `
-// mutation AuthWithOtp($countryCode: String!, $mobile: String!, $otp: String!, $source: String) {
-//   authWithOtp(countryCode: $countryCode, mobile: $mobile, otp: $otp, source: $source) {
-//     accessToken
-//     refreshToken
-//     hasName
-//     user {
-//       id
-//       name
-//       __typename
-//     }
-//     __typename
-//   }
-// }`;
-
 const AUTH_WITH_OTP_MUTATION = `
 mutation AuthWithOtp(
   $countryCode: String!,
   $mobile: String!,
   $otp: String!,
-  $source: String!
+  $source: String!,
+  $playerId: String
 ) {
   authWithOtp(
     countryCode: $countryCode,
     mobile: $mobile,
     otp: $otp,
-    source: $source
+    source: $source,
+    playerId: $playerId
   ) {
     accessToken
     refreshToken
@@ -83,22 +71,35 @@ export const verifyOTP = async (
   countryCode: string = '+91',
 ): Promise<LoginResult> => {
   try {
-    console.log('VERIFY VARIABLES:', {
-      countryCode,
-      mobile,
-      otp,
-      otpType: typeof otp,
-    });
+    // Fresh SDK read at OTP verify time — not from Redux/local cache
+    const playerId = await oneSignalService.getPlayerId();
 
-    const variables = {
+    const variables: {
+      countryCode: string;
+      mobile: string;
+      otp: string;
+      source: string;
+      playerId?: string;
+    } = {
       countryCode,
       mobile: mobile.trim(),
       otp: otp.trim(),
-      source:
-        Platform.OS === 'ios'
-          ? 'IOS'
-          : 'ANDROID',
+      source: Platform.OS === 'ios' ? 'IOS' : 'ANDROID',
     };
+
+    // Only send a real Player ID — never the string "null" or an empty value
+    if (playerId) {
+      variables.playerId = playerId;
+    }
+
+    console.log('VERIFY VARIABLES:', {
+      countryCode: variables.countryCode,
+      mobile: variables.mobile,
+      otp: variables.otp,
+      otpType: typeof variables.otp,
+      source: variables.source,
+      playerId: variables.playerId ?? null,
+    });
 
     console.log(
       'AUTH PAYLOAD =>',
@@ -112,12 +113,7 @@ export const verifyOTP = async (
     const response = await graphqlRequest<AuthWithOTPResponse>(
       'AuthWithOtp',
       AUTH_WITH_OTP_MUTATION,
-      {
-        countryCode,
-        mobile: mobile.trim(),
-        otp: otp.trim(),
-        source: Platform.OS === 'ios' ? 'IOS' : 'ANDROID',
-      },
+      variables,
     );
 
     console.log('VERIFY OTP RESPONSE:', response);
