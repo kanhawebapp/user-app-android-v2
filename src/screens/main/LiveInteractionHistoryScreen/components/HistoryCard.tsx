@@ -101,11 +101,11 @@ export const HistoryCard: React.FC<HistoryCardProps> = ({item}) => {
             label="Duration"
             value={formatDurationMmSs(item.durationSeconds)}
           />
-          <StatCell
+          {/* <StatCell
             icon="timer"
             label="Billable"
             value={formatBillableMinutes(item.billableMinutes)}
-          />
+          /> */}
           <StatCell
             icon="speed"
             label="Rate"
