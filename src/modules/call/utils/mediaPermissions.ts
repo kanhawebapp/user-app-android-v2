@@ -54,6 +54,16 @@ export const requestMediaPermissions = async (): Promise<{
   return {camera: true, microphone};
 };
 
+/** Request mic + camera for live/private video interactions. */
+export const requestVideoCallPermissions = async (): Promise<{
+  camera: boolean;
+  microphone: boolean;
+}> => {
+  const microphone = await requestMicrophonePermission();
+  const camera = await requestCameraPermission();
+  return {camera, microphone};
+};
+
 export const checkMediaPermissions = async (): Promise<{
   camera: boolean;
   microphone: boolean;

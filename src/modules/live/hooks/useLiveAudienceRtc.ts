@@ -6,8 +6,10 @@ import {
   ConnectionChangedReasonType,
   ConnectionStateType,
   createAgoraRtcEngine,
+  IRtcEngine,
   IRtcEngineEventHandler,
   RemoteVideoState,
+  RtcConnection,
   UserOfflineReasonType,
 } from 'react-native-agora';
 import loggingService from '../../../services/logging';
@@ -26,6 +28,8 @@ interface UseLiveAudienceRtcOptions {
   uid: number;
   /** Fired once the tracked host leaves the channel (Agora onUserOffline). */
   onHostOffline?: () => void;
+  /** Fired when a non-host remote (guest/co-host) leaves. */
+  onGuestOffline?: (uid: number) => void;
 }
 
 const getConnectionFailureMessage = (
@@ -43,9 +47,21 @@ const getConnectionFailureMessage = (
   }
 };
 
+const isSameChannel = (
+  connection: RtcConnection | undefined,
+  channelName: string,
+): boolean => {
+  if (!connection?.channelId) {
+    return true;
+  }
+  return connection.channelId === channelName;
+};
+
 /**
- * Joins an Agora live-broadcasting channel as an audience member (never publishes)
- * and tracks the host's video. Leaves the channel and releases the engine on unmount.
+ * Joins the public Agora live channel as an audience member.
+ * Tracks host + optional guest/co-host remotes on the SAME channel.
+ * Exposes engineRef so the viewer can temporarily publish as a co-host
+ * without creating a second channel or RTC engine.
  */
 export const useLiveAudienceRtc = ({
   appId,
@@ -53,27 +69,45 @@ export const useLiveAudienceRtc = ({
   rtcToken,
   uid,
   onHostOffline,
+  onGuestOffline,
 }: UseLiveAudienceRtcOptions) => {
   const [status, setStatus] = useState<LiveRtcStatus>('joining');
   const [error, setError] = useState<string | null>(null);
   const [hostUid, setHostUid] = useState<number | null>(null);
+  const [guestUid, setGuestUid] = useState<number | null>(null);
   const [isHostVideoOn, setIsHostVideoOn] = useState(false);
+  const [isGuestVideoOn, setIsGuestVideoOn] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [engineReady, setEngineReady] = useState(false);
+
   const localUidRef = useRef(uid);
   const hostUidRef = useRef<number | null>(null);
+  const guestUidRef = useRef<number | null>(null);
   const onHostOfflineRef = useRef(onHostOffline);
+  const onGuestOfflineRef = useRef(onGuestOffline);
+  const engineRef = useRef<IRtcEngine | null>(null);
+  /** When true, local user is publishing as co-host — ignore self in remotes. */
+  const isLocalCohostRef = useRef(false);
+
   onHostOfflineRef.current = onHostOffline;
+  onGuestOfflineRef.current = onGuestOffline;
 
   useEffect(() => {
     const engine = createAgoraRtcEngine();
     let active = true;
+    engineRef.current = engine;
+    setEngineReady(false);
 
     setStatus('joining');
     setError(null);
     setHostUid(null);
+    setGuestUid(null);
     setIsHostVideoOn(false);
+    setIsGuestVideoOn(false);
     hostUidRef.current = null;
+    guestUidRef.current = null;
     localUidRef.current = uid;
+    isLocalCohostRef.current = false;
 
     const fail = (message: string) => {
       if (!active) {
@@ -83,25 +117,37 @@ export const useLiveAudienceRtc = ({
       setError(message);
     };
 
+    const assignRemote = (remoteUid: number) => {
+      if (remoteUid === localUidRef.current) {
+        return;
+      }
+      if (hostUidRef.current == null) {
+        hostUidRef.current = remoteUid;
+        setHostUid(remoteUid);
+        return;
+      }
+      if (remoteUid === hostUidRef.current) {
+        return;
+      }
+      // Additional remote = public guest/co-host (single guest expected).
+      guestUidRef.current = remoteUid;
+      setGuestUid(remoteUid);
+    };
+
     const eventHandler: IRtcEngineEventHandler = {
-      onJoinChannelSuccess: () => {
-        if (active) {
-          setStatus('connected');
-        }
-      },
-      onUserJoined: (_connection, remoteUid) => {
-        if (!active) {
+      onJoinChannelSuccess: connection => {
+        if (!active || !isSameChannel(connection, channelName)) {
           return;
         }
-        if (remoteUid !== localUidRef.current) {
-          setHostUid(prev => {
-            const next = prev ?? remoteUid;
-            hostUidRef.current = next;
-            return next;
-          });
-        }
+        setStatus('connected');
       },
-      onUserOffline: (_connection, remoteUid, reason) => {
+      onUserJoined: (connection, remoteUid) => {
+        if (!active || !isSameChannel(connection, channelName)) {
+          return;
+        }
+        assignRemote(remoteUid);
+      },
+      onUserOffline: (connection, remoteUid, reason) => {
         loggingService.info('[LiveRTC] onUserOffline', {
           remoteUid,
           reason,
@@ -113,16 +159,25 @@ export const useLiveAudienceRtc = ({
           ),
           localUid: localUidRef.current,
           hostUid: hostUidRef.current,
+          guestUid: guestUidRef.current,
           channelName,
+          eventChannel: connection?.channelId,
         });
 
-        if (!active) {
+        if (!active || !isSameChannel(connection, channelName)) {
+          return;
+        }
+
+        if (guestUidRef.current === remoteUid) {
+          guestUidRef.current = null;
+          setGuestUid(null);
+          setIsGuestVideoOn(false);
+          onGuestOfflineRef.current?.(remoteUid);
           return;
         }
 
         const wasHost =
           hostUidRef.current === remoteUid ||
-          // Host left before we locked a uid — treat the first remote leave as host.
           (hostUidRef.current === null && remoteUid !== localUidRef.current);
 
         if (wasHost) {
@@ -132,22 +187,22 @@ export const useLiveAudienceRtc = ({
           onHostOfflineRef.current?.();
         }
       },
-      onRemoteVideoStateChanged: (_connection, remoteUid, state) => {
-        if (!active) {
+      onRemoteVideoStateChanged: (connection, remoteUid, state) => {
+        if (!active || !isSameChannel(connection, channelName)) {
           return;
         }
-        setHostUid(prev => {
-          const next = prev ?? remoteUid;
-          hostUidRef.current = next;
-          return next;
-        });
-        setIsHostVideoOn(
+        assignRemote(remoteUid);
+        const decoding =
           state === RemoteVideoState.RemoteVideoStateStarting ||
-            state === RemoteVideoState.RemoteVideoStateDecoding,
-        );
+          state === RemoteVideoState.RemoteVideoStateDecoding;
+        if (remoteUid === hostUidRef.current) {
+          setIsHostVideoOn(decoding);
+        } else if (remoteUid === guestUidRef.current) {
+          setIsGuestVideoOn(decoding);
+        }
       },
-      onConnectionStateChanged: (_connection, state, reason) => {
-        if (!active) {
+      onConnectionStateChanged: (connection, state, reason) => {
+        if (!active || !isSameChannel(connection, channelName)) {
           return;
         }
         if (state === ConnectionStateType.ConnectionStateConnected) {
@@ -161,7 +216,10 @@ export const useLiveAudienceRtc = ({
           fail(getConnectionFailureMessage(reason));
         }
       },
-      onRequestToken: () => {
+      onRequestToken: connection => {
+        if (!isSameChannel(connection, channelName)) {
+          return;
+        }
         fail(
           'Your access to this live session has expired. Please join again.',
         );
@@ -196,6 +254,9 @@ export const useLiveAudienceRtc = ({
       if (joinResult < 0) {
         throw new Error(`joinChannel failed (${joinResult})`);
       }
+      if (active) {
+        setEngineReady(true);
+      }
     } catch (err: any) {
       loggingService.error('[LiveRTC] Failed to join channel', {
         error: err?.message,
@@ -205,6 +266,8 @@ export const useLiveAudienceRtc = ({
 
     return () => {
       active = false;
+      setEngineReady(false);
+      engineRef.current = null;
       try {
         engine.unregisterEventHandler(eventHandler);
         engine.leaveChannel();
@@ -219,11 +282,30 @@ export const useLiveAudienceRtc = ({
 
   const retry = useCallback(() => setAttempt(prev => prev + 1), []);
 
+  const setLocalCohostActive = useCallback(
+    (active: boolean, publishingUid?: number | null) => {
+      isLocalCohostRef.current = active;
+      if (active && publishingUid != null) {
+        localUidRef.current = publishingUid;
+      } else if (!active) {
+        localUidRef.current = uid;
+      }
+    },
+    [uid],
+  );
+
   return {
     status,
     error,
     hostUid,
+    guestUid,
     isHostVideoOn,
+    isGuestVideoOn,
     retry,
+    engineRef,
+    engineReady,
+    setLocalCohostActive,
+    /** Original audience join credentials for demoting back from co-host. */
+    audienceCredentials: {appId, channelName, rtcToken, uid},
   };
 };

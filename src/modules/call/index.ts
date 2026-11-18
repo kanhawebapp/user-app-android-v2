@@ -17,5 +17,6 @@ export {
   requestCameraPermission,
   requestMicrophonePermission,
   requestMediaPermissions,
+  requestVideoCallPermissions,
   checkMediaPermissions,
 } from './utils/mediaPermissions';

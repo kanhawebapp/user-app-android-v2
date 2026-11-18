@@ -43,13 +43,24 @@ import {
   LiveChatMessage,
   useLiveRoomChat,
 } from '../../modules/live/hooks/useLiveRoomChat';
+import {useLiveInteractionSession} from '../../modules/live/hooks/useLiveInteractionSession';
+import {useLivePublicCohost} from '../../modules/live/hooks/useLivePublicCohost';
+import {
+  requestMediaPermissions,
+  requestVideoCallPermissions,
+} from '../../modules/call/utils/mediaPermissions';
 import {useToast} from '../../context/ToastContext';
 import {useSendLiveGift} from '../../services/api/liveGifts/useSendLiveGift';
 import type {LiveGift} from '../../services/api/liveGifts/live-gifts.types';
+import type {LiveInteractionType} from '../../services/api/liveInteractions/live-interactions.types';
 import {applyWalletBalanceCoins} from '../../services/api/wallet/wallet.hooks';
 import {useAuthStore} from '../../stores/auth.store';
 import loggingService from '../../services/logging';
 import {LiveGiftPanel} from './liveStream/LiveGiftPanel';
+import {CallNowPanel} from './liveStream/CallNowPanel';
+import {LiveInteractionWaitingPanel} from './liveStream/LiveInteractionWaitingPanel';
+import {LiveCohostControls} from './liveStream/LiveCohostControls';
+import {LiveInteractionSummarySheet} from './liveStream/LiveInteractionSummarySheet';
 
 const HOST_OFFLINE_STATUS_DELAY_MS = 5000;
 
@@ -186,13 +197,144 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
     };
   }, []);
 
+  const endInteractionRef = useRef<() => Promise<unknown>>(async () => null);
+
   const rtc = useLiveAudienceRtc({
     appId: joinData.appId,
     channelName: joinData.channelName,
     rtcToken: joinData.rtcToken,
     uid: joinData.uid,
     onHostOffline: handleHostOffline,
+    onGuestOffline: () => {
+      // Another viewer's co-host session ended — no local action required.
+    },
   });
+
+  const liveInteraction = useLiveInteractionSession({
+    liveStreamId: streamId,
+    astrologerId,
+    isScreenActive: true,
+  });
+
+  endInteractionRef.current = liveInteraction.endCall;
+  const markConnectingRef = useRef(liveInteraction.markConnecting);
+  const markInCallRef = useRef(liveInteraction.markInCall);
+  markConnectingRef.current = liveInteraction.markConnecting;
+  markInCallRef.current = liveInteraction.markInCall;
+
+  const cohostEnabled =
+    liveInteraction.isInCallPhase &&
+    liveInteraction.credentials != null &&
+    liveInteraction.phase !== 'ENDING';
+
+  const cohostSessionKey = liveInteraction.interaction.requestId;
+
+  const cohost = useLivePublicCohost({
+    enabled: cohostEnabled,
+    sessionKey: cohostSessionKey,
+    engineRef: rtc.engineRef,
+    engineReady: rtc.engineReady,
+    publicChannelName: joinData.channelName,
+    audienceCredentials: rtc.audienceCredentials,
+    publisherAppId: liveInteraction.credentials?.appId ?? null,
+    publisherChannelName: liveInteraction.credentials?.channelName ?? null,
+    publisherRtcToken: liveInteraction.credentials?.rtcToken ?? null,
+    publisherUid: liveInteraction.credentials?.uid ?? null,
+    interactionType: liveInteraction.interaction.interactionType,
+    setLocalCohostActive: rtc.setLocalCohostActive,
+    onFailed: message => {
+      showError(message);
+    },
+    onPromoted: () => {
+      markInCallRef.current();
+    },
+  });
+
+  useEffect(() => {
+    if (liveInteraction.phase === 'ACCEPTED' && cohostEnabled) {
+      markConnectingRef.current();
+    }
+  }, [liveInteraction.phase, cohostEnabled]);
+
+  const handleSelectCallType = useCallback(
+    async (type: LiveInteractionType) => {
+      const permissions =
+        type === 'VIDEO'
+          ? await requestVideoCallPermissions()
+          : await requestMediaPermissions();
+
+      if (!permissions.microphone) {
+        showError('Microphone permission is required to join live.');
+        return;
+      }
+      if (type === 'VIDEO' && !permissions.camera) {
+        showError('Camera permission is required for video co-host.');
+        return;
+      }
+
+      await liveInteraction.requestCall(type);
+    },
+    [liveInteraction.requestCall, showError],
+  );
+
+  const handleLeaveCohost = useCallback(async () => {
+    await cohost.leaveCohost();
+    cohost.clearAttemptedSessions();
+    await liveInteraction.endCall();
+  }, [cohost.leaveCohost, cohost.clearAttemptedSessions, liveInteraction.endCall]);
+
+  const handleCancelInteractionRequest = useCallback(async () => {
+    await liveInteraction.cancelRequest();
+    if (!liveInteraction.cancelApiAvailable) {
+      showError(
+        'Request cancelled. Backend cancel API is not available yet, so the astrologer may still see a pending request.',
+      );
+    }
+  }, [
+    liveInteraction.cancelRequest,
+    liveInteraction.cancelApiAvailable,
+    showError,
+  ]);
+
+  const handleRetryEndCall = useCallback(async () => {
+    await cohost.leaveCohost();
+    cohost.clearAttemptedSessions();
+    await liveInteraction.endCall();
+  }, [cohost.leaveCohost, cohost.clearAttemptedSessions, liveInteraction.endCall]);
+
+  const waitingPricePerMinute = useMemo(() => {
+    if (!liveInteraction.pricing || !liveInteraction.interaction.interactionType) {
+      return null;
+    }
+    return liveInteraction.interaction.interactionType === 'VIDEO'
+      ? liveInteraction.pricing.videoPrice
+      : liveInteraction.pricing.audioPrice;
+  }, [
+    liveInteraction.pricing,
+    liveInteraction.interaction.interactionType,
+  ]);
+
+  useEffect(() => {
+    if (liveInteraction.phase === 'REJECTED' && liveInteraction.error) {
+      showError(liveInteraction.error);
+      liveInteraction.dismissTerminal();
+    } else if (liveInteraction.phase === 'CANCELLED') {
+      liveInteraction.dismissTerminal();
+    }
+  }, [
+    liveInteraction.phase,
+    liveInteraction.error,
+    liveInteraction.dismissTerminal,
+    showError,
+  ]);
+
+  const showInteractionSummary =
+    liveInteraction.phase === 'COMPLETED' ||
+    (liveInteraction.phase === 'FAILED' &&
+      !!liveInteraction.error &&
+      !!liveInteraction.interaction.requestId &&
+      !liveInteraction.isWaiting &&
+      !liveInteraction.isCallNowVisible);
 
   const chatCredentialError = useMemo(
     () => getLiveJoinChatError(joinData),
@@ -384,6 +526,29 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
     leaveInFlightRef.current = true;
     setIsLeaving(true);
     try {
+      // Demote co-host / cancel request before leaving public live.
+      liveInteraction.stopPolling();
+      try {
+        await cohost.leaveCohost();
+        cohost.clearAttemptedSessions();
+      } catch {
+        // Continue leaving live even if demote fails.
+      }
+      if (
+        liveInteraction.interaction.requestId &&
+        (liveInteraction.isInCallPhase || liveInteraction.phase === 'PENDING')
+      ) {
+        try {
+          if (liveInteraction.isInCallPhase) {
+            await endInteractionRef.current();
+          } else {
+            await liveInteraction.cancelRequest();
+          }
+        } catch {
+          // Leave live even if interaction cleanup fails.
+        }
+      }
+
       const response = await leaveLiveStream(channelName);
       if (response?.success) {
         navigateBackOnce();
@@ -396,7 +561,18 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
       leaveInFlightRef.current = false;
       setIsLeaving(false);
     }
-  }, [joinData?.channelName, navigateBackOnce, showError]);
+  }, [
+    joinData?.channelName,
+    navigateBackOnce,
+    showError,
+    liveInteraction.stopPolling,
+    liveInteraction.interaction.requestId,
+    liveInteraction.isInCallPhase,
+    liveInteraction.phase,
+    liveInteraction.cancelRequest,
+    cohost.leaveCohost,
+    cohost.clearAttemptedSessions,
+  ]);
 
   const getRtcStatusText = (): string | null => {
     switch (rtc.status) {
@@ -511,6 +687,23 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
             />
           </View>
         )}
+        {/* Public guest/co-host video — same channel, visible to all audience */}
+        {rtc.guestUid != null &&
+          rtc.isGuestVideoOn &&
+          !cohost.isPublishing && (
+            <View
+              style={[styles.guestVideo, {top: insets.top + 72}]}
+              pointerEvents="none">
+              <RtcSurfaceView
+                style={StyleSheet.absoluteFill}
+                canvas={{
+                  uid: rtc.guestUid,
+                  sourceType: VideoSourceType.VideoSourceRemote,
+                  renderMode: RenderModeType.RenderModeHidden,
+                }}
+              />
+            </View>
+          )}
       </View>
 
       <View style={[styles.topBar, {paddingTop: insets.top + 8}]}>
@@ -716,6 +909,30 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
                 library="MaterialIcons"
               />
             </TouchableOpacity>
+            <TouchableOpacity
+              onPress={liveInteraction.openCallNow}
+              disabled={
+                liveInteraction.isWaiting || liveInteraction.isInCallPhase
+              }
+              style={[
+                styles.callNowButton,
+                {
+                  backgroundColor: colors.primary.main,
+                  opacity:
+                    liveInteraction.isWaiting || liveInteraction.isInCallPhase
+                      ? 0.5
+                      : 1,
+                },
+              ]}
+              accessibilityLabel="Join live as co-host"
+              testID="live-call-now-button">
+              <Icon
+                name="call"
+                size={18}
+                color={colors.common.white}
+                library="MaterialIcons"
+              />
+            </TouchableOpacity>
             <TextInput
               value={draft}
               onChangeText={setDraft}
@@ -754,6 +971,51 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
           </View>
         </KeyboardAvoidingView>
       )}
+
+      <CallNowPanel
+        visible={liveInteraction.isCallNowVisible}
+        pricing={liveInteraction.pricing}
+        loading={liveInteraction.phase === 'FETCHING_PRICING'}
+        error={liveInteraction.pricingError || liveInteraction.error}
+        requesting={liveInteraction.phase === 'REQUESTING'}
+        onClose={liveInteraction.closeCallNow}
+        onRetry={liveInteraction.refreshPricing}
+        onSelect={handleSelectCallType}
+      />
+
+      <LiveInteractionWaitingPanel
+        visible={liveInteraction.isWaiting}
+        astrologerName={astrologerName}
+        profilePicUrl={profilePicUrl}
+        interactionType={liveInteraction.interaction.interactionType}
+        pricePerMinute={waitingPricePerMinute}
+        onCancel={handleCancelInteractionRequest}
+      />
+
+      <LiveCohostControls
+        visible={liveInteraction.isInCallPhase}
+        interactionType={liveInteraction.interaction.interactionType}
+        status={cohost.status}
+        isMuted={cohost.isMuted}
+        isCameraOff={cohost.isCameraOff}
+        ending={liveInteraction.phase === 'ENDING'}
+        onToggleMute={cohost.toggleMute}
+        onToggleCamera={cohost.toggleCamera}
+        onSwitchCamera={cohost.switchCamera}
+        onLeave={handleLeaveCohost}
+      />
+
+      <LiveInteractionSummarySheet
+        visible={showInteractionSummary}
+        summary={liveInteraction.summary}
+        error={
+          liveInteraction.phase === 'FAILED' ? liveInteraction.error : null
+        }
+        onClose={liveInteraction.dismissTerminal}
+        onRetryEnd={
+          liveInteraction.phase === 'FAILED' ? handleRetryEndCall : undefined
+        }
+      />
     </View>
   );
 };
@@ -768,6 +1030,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     opacity: 0.4,
+  },
+  guestVideo: {
+    position: 'absolute',
+    right: 12,
+    width: 100,
+    height: 140,
+    borderRadius: 10,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.4)',
+    backgroundColor: '#222',
   },
   topBar: {
     flexDirection: 'row',
@@ -897,6 +1170,15 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     marginRight: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  callNowButton: {
+    height: 40,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    marginRight: 8,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
