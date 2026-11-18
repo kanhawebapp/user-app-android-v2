@@ -62,6 +62,7 @@ import {
   hasMinimumCallBalance,
   MIN_LIVE_INTERACTION_MINUTES,
   getMinimumRequiredBalance,
+  reconcileCallEndsAtWithWallet,
 } from '../../services/api/liveInteractions/live-interaction-billing';
 import {applyWalletBalanceCoins} from '../../services/api/wallet/wallet.hooks';
 import {useAuthStore} from '../../stores/auth.store';
@@ -117,6 +118,8 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
   const callTimerStartedForRequestRef = useRef<string | null>(null);
   /** Price/min captured when the call request is sent (coins). */
   const activeCallPriceRef = useRef<number | null>(null);
+  /** Last wallet balance applied to the active call countdown (coins). */
+  const lastSyncedWalletForCallRef = useRef<number | null>(null);
   /** requestId captured for EndLiveInteraction when timer starts / call connects. */
   const activeRequestIdRef = useRef<string | null>(null);
   const activeInteractionTypeRef = useRef<LiveInteractionType | null>(null);
@@ -319,6 +322,7 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
     callEndsAtRef.current = null;
     setCallEndsAt(null);
     callTimerStartedForRequestRef.current = null;
+    lastSyncedWalletForCallRef.current = null;
   }, []);
 
   const fireEndLiveInteractionOnce = useCallback((requestId: string) => {
@@ -351,7 +355,7 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
   }, []);
 
   const endCohostSession = useCallback(
-    (reason: 'manual' | 'exhausted') => {
+    (reason: 'manual' | 'exhausted' | 'gift_exhausted') => {
       if (endCohostInFlightRef.current) {
         loggingService.info('[LiveStream] endCohostSession skipped — in flight', {
           reason,
@@ -394,7 +398,11 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
       activeInteractionTypeRef.current = null;
       activeCallPriceRef.current = null;
 
-      if (reason === 'exhausted') {
+      if (reason === 'gift_exhausted') {
+        showError(
+          'Your call has ended because your wallet balance was used for gifts. Please recharge to continue.',
+        );
+      } else if (reason === 'exhausted') {
         showError(
           interactionType === 'VIDEO'
             ? 'Your video call has ended because your wallet balance is exhausted.'
@@ -482,6 +490,7 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
     activeCallPriceRef.current = price;
     activeRequestIdRef.current = requestId;
     activeInteractionTypeRef.current = interactionType;
+    lastSyncedWalletForCallRef.current = balance;
     callEndsAtRef.current = endsAt;
     setCallEndsAt(endsAt);
 
@@ -502,6 +511,55 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
     clearCallTimer,
     endCohostSession,
   ]);
+
+  // Keep the absolute endsAt in sync with live wallet balance (gifts / recharge).
+  // Gift sends update auth walletBalance; shrink (never extend) the countdown.
+  useEffect(() => {
+    if (
+      callEndsAt == null ||
+      callTimerStartedForRequestRef.current == null ||
+      endCohostInFlightRef.current
+    ) {
+      return;
+    }
+
+    const price = activeCallPriceRef.current;
+    const currentEndsAt = callEndsAtRef.current;
+    if (price == null || currentEndsAt == null) {
+      return;
+    }
+
+    if (lastSyncedWalletForCallRef.current === walletBalanceCoins) {
+      return;
+    }
+
+    lastSyncedWalletForCallRef.current = walletBalanceCoins;
+
+    const result = reconcileCallEndsAtWithWallet(
+      currentEndsAt,
+      walletBalanceCoins,
+      price,
+    );
+
+    loggingService.info('[LiveStream] Call timer wallet sync', {
+      balance: walletBalanceCoins,
+      pricePerMinute: price,
+      currentEndsAt,
+      shouldEnd: result.shouldEnd,
+      nextEndsAt: result.endsAt,
+      didShrink: result.shouldEnd ? false : result.didShrink,
+    });
+
+    if (result.shouldEnd) {
+      endCohostSession('gift_exhausted');
+      return;
+    }
+
+    if (result.didShrink && result.endsAt !== currentEndsAt) {
+      callEndsAtRef.current = result.endsAt;
+      setCallEndsAt(result.endsAt);
+    }
+  }, [walletBalanceCoins, callEndsAt, endCohostSession]);
 
   // Backup expiry watcher — ensures EndLiveInteraction fires even if the
   // card unmounts; uses absolute endsAt (background-safe).
