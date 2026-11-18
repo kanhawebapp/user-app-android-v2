@@ -27,7 +27,7 @@ export const DEFAULT_MENU_ITEMS: SidebarMenuItem[] = [
   },
   {
     key: 'live_interaction_history',
-    label: 'Live Interaction History',
+    label: 'Live History',
     icon: 'live-tv',
     iconLibrary: 'MaterialIcons',
   },

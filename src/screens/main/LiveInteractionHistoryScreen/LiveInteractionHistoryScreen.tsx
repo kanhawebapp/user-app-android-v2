@@ -60,7 +60,7 @@ const LiveInteractionHistoryScreen: React.FC<
     [],
   );
 
-  const listHeader = <SummarySection summary={summary} />;
+  // const listHeader = <SummarySection summary={summary} />;
 
   const listFooter = () => {
     if (!loadingMore) {
@@ -91,13 +91,13 @@ const LiveInteractionHistoryScreen: React.FC<
     <View
       style={[styles.container, {backgroundColor: colors.background.primary}]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      <GoBack onBack={onNavigateBack} title="Live Interaction History" />
+      <GoBack onBack={onNavigateBack} title="Live History" />
 
       <FlatList
         data={loading && data.length === 0 ? [] : data}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
-        ListHeaderComponent={listHeader}
+        // ListHeaderComponent={listHeader}
         ListEmptyComponent={listEmpty}
         ListFooterComponent={listFooter}
         onEndReached={handleEndReached}
