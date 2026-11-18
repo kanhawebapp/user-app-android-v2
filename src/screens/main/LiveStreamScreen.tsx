@@ -1326,7 +1326,7 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
           </View>
         )}
 
-        <View style={[styles.inputRow, {paddingBottom: inputRowPaddingBottom}]}>
+        <View style={styles.actionButtonsRow}>
           <TouchableOpacity
             onPress={() => setIsGiftPanelVisible(true)}
             style={[
@@ -1366,42 +1366,47 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
               library="MaterialIcons"
             />
           </TouchableOpacity>
-          <TextInput
-            ref={chatInputRef}
-            value={draft}
-            onChangeText={setDraft}
-            placeholder={
-              isChatReady
-                ? 'Say something...'
-                : chat.status === 'connecting'
-                ? 'Connecting to chat...'
-                : 'Chat unavailable'
-            }
-            placeholderTextColor="rgba(255, 255, 255, 0.6)"
-            editable={isChatReady}
-            style={[styles.input, {color: colors.common.white}]}
-            maxLength={500}
-            returnKeyType="send"
-            onSubmitEditing={handleSend}
-          />
-          <TouchableOpacity
-            onPress={handleSend}
-            disabled={!isChatReady || !draft.trim()}
-            style={[
-              styles.sendButton,
-              {
-                backgroundColor: colors.primary.main,
-                opacity: isChatReady && draft.trim() ? 1 : 0.5,
-              },
-            ]}
-            accessibilityLabel="Send message">
-            <Icon
-              name="send"
-              size={18}
-              color={colors.primary.contrastText}
-              library="MaterialIcons"
+        </View>
+
+        <View style={[styles.inputRow, {paddingBottom: inputRowPaddingBottom}]}>
+          <View style={styles.inputContainer}>
+            <TextInput
+              ref={chatInputRef}
+              value={draft}
+              onChangeText={setDraft}
+              placeholder={
+                isChatReady
+                  ? 'Say something...'
+                  : chat.status === 'connecting'
+                  ? 'Connecting to chat...'
+                  : 'Chat unavailable'
+              }
+              placeholderTextColor="rgba(255, 255, 255, 0.6)"
+              editable={isChatReady}
+              style={[styles.input, {color: colors.common.white}]}
+              maxLength={500}
+              returnKeyType="send"
+              onSubmitEditing={handleSend}
             />
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleSend}
+              disabled={!isChatReady || !draft.trim()}
+              style={[
+                styles.sendButton,
+                {
+                  backgroundColor: colors.primary.main,
+                  opacity: isChatReady && draft.trim() ? 1 : 0.5,
+                },
+              ]}
+              accessibilityLabel="Send message">
+              <Icon
+                name="send"
+                size={18}
+                color={colors.primary.contrastText}
+                library="MaterialIcons"
+              />
+            </TouchableOpacity>
+          </View>
         </View>
       </KeyboardAvoidingView>
 
@@ -1602,31 +1607,41 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 8,
   },
+  actionButtonsRow: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+    gap: 8,
+  },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingTop: 8,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    gap: 8,
   },
   giftButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    marginRight: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   callNowButton: {
+    width: 40,
     height: 40,
     borderRadius: 20,
-    paddingHorizontal: 10,
-    marginRight: 8,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
   input: {
     flex: 1,
+    minWidth: 0,
     height: 40,
     paddingHorizontal: 14,
     borderRadius: 20,
@@ -1636,7 +1651,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    marginLeft: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
