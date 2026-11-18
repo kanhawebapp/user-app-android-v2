@@ -1,8 +1,10 @@
-import React, {useCallback, useEffect, useRef} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
   View,
   StyleSheet,
   TouchableOpacity,
+  AppState,
+  AppStateStatus,
 } from 'react-native';
 import {
   RenderModeType,
@@ -11,10 +13,12 @@ import {
 } from 'react-native-agora';
 import {Text} from '../../../components/Text';
 import {Icon} from '../../../components/Icon';
-import {endLiveInteraction} from '../../../services/api/liveInteractions/live-interactions.api';
 import type {LiveInteractionType} from '../../../services/api/liveInteractions/live-interactions.types';
 import type {LiveCohostStatus} from '../../../modules/live/hooks/useLivePublicCohost';
-import loggingService from '../../../services/logging';
+import {
+  formatCallCountdown,
+  getRemainingSecondsFromEndTime,
+} from '../../../services/api/liveInteractions/live-interaction-billing';
 
 interface LiveCohostControlsProps {
   /** Local active guest/co-host only — never for normal viewers. */
@@ -25,92 +29,74 @@ interface LiveCohostControlsProps {
   displayName: string;
   isMuted: boolean;
   isCameraOff: boolean;
+  /** Absolute end timestamp (ms). When set, countdown shows in this card. */
+  endsAt?: number | null;
   onToggleMute: () => void;
   onToggleCamera: () => void;
+  /** Parent owns EndLiveInteraction + timer cleanup (manual / auto). */
   onLeave: () => void;
+  onCountdownExpired?: () => void;
 }
 
 /**
- * RTC guest/co-host card (matches host ActiveLiveInteractionOverlay layout).
- * Renders inside the public guest/co-host RTC section — not a full-screen bar.
+ * RTC guest/co-host card with in-card wallet countdown.
  */
 export const LiveCohostControls: React.FC<LiveCohostControlsProps> = ({
   visible,
-  requestId,
   interactionType,
   status,
-  displayName,
   isMuted,
   isCameraOff,
+  endsAt = null,
   onToggleMute,
   onToggleCamera,
   onLeave,
+  onCountdownExpired,
 }) => {
-  const endInFlightRef = useRef(false);
-  const endedRequestIdRef = useRef<string | null>(null);
+  const expiredRef = useRef(false);
+  const onExpiredRef = useRef(onCountdownExpired);
+  onExpiredRef.current = onCountdownExpired;
+
+  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(
+    () => (endsAt != null ? getRemainingSecondsFromEndTime(endsAt) : null),
+  );
 
   useEffect(() => {
-    const id = typeof requestId === 'string' ? requestId.trim() : '';
-    if (!id) {
-      endedRequestIdRef.current = null;
-      endInFlightRef.current = false;
-    }
-  }, [requestId]);
-
-  const fireEndLiveInteraction = useCallback((id: string) => {
-    if (!id) {
-      return;
-    }
-    if (endedRequestIdRef.current === id || endInFlightRef.current) {
-      loggingService.info(
-        '[LiveCohostControls] EndLiveInteraction skipped — duplicate',
-        {requestId: id},
-      );
+    if (endsAt == null) {
+      setRemainingSeconds(null);
+      expiredRef.current = false;
       return;
     }
 
-    endInFlightRef.current = true;
-    loggingService.info('[LiveCohostControls] EndLiveInteraction invoke', {
-      requestId: id,
-    });
+    expiredRef.current = false;
+    setRemainingSeconds(getRemainingSecondsFromEndTime(endsAt));
 
-    void endLiveInteraction(id)
-      .then(result => {
-        endedRequestIdRef.current = result?.id || id;
-        loggingService.info(
-          '[LiveCohostControls] EndLiveInteraction success',
-          {
-            requestId: result?.id,
-            status: result?.status,
-            durationSeconds: result?.durationSeconds,
-            billableMinutes: result?.billableMinutes,
-            chargedCoins: result?.chargedCoins,
-          },
-        );
-      })
-      .catch((err: any) => {
-        loggingService.error(
-          '[LiveCohostControls] EndLiveInteraction failed',
-          {requestId: id, error: err?.message || err},
-        );
-      })
-      .finally(() => {
-        endInFlightRef.current = false;
-      });
-  }, []);
+    const tick = () => {
+      const remaining = getRemainingSecondsFromEndTime(endsAt);
+      setRemainingSeconds(remaining);
+      if (remaining <= 0 && !expiredRef.current) {
+        expiredRef.current = true;
+        onExpiredRef.current?.();
+      }
+    };
+
+    const intervalId = setInterval(tick, 1000);
+    const onAppState = (next: AppStateStatus) => {
+      if (next === 'active') {
+        tick();
+      }
+    };
+    const sub = AppState.addEventListener('change', onAppState);
+
+    return () => {
+      clearInterval(intervalId);
+      sub.remove();
+    };
+  }, [endsAt]);
 
   const handleEndPress = useCallback(() => {
-    const id = typeof requestId === 'string' ? requestId.trim() : '';
-    // Existing demote / leave immediately — never await API.
     onLeave();
-    if (!id) {
-      loggingService.info(
-        '[LiveCohostControls] EndLiveInteraction skipped — no requestId',
-      );
-      return;
-    }
-    fireEndLiveInteraction(id);
-  }, [onLeave, requestId, fireEndLiveInteraction]);
+  }, [onLeave]);
 
   if (!visible) {
     return null;
@@ -151,6 +137,13 @@ export const LiveCohostControls: React.FC<LiveCohostControlsProps> = ({
               renderMode: RenderModeType.RenderModeHidden,
             }}
           />
+          {remainingSeconds != null && (
+            <View style={styles.videoTimerOverlay} pointerEvents="none">
+              <Text variant="caption" weight="semibold" style={styles.timerValue}>
+                {formatCallCountdown(remainingSeconds)}
+              </Text>
+            </View>
+          )}
         </View>
       ) : (
         <View style={styles.audioFallback}>
@@ -165,21 +158,13 @@ export const LiveCohostControls: React.FC<LiveCohostControlsProps> = ({
           <Text variant="captionSmall" style={styles.connectionText}>
             {connectionLabel}
           </Text>
+          {remainingSeconds != null ? (
+            <Text variant="caption" weight="semibold" style={styles.timerValue}>
+              {formatCallCountdown(remainingSeconds)}
+            </Text>
+          ) : null}
         </View>
       )}
-
-      {/* <View style={styles.meta}>
-        <Text variant="captionSmall" style={styles.typeLabel}>
-          {isVideo ? 'Video interaction' : 'Audio interaction'}
-        </Text>
-        <Text
-          variant="bodySmall"
-          weight="semibold"
-          style={styles.name}
-          numberOfLines={1}>
-          {displayName || 'You'}
-        </Text>
-      </View> */}
 
       <View style={styles.actions}>
         <TouchableOpacity
@@ -235,17 +220,27 @@ const styles = StyleSheet.create({
     height: 180,
     backgroundColor: '#000',
   },
+  videoTimerOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingVertical: 6,
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
   audioFallback: {
-    height: 140,
+    minHeight: 120,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 6,
     paddingHorizontal: 8,
+    paddingVertical: 12,
   },
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#262667',
@@ -254,17 +249,12 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.75)',
     textAlign: 'center',
   },
-  meta: {
-    paddingHorizontal: 10,
-    paddingTop: 8,
-    paddingBottom: 4,
-  },
-  typeLabel: {
-    color: 'rgba(255,255,255,0.7)',
-  },
-  name: {
+  timerValue: {
     color: '#fff',
-    marginTop: 2,
+    textAlign: 'center',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: 0.5,
+    opacity: 0.95,
   },
   actions: {
     flexDirection: 'row',

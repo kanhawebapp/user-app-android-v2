@@ -53,6 +53,15 @@ import {useToast} from '../../context/ToastContext';
 import {useSendLiveGift} from '../../services/api/liveGifts/useSendLiveGift';
 import type {LiveGift} from '../../services/api/liveGifts/live-gifts.types';
 import type {LiveInteractionType} from '../../services/api/liveInteractions/live-interactions.types';
+import {endLiveInteraction} from '../../services/api/liveInteractions/live-interactions.api';
+import {
+  getAvailableCallSeconds,
+  getLiveInteractionPricePerMinute,
+  getRemainingSecondsFromEndTime,
+  hasMinimumCallBalance,
+  MIN_LIVE_INTERACTION_MINUTES,
+  getMinimumRequiredBalance,
+} from '../../services/api/liveInteractions/live-interaction-billing';
 import {applyWalletBalanceCoins} from '../../services/api/wallet/wallet.hooks';
 import {useAuthStore} from '../../stores/auth.store';
 import loggingService from '../../services/logging';
@@ -93,6 +102,17 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
   const liveStatusCheckInFlightRef = useRef(false);
   const hasNavigatedBackRef = useRef(false);
   const [isLeaving, setIsLeaving] = useState(false);
+  /** Absolute end timestamp for active call countdown (ms). Null when inactive. */
+  const [callEndsAt, setCallEndsAt] = useState<number | null>(null);
+  const callEndsAtRef = useRef<number | null>(null);
+  const callTimerStartedForRequestRef = useRef<string | null>(null);
+  /** Price/min captured when the call request is sent (coins). */
+  const activeCallPriceRef = useRef<number | null>(null);
+  /** requestId captured for EndLiveInteraction when timer starts / call connects. */
+  const activeRequestIdRef = useRef<string | null>(null);
+  const activeInteractionTypeRef = useRef<LiveInteractionType | null>(null);
+  const endCohostInFlightRef = useRef(false);
+  const endedApiRequestIdRef = useRef<string | null>(null);
 
   /** Prefer join response stream id; fall back to the listed session id. */
   const streamId = joinData.id || session.id;
@@ -216,9 +236,7 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
     isScreenActive: true,
   });
 
-  endInteractionRef.current = liveInteraction.endCall;
-  const markConnectingRef = useRef(liveInteraction.markConnecting);
-  const markInCallRef = useRef(liveInteraction.markInCall);
+  const markConnectingRef = useRef(liveInteraction.markConnecting);  const markInCallRef = useRef(liveInteraction.markInCall);
   markConnectingRef.current = liveInteraction.markConnecting;
   markInCallRef.current = liveInteraction.markInCall;
 
@@ -256,8 +274,243 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
     }
   }, [liveInteraction.phase, cohostEnabled]);
 
+  const walletBalanceCoins =
+    useAuthStore(s => s.user?.walletBalance) ??
+    liveInteraction.pricing?.walletBalance ??
+    0;
+
+  const clearCallTimer = useCallback(() => {
+    callEndsAtRef.current = null;
+    setCallEndsAt(null);
+    callTimerStartedForRequestRef.current = null;
+  }, []);
+
+  const fireEndLiveInteractionOnce = useCallback((requestId: string) => {
+    const id = requestId.trim();
+    if (!id || endedApiRequestIdRef.current === id) {
+      loggingService.info(
+        '[LiveStream] EndLiveInteraction skipped — duplicate',
+        {requestId: id},
+      );
+      return;
+    }
+    endedApiRequestIdRef.current = id;
+    loggingService.info('[LiveStream] EndLiveInteraction invoke', {
+      requestId: id,
+    });
+    void endLiveInteraction(id)
+      .then(result => {
+        loggingService.info('[LiveStream] EndLiveInteraction success', {
+          requestId: result?.id,
+          status: result?.status,
+          chargedCoins: result?.chargedCoins,
+        });
+      })
+      .catch((err: any) => {
+        loggingService.error('[LiveStream] EndLiveInteraction failed', {
+          requestId: id,
+          error: err?.message || err,
+        });
+      });
+  }, []);
+
+  const endCohostSession = useCallback(
+    (reason: 'manual' | 'exhausted') => {
+      if (endCohostInFlightRef.current) {
+        loggingService.info('[LiveStream] endCohostSession skipped — in flight', {
+          reason,
+        });
+        return;
+      }
+      endCohostInFlightRef.current = true;
+
+      // Prefer live state, fall back to ids captured when the timer started.
+      const requestId =
+        liveInteraction.interaction.requestId || activeRequestIdRef.current;
+      const interactionType =
+        liveInteraction.interaction.interactionType ||
+        activeInteractionTypeRef.current;
+
+      loggingService.info('[LiveStream] endCohostSession', {
+        reason,
+        requestId,
+        interactionType,
+      });
+
+      clearCallTimer();
+
+      // Local RTC demote immediately — never wait on billing API.
+      void cohost.leaveCohost();
+      cohost.clearAttemptedSessions();
+
+      // Always end the billed interaction when timer/manual end fires.
+      if (requestId) {
+        fireEndLiveInteractionOnce(requestId);
+      } else {
+        loggingService.error(
+          '[LiveStream] EndLiveInteraction skipped — missing requestId',
+          {reason},
+        );
+      }
+
+      liveInteraction.dismissTerminal();
+      activeRequestIdRef.current = null;
+      activeInteractionTypeRef.current = null;
+      activeCallPriceRef.current = null;
+
+      if (reason === 'exhausted') {
+        showError(
+          interactionType === 'VIDEO'
+            ? 'Your video call has ended because your wallet balance is exhausted.'
+            : 'Your audio call has ended because your wallet balance is exhausted.',
+        );
+      }
+    },
+    [
+      clearCallTimer,
+      cohost.leaveCohost,
+      cohost.clearAttemptedSessions,
+      fireEndLiveInteractionOnce,
+      liveInteraction.dismissTerminal,
+      liveInteraction.interaction.requestId,
+      liveInteraction.interaction.interactionType,
+      showError,
+    ],
+  );
+
+  const handleCountdownExpired = useCallback(() => {
+    endCohostSession('exhausted');
+  }, [endCohostSession]);
+
+  // Wallet-based call countdown — starts only after public co-host publish.
+  // Absolute endsAt is set once; LiveCohostControls ticks the UI from endsAt.
+  useEffect(() => {
+    const requestId = liveInteraction.interaction.requestId;
+    const interactionType = liveInteraction.interaction.interactionType;
+    const shouldRunTimer =
+      (liveInteraction.phase === 'IN_CALL' ||
+        liveInteraction.phase === 'CONNECTING') &&
+      cohost.isPublishing &&
+      !!requestId &&
+      (interactionType === 'AUDIO' || interactionType === 'VIDEO');
+
+    if (!shouldRunTimer) {
+      if (
+        liveInteraction.phase === 'IDLE' ||
+        liveInteraction.phase === 'COMPLETED' ||
+        liveInteraction.phase === 'CANCELLED' ||
+        liveInteraction.phase === 'REJECTED' ||
+        liveInteraction.phase === 'FAILED'
+      ) {
+        clearCallTimer();
+        activeCallPriceRef.current = null;
+        if (liveInteraction.phase === 'IDLE') {
+          endCohostInFlightRef.current = false;
+        }
+      }
+      return;
+    }
+
+    if (callTimerStartedForRequestRef.current === requestId) {
+      return;
+    }
+
+    const price =
+      activeCallPriceRef.current ??
+      getLiveInteractionPricePerMinute(
+        liveInteraction.pricing,
+        interactionType,
+      );
+    if (price == null) {
+      loggingService.info('[LiveStream] Call timer waiting for price', {
+        requestId,
+        interactionType,
+      });
+      return;
+    }
+
+    const balance =
+      useAuthStore.getState().user?.walletBalance ??
+      liveInteraction.pricing?.walletBalance ??
+      0;
+    const availableSeconds = getAvailableCallSeconds(balance, price);
+    if (availableSeconds <= 0) {
+      endCohostSession('exhausted');
+      return;
+    }
+
+    const endsAt = Date.now() + availableSeconds * 1000;
+    callTimerStartedForRequestRef.current = requestId;
+    endCohostInFlightRef.current = false;
+    endedApiRequestIdRef.current = null;
+    activeCallPriceRef.current = price;
+    activeRequestIdRef.current = requestId;
+    activeInteractionTypeRef.current = interactionType;
+    callEndsAtRef.current = endsAt;
+    setCallEndsAt(endsAt);
+
+    loggingService.info('[LiveStream] Call timer started', {
+      requestId,
+      interactionType,
+      availableSeconds,
+      endsAt,
+      balance,
+      pricePerMinute: price,
+    });
+  }, [
+    liveInteraction.phase,
+    liveInteraction.interaction.requestId,
+    liveInteraction.interaction.interactionType,
+    liveInteraction.pricing,
+    cohost.isPublishing,
+    clearCallTimer,
+    endCohostSession,
+  ]);
+
+  // Backup expiry watcher — ensures EndLiveInteraction fires even if the
+  // card unmounts; uses absolute endsAt (background-safe).
+  useEffect(() => {
+    if (callEndsAt == null) {
+      return;
+    }
+    const intervalId = setInterval(() => {
+      const remaining = getRemainingSecondsFromEndTime(callEndsAt);
+      if (remaining <= 0) {
+        endCohostSession('exhausted');
+      }
+    }, 1000);
+    return () => clearInterval(intervalId);
+  }, [callEndsAt, endCohostSession]);
+
+  useEffect(() => {
+    return () => {
+      clearCallTimer();
+    };
+  }, [clearCallTimer]);
+
   const handleSelectCallType = useCallback(
     async (type: LiveInteractionType) => {
+      const price = getLiveInteractionPricePerMinute(
+        liveInteraction.pricing,
+        type,
+      );
+      const balance =
+        useAuthStore.getState().user?.walletBalance ??
+        liveInteraction.pricing?.walletBalance ??
+        0;
+
+      if (price == null) {
+        showError('Call pricing is unavailable. Please try again.');
+        return;
+      }
+      if (!hasMinimumCallBalance(balance, price)) {
+        const required = getMinimumRequiredBalance(price);
+        showError(
+          `A minimum ${MIN_LIVE_INTERACTION_MINUTES}-minute wallet balance is required (${required} coins).`,
+        );
+        return;
+      }
+
       const permissions =
         type === 'VIDEO'
           ? await requestVideoCallPermissions()
@@ -272,22 +525,40 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
         return;
       }
 
-      await liveInteraction.requestCall(type);
+      // Revalidate immediately before creating the interaction request.
+      const balanceNow =
+        useAuthStore.getState().user?.walletBalance ??
+        liveInteraction.pricing?.walletBalance ??
+        0;
+      if (!hasMinimumCallBalance(balanceNow, price)) {
+        const required = getMinimumRequiredBalance(price);
+        showError(
+          `A minimum ${MIN_LIVE_INTERACTION_MINUTES}-minute wallet balance is required (${required} coins).`,
+        );
+        return;
+      }
+
+      activeCallPriceRef.current = price;
+      activeInteractionTypeRef.current = type;
+      const result = await liveInteraction.requestCall(type);
+      if (!result.success) {
+        activeCallPriceRef.current = null;
+        activeInteractionTypeRef.current = null;
+        if (result.error) {
+          showError(result.error);
+        }
+      }
     },
-    [liveInteraction.requestCall, showError],
+    [liveInteraction.pricing, liveInteraction.requestCall, showError],
   );
 
   const handleLeaveCohost = useCallback(() => {
-    // Demote immediately. EndLiveInteraction is fire-and-forget inside
-    // LiveCohostControls so leave never blocks RTC.
-    void cohost.leaveCohost();
-    cohost.clearAttemptedSessions();
-    liveInteraction.dismissTerminal();
-  }, [
-    cohost.leaveCohost,
-    cohost.clearAttemptedSessions,
-    liveInteraction.dismissTerminal,
-  ]);
+    endCohostSession('manual');
+  }, [endCohostSession]);
+
+  endInteractionRef.current = async () => {
+    endCohostSession('manual');
+  };
 
   const handleCancelInteractionRequest = useCallback(async () => {
     await liveInteraction.cancelRequest();
@@ -302,11 +573,11 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
     showError,
   ]);
 
-  const handleRetryEndCall = useCallback(async () => {
-    await cohost.leaveCohost();
-    cohost.clearAttemptedSessions();
-    await liveInteraction.endCall();
-  }, [cohost.leaveCohost, cohost.clearAttemptedSessions, liveInteraction.endCall]);
+  const handleRetryEndCall = useCallback(() => {
+    endCohostInFlightRef.current = false;
+    endedApiRequestIdRef.current = null;
+    endCohostSession('manual');
+  }, [endCohostSession]);
 
   const waitingPricePerMinute = useMemo(() => {
     if (!liveInteraction.pricing || !liveInteraction.interaction.interactionType) {
@@ -546,7 +817,7 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
       ) {
         try {
           if (liveInteraction.isInCallPhase) {
-            await endInteractionRef.current();
+            endCohostSession('manual');
           } else {
             await liveInteraction.cancelRequest();
           }
@@ -578,6 +849,7 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
     liveInteraction.cancelRequest,
     cohost.leaveCohost,
     cohost.clearAttemptedSessions,
+    endCohostSession,
   ]);
 
   const getRtcStatusText = (): string | null => {
@@ -745,9 +1017,11 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
             displayName={localCohostDisplayName}
             isMuted={cohost.isMuted}
             isCameraOff={cohost.isCameraOff}
+            endsAt={callEndsAt}
             onToggleMute={cohost.toggleMute}
             onToggleCamera={cohost.toggleCamera}
             onLeave={handleLeaveCohost}
+            onCountdownExpired={handleCountdownExpired}
           />
         </View>
       )}
@@ -1024,9 +1298,11 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
         loading={liveInteraction.phase === 'FETCHING_PRICING'}
         error={liveInteraction.pricingError || liveInteraction.error}
         requesting={liveInteraction.phase === 'REQUESTING'}
+        walletBalance={walletBalanceCoins}
         onClose={liveInteraction.closeCallNow}
         onRetry={liveInteraction.refreshPricing}
         onSelect={handleSelectCallType}
+        activeCall={null}
       />
 
       <LiveInteractionWaitingPanel

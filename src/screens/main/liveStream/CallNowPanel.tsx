@@ -1,9 +1,11 @@
-import React, {useMemo} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
   View,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  AppState,
+  AppStateStatus,
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Text} from '../../../components/Text';
@@ -12,6 +14,15 @@ import {Icon} from '../../../components/Icon';
 import {useTheme} from '../../../theme';
 import type {LiveInteractionPricing} from '../../../services/api/liveInteractions/live-interactions.types';
 import type {LiveInteractionType} from '../../../services/api/liveInteractions/live-interactions.types';
+import {
+  formatCallCountdown,
+  getAvailableCallSeconds,
+  getLiveInteractionPricePerMinute,
+  getMinimumRequiredBalance,
+  getRemainingSecondsFromEndTime,
+  hasMinimumCallBalance,
+  MIN_LIVE_INTERACTION_MINUTES,
+} from '../../../services/api/liveInteractions/live-interaction-billing';
 
 interface CallNowPanelProps {
   visible: boolean;
@@ -19,10 +30,103 @@ interface CallNowPanelProps {
   loading: boolean;
   error: string | null;
   requesting: boolean;
+  /** Wallet balance in coins from auth/pricing (same unit as prices). */
+  walletBalance: number;
   onClose: () => void;
   onRetry: () => void;
   onSelect: (type: LiveInteractionType) => void;
+  /**
+   * Active connected call. Pass absolute endsAt so this panel ticks locally
+   * without re-rendering the parent RTC tree every second.
+   */
+  activeCall?: {
+    interactionType: LiveInteractionType;
+    /** Absolute end timestamp (ms): interactionStartTime + availableSeconds */
+    endsAt: number;
+  } | null;
+  onCountdownExpired?: () => void;
 }
+
+const ActiveCallCountdown: React.FC<{
+  interactionType: LiveInteractionType;
+  endsAt: number;
+  onExpired?: () => void;
+}> = ({interactionType, endsAt, onExpired}) => {
+  const theme = useTheme();
+  const colors = theme.colors;
+  const insets = useSafeAreaInsets();
+  const expiredRef = useRef(false);
+  const onExpiredRef = useRef(onExpired);
+  onExpiredRef.current = onExpired;
+
+  const [remainingSeconds, setRemainingSeconds] = useState(() =>
+    getRemainingSecondsFromEndTime(endsAt),
+  );
+
+  useEffect(() => {
+    expiredRef.current = false;
+    setRemainingSeconds(getRemainingSecondsFromEndTime(endsAt));
+
+    const tick = () => {
+      const remaining = getRemainingSecondsFromEndTime(endsAt);
+      setRemainingSeconds(remaining);
+      if (remaining <= 0 && !expiredRef.current) {
+        expiredRef.current = true;
+        onExpiredRef.current?.();
+      }
+    };
+
+    const intervalId = setInterval(tick, 1000);
+
+    const onAppState = (next: AppStateStatus) => {
+      if (next === 'active') {
+        // Recompute from absolute endsAt after background — never restart.
+        tick();
+      }
+    };
+    const sub = AppState.addEventListener('change', onAppState);
+
+    return () => {
+      clearInterval(intervalId);
+      sub.remove();
+    };
+  }, [endsAt]);
+
+  const callLabel =
+    interactionType === 'VIDEO' ? 'VIDEO CALL' : 'AUDIO CALL';
+
+  return (
+    <View
+      style={[
+        styles.timerBanner,
+        {
+          backgroundColor: colors.background.primary,
+          top: insets.top + 56,
+          borderColor: colors.border.light,
+        },
+      ]}
+      pointerEvents="none"
+      accessibilityLabel={`${callLabel}, time remaining ${formatCallCountdown(remainingSeconds)}`}>
+      <Text
+        variant="caption"
+        weight="bold"
+        color={colors.primary.main}
+        style={styles.timerCallType}>
+        {callLabel}
+      </Text>
+      <Text variant="caption" color={colors.text.secondary}>
+        Time Remaining
+      </Text>
+      <Text
+        variant="h3"
+        weight="bold"
+        color={colors.text.primary}
+        style={styles.timerValue}>
+        {formatCallCountdown(remainingSeconds)}
+      </Text>
+    </View>
+  );
+};
 
 export const CallNowPanel: React.FC<CallNowPanelProps> = ({
   visible,
@@ -30,47 +134,83 @@ export const CallNowPanel: React.FC<CallNowPanelProps> = ({
   loading,
   error,
   requesting,
+  walletBalance,
   onClose,
   onRetry,
   onSelect,
+  activeCall = null,
+  onCountdownExpired,
 }) => {
   const theme = useTheme();
   const colors = theme.colors;
   const insets = useSafeAreaInsets();
 
+  const audioPrice = getLiveInteractionPricePerMinute(pricing, 'AUDIO');
+  const videoPrice = getLiveInteractionPricePerMinute(pricing, 'VIDEO');
+
   const audioDisabled = useMemo(() => {
-    if (!pricing || loading || requesting) {
+    if (!pricing || loading || requesting || audioPrice == null) {
       return true;
     }
     return (
-      !pricing.audioAvailable || pricing.walletBalance < pricing.audioPrice
+      !pricing.audioAvailable ||
+      !hasMinimumCallBalance(walletBalance, audioPrice)
     );
-  }, [pricing, loading, requesting]);
+  }, [pricing, loading, requesting, audioPrice, walletBalance]);
 
   const videoDisabled = useMemo(() => {
-    if (!pricing || loading || requesting) {
+    if (!pricing || loading || requesting || videoPrice == null) {
       return true;
     }
     return (
-      !pricing.videoAvailable || pricing.walletBalance < pricing.videoPrice
+      !pricing.videoAvailable ||
+      !hasMinimumCallBalance(walletBalance, videoPrice)
     );
-  }, [pricing, loading, requesting]);
-
-  if (!visible) {
-    return null;
-  }
+  }, [pricing, loading, requesting, videoPrice, walletBalance]);
 
   const insufficientAudio =
     !!pricing &&
     pricing.audioAvailable &&
-    pricing.walletBalance < pricing.audioPrice;
+    audioPrice != null &&
+    !hasMinimumCallBalance(walletBalance, audioPrice);
   const insufficientVideo =
     !!pricing &&
     pricing.videoAvailable &&
-    pricing.walletBalance < pricing.videoPrice;
+    videoPrice != null &&
+    !hasMinimumCallBalance(walletBalance, videoPrice);
+
+  const audioAvailableSeconds =
+    audioPrice != null
+      ? getAvailableCallSeconds(walletBalance, audioPrice)
+      : 0;
+  const videoAvailableSeconds =
+    videoPrice != null
+      ? getAvailableCallSeconds(walletBalance, videoPrice)
+      : 0;
+
+  const countdownOverlay =
+    activeCall != null ? (
+      <ActiveCallCountdown
+        interactionType={activeCall.interactionType}
+        endsAt={activeCall.endsAt}
+        onExpired={onCountdownExpired}
+      />
+    ) : null;
+
+  if (!visible) {
+    if (!countdownOverlay) {
+      return null;
+    }
+    return (
+      <View style={styles.timerAnchor} pointerEvents="box-none">
+        {countdownOverlay}
+      </View>
+    );
+  }
 
   return (
     <View style={styles.anchor} pointerEvents="box-none">
+      {countdownOverlay}
       <TouchableOpacity
         style={styles.backdrop}
         activeOpacity={1}
@@ -134,7 +274,13 @@ export const CallNowPanel: React.FC<CallNowPanelProps> = ({
                 variant="subtitle"
                 weight="bold"
                 color={colors.text.primary}>
-                {pricing ? `${Math.floor(pricing.walletBalance)} coins` : '—'}
+                {`${Math.floor(walletBalance)} coins`}
+              </Text>
+              <Text
+                variant="captionSmall"
+                color={colors.text.tertiary}
+                style={styles.minBalanceHint}>
+                Minimum {MIN_LIVE_INTERACTION_MINUTES} minutes balance required
               </Text>
             </View>
 
@@ -143,13 +289,15 @@ export const CallNowPanel: React.FC<CallNowPanelProps> = ({
                 variant="caption"
                 color={colors.error.main}
                 style={styles.warning}>
-                Insufficient wallet balance for{' '}
-                {insufficientAudio && insufficientVideo
-                  ? 'audio and video'
-                  : insufficientAudio
-                  ? 'audio'
-                  : 'video'}{' '}
-                call.
+                A minimum {MIN_LIVE_INTERACTION_MINUTES}-minute wallet balance is
+                required
+                {insufficientAudio && audioPrice != null
+                  ? ` (audio: ${getMinimumRequiredBalance(audioPrice)} coins)`
+                  : ''}
+                {insufficientVideo && videoPrice != null
+                  ? ` (video: ${getMinimumRequiredBalance(videoPrice)} coins)`
+                  : ''}
+                .
               </Text>
             )}
 
@@ -195,7 +343,9 @@ export const CallNowPanel: React.FC<CallNowPanelProps> = ({
                 <Text variant="caption" color={colors.text.secondary}>
                   {!pricing?.audioAvailable
                     ? 'Unavailable right now'
-                    : `Go live with mic · ${pricing.audioPrice} coins / min`}
+                    : audioPrice == null
+                    ? 'Pricing unavailable'
+                    : `Go live with mic · ${audioPrice} coins / min · ~${formatCallCountdown(audioAvailableSeconds)} available`}
                 </Text>
               </View>
               {requesting ? (
@@ -243,7 +393,9 @@ export const CallNowPanel: React.FC<CallNowPanelProps> = ({
                 <Text variant="caption" color={colors.text.secondary}>
                   {!pricing?.videoAvailable
                     ? 'Unavailable right now'
-                    : `Go live with camera · ${pricing.videoPrice} coins / min`}
+                    : videoPrice == null
+                    ? 'Pricing unavailable'
+                    : `Go live with camera · ${videoPrice} coins / min · ~${formatCallCountdown(videoAvailableSeconds)} available`}
                 </Text>
               </View>
               {requesting ? (
@@ -270,6 +422,37 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     zIndex: 30,
     elevation: 30,
+  },
+  timerAnchor: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 42,
+    elevation: 42,
+  },
+  timerBanner: {
+    position: 'absolute',
+    left: 48,
+    right: 48,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: {width: 0, height: 2},
+    elevation: 8,
+  },
+  timerCallType: {
+    letterSpacing: 0.8,
+    marginBottom: 2,
+    textAlign: 'center',
+  },
+  timerValue: {
+    marginTop: 2,
+    textAlign: 'center',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: 1,
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
@@ -309,6 +492,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     marginBottom: 12,
+  },
+  minBalanceHint: {
+    marginTop: 4,
   },
   warning: {
     marginBottom: 10,

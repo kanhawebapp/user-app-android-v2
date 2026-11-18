@@ -17,6 +17,12 @@ import type {
   MyLiveInteraction,
 } from '../../../services/api/liveInteractions/live-interactions.types';
 import {
+  getLiveInteractionPricePerMinute,
+  getMinimumRequiredBalance,
+  hasMinimumCallBalance,
+  MIN_LIVE_INTERACTION_MINUTES,
+} from '../../../services/api/liveInteractions/live-interaction-billing';
+import {
   applyWalletBalanceCoins,
   refreshWalletBalance,
 } from '../../../services/api/wallet/wallet.hooks';
@@ -424,13 +430,17 @@ export const useLiveInteractionSession = ({
   }, [clearPollTimer, clearPendingTimeout, pollActiveOnce]);
 
   const requestCall = useCallback(
-    async (interactionType: LiveInteractionType) => {
+    async (
+      interactionType: LiveInteractionType,
+    ): Promise<{success: boolean; error?: string}> => {
       if (!liveStreamId) {
-        setError('Live stream is unavailable. Please rejoin and try again.');
-        return;
+        const message =
+          'Live stream is unavailable. Please rejoin and try again.';
+        setError(message);
+        return {success: false, error: message};
       }
       if (requestInFlightRef.current) {
-        return;
+        return {success: false};
       }
       if (
         phaseRef.current === 'PENDING' ||
@@ -439,8 +449,9 @@ export const useLiveInteractionSession = ({
         phaseRef.current === 'IN_CALL' ||
         phaseRef.current === 'ENDING'
       ) {
-        setError('You already have an active call request.');
-        return;
+        const message = 'You already have an active call request.';
+        setError(message);
+        return {success: false, error: message};
       }
 
       if (pricing) {
@@ -448,19 +459,30 @@ export const useLiveInteractionSession = ({
           interactionType === 'AUDIO'
             ? pricing.audioAvailable
             : pricing.videoAvailable;
-        const price =
-          interactionType === 'AUDIO' ? pricing.audioPrice : pricing.videoPrice;
+        const price = getLiveInteractionPricePerMinute(
+          pricing,
+          interactionType,
+        );
         if (!available) {
-          setError(
-            `${interactionType === 'AUDIO' ? 'Audio' : 'Video'} call is not available right now.`,
-          );
-          return;
+          const message = `${interactionType === 'AUDIO' ? 'Audio' : 'Video'} call is not available right now.`;
+          setError(message);
+          return {success: false, error: message};
         }
-        if (pricing.walletBalance < price) {
-          setError(
-            'Insufficient wallet balance. Please recharge to start this call.',
-          );
-          return;
+        if (price == null) {
+          const message = 'Call pricing is unavailable. Please try again.';
+          setError(message);
+          return {success: false, error: message};
+        }
+        // Prefer live auth wallet; fall back to pricing payload (same coin unit).
+        const walletBalance =
+          useAuthStore.getState().user?.walletBalance ??
+          pricing.walletBalance ??
+          0;
+        if (!hasMinimumCallBalance(walletBalance, price)) {
+          const required = getMinimumRequiredBalance(price);
+          const message = `A minimum ${MIN_LIVE_INTERACTION_MINUTES}-minute wallet balance is required (${required} coins). Please recharge to start this call.`;
+          setError(message);
+          return {success: false, error: message};
         }
       }
 
@@ -493,16 +515,17 @@ export const useLiveInteractionSession = ({
           // Rare fast-path: backend may accept immediately.
           setPhase('PENDING');
           startPolling();
-          return;
+          return {success: true};
         }
         if (TERMINAL_REQUEST_STATUSES.has(status)) {
           handleTerminalStatus(status, request);
-          return;
+          return {success: false, error: 'Call request was not accepted.'};
         }
 
         setPhase('PENDING');
         setIsCallNowVisible(false);
         startPolling();
+        return {success: true};
       } catch (err: any) {
         const message =
           err?.message || 'Unable to send call request. Please try again.';
@@ -511,6 +534,7 @@ export const useLiveInteractionSession = ({
         loggingService.error('[LiveInteraction] Create request failed', {
           error: message,
         });
+        return {success: false, error: message};
       } finally {
         requestInFlightRef.current = false;
       }
