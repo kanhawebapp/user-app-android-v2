@@ -168,7 +168,7 @@ export const LiveCohostControls: React.FC<LiveCohostControlsProps> = ({
         </View>
       )}
 
-      <View style={styles.meta}>
+      {/* <View style={styles.meta}>
         <Text variant="captionSmall" style={styles.typeLabel}>
           {isVideo ? 'Video interaction' : 'Audio interaction'}
         </Text>
@@ -179,7 +179,7 @@ export const LiveCohostControls: React.FC<LiveCohostControlsProps> = ({
           numberOfLines={1}>
           {displayName || 'You'}
         </Text>
-      </View>
+      </View> */}
 
       <View style={styles.actions}>
         <TouchableOpacity
