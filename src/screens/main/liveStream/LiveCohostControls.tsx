@@ -68,9 +68,9 @@ export const LiveCohostControls: React.FC<LiveCohostControlsProps> = ({
       return;
     }
 
+    // New absolute deadline (e.g. wallet shrink after gifts) — allow one
+    // expiry for this endsAt value; do not restart from a full duration.
     expiredRef.current = false;
-    setRemainingSeconds(getRemainingSecondsFromEndTime(endsAt));
-
     const tick = () => {
       const remaining = getRemainingSecondsFromEndTime(endsAt);
       setRemainingSeconds(remaining);
@@ -79,6 +79,8 @@ export const LiveCohostControls: React.FC<LiveCohostControlsProps> = ({
         onExpiredRef.current?.();
       }
     };
+
+    tick();
 
     const intervalId = setInterval(tick, 1000);
     const onAppState = (next: AppStateStatus) => {
