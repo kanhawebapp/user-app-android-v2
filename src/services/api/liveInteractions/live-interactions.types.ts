@@ -82,3 +82,52 @@ export interface EndLiveInteractionResult {
 export interface EndLiveInteractionResponse {
   endLiveInteraction: EndLiveInteractionResult;
 }
+
+/** Search / pagination input for getMyLiveInteractionHistory (backend schema name) */
+export interface MyLiveInteractionHistorySearchInput {
+  query?: string | null;
+  sessionId?: string | null;
+  astrologerName?: string | null;
+  status?: LiveInteractionRequestStatus | null;
+  interactionType?: LiveInteractionType | null;
+  filterType?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  page?: number;
+  limit?: number;
+}
+
+/** Single row returned by getMyLiveInteractionHistory */
+export interface LiveInteractionHistoryItem {
+  sessionId: string;
+  liveStreamId: string;
+  astrologerId: string;
+  astrologerName: string | null;
+  interactionType: LiveInteractionType | string;
+  status: LiveInteractionRequestStatus;
+  ratePerMin: number | null;
+  chargedCoins: number | null;
+  durationSeconds: number | null;
+  billableMinutes: number | null;
+  requestedAt: string | null;
+  acceptedAt: string | null;
+  startedAt: string | null;
+  endedAt: string | null;
+  createdAt: string | null;
+  __typename?: string;
+}
+
+export interface LiveInteractionHistoryResult {
+  data: LiveInteractionHistoryItem[];
+  totalCount: number;
+  currentPage: number;
+  totalPages: number;
+  totalCoinsDeducted: number;
+  totalAudioCalls: number;
+  totalVideoCalls: number;
+  __typename?: string;
+}
+
+export interface GetMyLiveInteractionHistoryResponse {
+  getMyLiveInteractionHistory: LiveInteractionHistoryResult;
+}

@@ -12,6 +12,7 @@ export type SidebarScreenKey =
   | 'wallet'
   | 'payment_logs'
   | 'session_history'
+  | 'live_interaction_history'
   | 'chat_history'
   | 'my_following'
   | 'free_services'

@@ -25,6 +25,12 @@ export const DEFAULT_MENU_ITEMS: SidebarMenuItem[] = [
     icon: 'history',
     iconLibrary: 'MaterialIcons',
   },
+  {
+    key: 'live_interaction_history',
+    label: 'Live Interaction History',
+    icon: 'live-tv',
+    iconLibrary: 'MaterialIcons',
+  },
   // {
   //   key: 'chat_history',
   //   label: 'Chat History',

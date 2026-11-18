@@ -81,6 +81,11 @@ const SessionHistoryScreen = lazy(() =>
     default: module.default,
   })),
 );
+const LiveInteractionHistoryScreen = lazy(() =>
+  import('../../screens/main/LiveInteractionHistoryScreen').then(module => ({
+    default: module.default,
+  })),
+);
 const ChatHistoryScreen = lazy(() =>
   import('../../screens/main/ChatHistoryScreen/ChatHistoryScreen').then(
     module => ({
@@ -337,6 +342,12 @@ export const renderSidebarScreen = ({
       return (
         <Suspense fallback={shimmerFallback}>
           <SessionHistoryScreen onNavigateBack={handleSidebarBack} />
+        </Suspense>
+      );
+    case 'live_interaction_history':
+      return (
+        <Suspense fallback={shimmerFallback}>
+          <LiveInteractionHistoryScreen onNavigateBack={handleSidebarBack} />
         </Suspense>
       );
     case 'chat_history':

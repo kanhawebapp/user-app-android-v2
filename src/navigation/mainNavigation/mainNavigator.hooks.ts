@@ -104,6 +104,9 @@ export const useSidebarNavigation = ({
         case 'session_history':
           setSidebarScreen('session_history');
           break;
+        case 'live_interaction_history':
+          setSidebarScreen('live_interaction_history');
+          break;
         case 'chat_history':
           setSidebarScreen('chat_history');
           break;

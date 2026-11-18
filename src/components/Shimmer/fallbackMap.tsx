@@ -541,6 +541,7 @@ export const SidebarFallbackMap: Record<
   wallet: <WalletScreenShimmer />,
   payment_logs: <SessionHistoryScreenShimmer />,
   session_history: <SessionHistoryScreenShimmer />,
+  live_interaction_history: <SessionHistoryScreenShimmer />,
   chat_history: <ChatHistoryScreenShimmer />,
   my_following: <MyFollowingScreenShimmer />,
   free_services: <FreeServicesScreenShimmer />,

@@ -5,9 +5,12 @@ import {
   EndLiveInteractionResponse,
   EndLiveInteractionResult,
   GetLiveInteractionPricingResponse,
+  GetMyLiveInteractionHistoryResponse,
   GetMyLiveInteractionResponse,
+  LiveInteractionHistoryResult,
   LiveInteractionPricing,
   LiveInteractionRequest,
+  MyLiveInteractionHistorySearchInput,
   MyLiveInteraction,
   StartLiveInteractionResponse,
 } from './live-interactions.types';
@@ -98,6 +101,40 @@ mutation EndLiveInteraction($requestId: ID!) {
 }
 `;
 
+const GET_MY_LIVE_INTERACTION_HISTORY = `
+query GetMyLiveInteractionHistory(
+  $searchInput: MyLiveInteractionHistorySearchInput
+) {
+  getMyLiveInteractionHistory(searchInput: $searchInput) {
+    data {
+      sessionId
+      liveStreamId
+      astrologerId
+      astrologerName
+      interactionType
+      status
+      ratePerMin
+      chargedCoins
+      durationSeconds
+      billableMinutes
+      requestedAt
+      acceptedAt
+      startedAt
+      endedAt
+      createdAt
+      __typename
+    }
+    totalCount
+    currentPage
+    totalPages
+    totalCoinsDeducted
+    totalAudioCalls
+    totalVideoCalls
+    __typename
+  }
+}
+`;
+
 export const getLiveInteractionPricing = async (
   astrologerId: string,
 ): Promise<LiveInteractionPricing> => {
@@ -171,3 +208,25 @@ export const endLiveInteraction = async (
  * Keep this documented so callers do not invent a fake GraphQL operation.
  */
 export const LIVE_INTERACTION_CANCEL_API_AVAILABLE = false as const;
+
+export const getMyLiveInteractionHistory = async (
+  searchInput: MyLiveInteractionHistorySearchInput = {page: 1, limit: 10},
+): Promise<LiveInteractionHistoryResult> => {
+  const response = await graphqlRequest<GetMyLiveInteractionHistoryResponse>(
+    'GetMyLiveInteractionHistory',
+    GET_MY_LIVE_INTERACTION_HISTORY,
+    {
+      searchInput: {
+        page: searchInput.page ?? 1,
+        limit: searchInput.limit ?? 10,
+      },
+    },
+  );
+
+  const result = response.getMyLiveInteractionHistory;
+  if (!result) {
+    throw new Error('Live interaction history is unavailable.');
+  }
+
+  return result;
+};
