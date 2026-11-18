@@ -10,6 +10,8 @@ import {
   Keyboard,
   Platform,
   ActivityIndicator,
+  Alert,
+  BackHandler,
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {
@@ -106,6 +108,7 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
   const chatInputRef = useRef<TextInput>(null);
   const sendInFlightRef = useRef(false);
   const leaveInFlightRef = useRef(false);
+  const leaveConfirmVisibleRef = useRef(false);
   const hostOfflineTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
@@ -949,6 +952,57 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
     endCohostSession,
   ]);
 
+  const handleBackPress = useCallback(() => {
+    if (
+      isLeaving ||
+      leaveInFlightRef.current ||
+      hasNavigatedBackRef.current ||
+      leaveConfirmVisibleRef.current
+    ) {
+      return true;
+    }
+
+    leaveConfirmVisibleRef.current = true;
+    Alert.alert(
+      'Leave Live Session?',
+      'Are you sure you want to leave this live session?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+          onPress: () => {
+            leaveConfirmVisibleRef.current = false;
+          },
+        },
+        {
+          text: 'Leave',
+          style: 'destructive',
+          onPress: () => {
+            leaveConfirmVisibleRef.current = false;
+            void handleLeaveSession();
+          },
+        },
+      ],
+      {
+        cancelable: true,
+        onDismiss: () => {
+          leaveConfirmVisibleRef.current = false;
+        },
+      },
+    );
+    return true;
+  }, [handleLeaveSession, isLeaving]);
+
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      handleBackPress,
+    );
+    return () => {
+      subscription.remove();
+    };
+  }, [handleBackPress]);
+
   const getRtcStatusText = (): string | null => {
     switch (rtc.status) {
       case 'joining':
@@ -1136,7 +1190,7 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
 
       <View style={[styles.topBar, {paddingTop: insets.top + 8}]}>
         <TouchableOpacity
-          onPress={handleLeaveSession}
+          onPress={handleBackPress}
           disabled={isLeaving}
           style={styles.iconButton}
           accessibilityLabel="Leave live session">
