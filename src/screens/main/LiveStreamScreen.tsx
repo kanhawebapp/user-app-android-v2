@@ -277,11 +277,17 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
     [liveInteraction.requestCall, showError],
   );
 
-  const handleLeaveCohost = useCallback(async () => {
-    await cohost.leaveCohost();
+  const handleLeaveCohost = useCallback(() => {
+    // Demote immediately. EndLiveInteraction is fire-and-forget inside
+    // LiveCohostControls so leave never blocks RTC.
+    void cohost.leaveCohost();
     cohost.clearAttemptedSessions();
-    await liveInteraction.endCall();
-  }, [cohost.leaveCohost, cohost.clearAttemptedSessions, liveInteraction.endCall]);
+    liveInteraction.dismissTerminal();
+  }, [
+    cohost.leaveCohost,
+    cohost.clearAttemptedSessions,
+    liveInteraction.dismissTerminal,
+  ]);
 
   const handleCancelInteractionRequest = useCallback(async () => {
     await liveInteraction.cancelRequest();
@@ -605,6 +611,25 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
   const showVideo =
     rtc.status !== 'failed' && rtc.hostUid !== null && rtc.isHostVideoOn;
 
+  // Remote guest VIDEO tile for audience (same public channel).
+  const showRemoteGuestVideo =
+    rtc.guestUid != null &&
+    rtc.isGuestVideoOn &&
+    !cohost.isPublishing;
+
+  // Local guest/co-host management card (AUDIO or VIDEO).
+  const showLocalCohostControls =
+    !!liveInteraction.interaction.requestId &&
+    (liveInteraction.interaction.interactionType === 'AUDIO' ||
+      liveInteraction.interaction.interactionType === 'VIDEO') &&
+    liveInteraction.isInCallPhase;
+
+  const showPublicCohostSection =
+    showRemoteGuestVideo || showLocalCohostControls;
+
+  const localCohostDisplayName =
+    useAuthStore(s => s.user?.name?.trim()) || 'You';
+
   const formatMessageTime = (timestamp?: number | string) => {
     if (timestamp == null) {
       return '';
@@ -687,13 +712,19 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
             />
           </View>
         )}
-        {/* Public guest/co-host video — same channel, visible to all audience */}
-        {rtc.guestUid != null &&
-          rtc.isGuestVideoOn &&
-          !cohost.isPublishing && (
-            <View
-              style={[styles.guestVideo, {top: insets.top + 72}]}
-              pointerEvents="none">
+      </View>
+
+      {/*
+        Public guest/co-host RTC section — card layout matches reference.
+        Positioned as a high-zIndex overlay so End/mute stay tappable.
+      */}
+      {showPublicCohostSection && (
+        <View
+          style={[styles.publicCohostContainer, {top: insets.top + 72}]}
+          pointerEvents="box-none">
+          {/* Audience: remote guest VIDEO on the same public channel */}
+          {showRemoteGuestVideo && rtc.guestUid != null && (
+            <View style={styles.guestVideo} pointerEvents="none">
               <RtcSurfaceView
                 style={StyleSheet.absoluteFill}
                 canvas={{
@@ -704,7 +735,22 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
               />
             </View>
           )}
-      </View>
+
+          {/* Local AUDIO/VIDEO co-host controls inside the same RTC section */}
+          <LiveCohostControls
+            visible={showLocalCohostControls}
+            requestId={liveInteraction.interaction.requestId}
+            interactionType={liveInteraction.interaction.interactionType}
+            status={cohost.status}
+            displayName={localCohostDisplayName}
+            isMuted={cohost.isMuted}
+            isCameraOff={cohost.isCameraOff}
+            onToggleMute={cohost.toggleMute}
+            onToggleCamera={cohost.toggleCamera}
+            onLeave={handleLeaveCohost}
+          />
+        </View>
+      )}
 
       <View style={[styles.topBar, {paddingTop: insets.top + 8}]}>
         <TouchableOpacity
@@ -992,19 +1038,6 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
         onCancel={handleCancelInteractionRequest}
       />
 
-      <LiveCohostControls
-        visible={liveInteraction.isInCallPhase}
-        interactionType={liveInteraction.interaction.interactionType}
-        status={cohost.status}
-        isMuted={cohost.isMuted}
-        isCameraOff={cohost.isCameraOff}
-        ending={liveInteraction.phase === 'ENDING'}
-        onToggleMute={cohost.toggleMute}
-        onToggleCamera={cohost.toggleCamera}
-        onSwitchCamera={cohost.switchCamera}
-        onLeave={handleLeaveCohost}
-      />
-
       <LiveInteractionSummarySheet
         visible={showInteractionSummary}
         summary={liveInteraction.summary}
@@ -1031,16 +1064,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     opacity: 0.4,
   },
-  guestVideo: {
+  publicCohostContainer: {
     position: 'absolute',
     right: 12,
-    width: 100,
-    height: 140,
-    borderRadius: 10,
+    zIndex: 45,
+    elevation: 45,
+  },
+  guestVideo: {
+    width: 140,
+    height: 180,
+    borderRadius: 14,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.4)',
-    backgroundColor: '#222',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: '#000',
   },
   topBar: {
     flexDirection: 'row',

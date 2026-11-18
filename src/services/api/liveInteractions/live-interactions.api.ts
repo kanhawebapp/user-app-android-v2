@@ -85,7 +85,15 @@ mutation StartLiveInteraction($requestId: ID!) {
 const END_LIVE_INTERACTION = `
 mutation EndLiveInteraction($requestId: ID!) {
   endLiveInteraction(requestId: $requestId) {
-    ${LIVE_INTERACTION_REQUEST_FIELDS}
+    id
+    status
+    interactionType
+    startedAt
+    endedAt
+    durationSeconds
+    billableMinutes
+    chargedCoins
+    __typename
   }
 }
 `;

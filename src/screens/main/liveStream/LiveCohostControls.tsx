@@ -1,72 +1,148 @@
-import React from 'react';
+import React, {useCallback, useEffect, useRef} from 'react';
 import {
   View,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
 } from 'react-native';
 import {
   RenderModeType,
   RtcSurfaceView,
   VideoSourceType,
 } from 'react-native-agora';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Text} from '../../../components/Text';
 import {Icon} from '../../../components/Icon';
+import {endLiveInteraction} from '../../../services/api/liveInteractions/live-interactions.api';
 import type {LiveInteractionType} from '../../../services/api/liveInteractions/live-interactions.types';
 import type {LiveCohostStatus} from '../../../modules/live/hooks/useLivePublicCohost';
+import loggingService from '../../../services/logging';
 
 interface LiveCohostControlsProps {
+  /** Local active guest/co-host only — never for normal viewers. */
   visible: boolean;
+  requestId: string | null | undefined;
   interactionType: LiveInteractionType | null;
   status: LiveCohostStatus;
+  displayName: string;
   isMuted: boolean;
   isCameraOff: boolean;
-  ending: boolean;
   onToggleMute: () => void;
   onToggleCamera: () => void;
-  onSwitchCamera: () => void;
   onLeave: () => void;
 }
 
 /**
- * In-stream co-host controls. Keeps the public live video visible —
- * does not open a private 1:1 call screen.
+ * RTC guest/co-host card (matches host ActiveLiveInteractionOverlay layout).
+ * Renders inside the public guest/co-host RTC section — not a full-screen bar.
  */
 export const LiveCohostControls: React.FC<LiveCohostControlsProps> = ({
   visible,
+  requestId,
   interactionType,
   status,
+  displayName,
   isMuted,
   isCameraOff,
-  ending,
   onToggleMute,
   onToggleCamera,
-  onSwitchCamera,
   onLeave,
 }) => {
-  const insets = useSafeAreaInsets();
+  const endInFlightRef = useRef(false);
+  const endedRequestIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const id = typeof requestId === 'string' ? requestId.trim() : '';
+    if (!id) {
+      endedRequestIdRef.current = null;
+      endInFlightRef.current = false;
+    }
+  }, [requestId]);
+
+  const fireEndLiveInteraction = useCallback((id: string) => {
+    if (!id) {
+      return;
+    }
+    if (endedRequestIdRef.current === id || endInFlightRef.current) {
+      loggingService.info(
+        '[LiveCohostControls] EndLiveInteraction skipped — duplicate',
+        {requestId: id},
+      );
+      return;
+    }
+
+    endInFlightRef.current = true;
+    loggingService.info('[LiveCohostControls] EndLiveInteraction invoke', {
+      requestId: id,
+    });
+
+    void endLiveInteraction(id)
+      .then(result => {
+        endedRequestIdRef.current = result?.id || id;
+        loggingService.info(
+          '[LiveCohostControls] EndLiveInteraction success',
+          {
+            requestId: result?.id,
+            status: result?.status,
+            durationSeconds: result?.durationSeconds,
+            billableMinutes: result?.billableMinutes,
+            chargedCoins: result?.chargedCoins,
+          },
+        );
+      })
+      .catch((err: any) => {
+        loggingService.error(
+          '[LiveCohostControls] EndLiveInteraction failed',
+          {requestId: id, error: err?.message || err},
+        );
+      })
+      .finally(() => {
+        endInFlightRef.current = false;
+      });
+  }, []);
+
+  const handleEndPress = useCallback(() => {
+    const id = typeof requestId === 'string' ? requestId.trim() : '';
+    // Existing demote / leave immediately — never await API.
+    onLeave();
+    if (!id) {
+      loggingService.info(
+        '[LiveCohostControls] EndLiveInteraction skipped — no requestId',
+      );
+      return;
+    }
+    fireEndLiveInteraction(id);
+  }, [onLeave, requestId, fireEndLiveInteraction]);
 
   if (!visible) {
     return null;
   }
 
   const isVideo = interactionType === 'VIDEO';
-  const statusLabel =
-    status === 'promoting'
-      ? 'Joining live…'
+  const isAudio = interactionType === 'AUDIO';
+  if (!isVideo && !isAudio) {
+    return null;
+  }
+
+  const isConnected = status === 'publishing';
+  const showLocalVideo = isVideo && !isCameraOff && isConnected;
+
+  const connectionLabel = !isConnected
+    ? status === 'promoting'
+      ? 'Joining…'
       : status === 'demoting'
       ? 'Leaving…'
       : status === 'failed'
-      ? 'Publish failed'
-      : isVideo
-      ? 'You are live on video'
-      : 'You are live on audio';
+      ? 'Connection failed'
+      : 'Connecting…'
+    : isVideo
+    ? isCameraOff
+      ? 'Camera off'
+      : 'Video connected'
+    : 'Audio connected';
 
   return (
-    <View style={styles.wrap} pointerEvents="box-none">
-      {isVideo && !isCameraOff && status === 'publishing' && (
-        <View style={[styles.localPreview, {top: insets.top + 72}]}>
+    <View style={styles.panel}>
+      {showLocalVideo ? (
+        <View style={styles.videoSlot}>
           <RtcSurfaceView
             style={StyleSheet.absoluteFill}
             canvas={{
@@ -76,133 +152,146 @@ export const LiveCohostControls: React.FC<LiveCohostControlsProps> = ({
             }}
           />
         </View>
-      )}
-
-      <View style={[styles.bar, {paddingBottom: insets.bottom + 12}]}>
-        <Text variant="caption" style={styles.status}>
-          {statusLabel}
-        </Text>
-        <View style={styles.row}>
-          <TouchableOpacity
-            style={styles.btn}
-            onPress={onToggleMute}
-            accessibilityLabel={isMuted ? 'Unmute' : 'Mute'}>
+      ) : (
+        <View style={styles.audioFallback}>
+          <View style={styles.avatar}>
             <Icon
-              name={isMuted ? 'mic-off' : 'mic'}
-              size={22}
+              name={isVideo && isCameraOff ? 'videocam-off' : 'person'}
+              size={28}
               color="#fff"
               library="MaterialIcons"
             />
-            <Text variant="captionSmall" style={styles.label}>
-              {isMuted ? 'Unmute' : 'Mute'}
-            </Text>
-          </TouchableOpacity>
-
-          {isVideo && (
-            <>
-              <TouchableOpacity
-                style={styles.btn}
-                onPress={onToggleCamera}
-                accessibilityLabel={isCameraOff ? 'Camera on' : 'Camera off'}>
-                <Icon
-                  name={isCameraOff ? 'videocam-off' : 'videocam'}
-                  size={22}
-                  color="#fff"
-                  library="MaterialIcons"
-                />
-                <Text variant="captionSmall" style={styles.label}>
-                  {isCameraOff ? 'Cam On' : 'Cam Off'}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.btn}
-                onPress={onSwitchCamera}
-                accessibilityLabel="Switch camera">
-                <Icon
-                  name="cameraswitch"
-                  size={22}
-                  color="#fff"
-                  library="MaterialIcons"
-                />
-                <Text variant="captionSmall" style={styles.label}>
-                  Flip
-                </Text>
-              </TouchableOpacity>
-            </>
-          )}
-
-          <TouchableOpacity
-            style={[styles.btn, styles.leave]}
-            onPress={onLeave}
-            disabled={ending || status === 'demoting'}
-            accessibilityLabel="Leave live interaction">
-            {ending || status === 'demoting' ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Icon
-                name="call-end"
-                size={22}
-                color="#fff"
-                library="MaterialIcons"
-              />
-            )}
-            <Text variant="captionSmall" style={styles.label}>
-              Leave
-            </Text>
-          </TouchableOpacity>
+          </View>
+          <Text variant="captionSmall" style={styles.connectionText}>
+            {connectionLabel}
+          </Text>
         </View>
+      )}
+
+      <View style={styles.meta}>
+        <Text variant="captionSmall" style={styles.typeLabel}>
+          {isVideo ? 'Video interaction' : 'Audio interaction'}
+        </Text>
+        <Text
+          variant="bodySmall"
+          weight="semibold"
+          style={styles.name}
+          numberOfLines={1}>
+          {displayName || 'You'}
+        </Text>
+      </View>
+
+      <View style={styles.actions}>
+        <TouchableOpacity
+          style={styles.iconBtn}
+          onPress={onToggleMute}
+          accessibilityLabel={isMuted ? 'Unmute' : 'Mute'}>
+          <Icon
+            name={isMuted ? 'mic-off' : 'mic'}
+            size={18}
+            color="#fff"
+            library="MaterialIcons"
+          />
+        </TouchableOpacity>
+
+        {isVideo && (
+          <TouchableOpacity
+            style={styles.iconBtn}
+            onPress={onToggleCamera}
+            accessibilityLabel={isCameraOff ? 'Camera on' : 'Camera off'}>
+            <Icon
+              name={isCameraOff ? 'videocam-off' : 'videocam'}
+              size={18}
+              color="#fff"
+              library="MaterialIcons"
+            />
+          </TouchableOpacity>
+        )}
+
+        <TouchableOpacity
+          style={styles.endButton}
+          onPress={handleEndPress}
+          accessibilityLabel="End co-host interaction">
+          <Text variant="caption" weight="semibold" style={styles.endLabel}>
+            End
+          </Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  wrap: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'flex-end',
-    zIndex: 35,
-    elevation: 35,
-  },
-  localPreview: {
-    position: 'absolute',
-    right: 12,
-    width: 100,
-    height: 140,
-    borderRadius: 10,
+  panel: {
+    width: 140,
+    borderRadius: 14,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.4)',
-    backgroundColor: '#222',
+    backgroundColor: 'rgba(10,10,30,0.9)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.15)',
   },
-  bar: {
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    paddingTop: 10,
-    paddingHorizontal: 12,
+  videoSlot: {
+    width: 140,
+    height: 180,
+    backgroundColor: '#000',
   },
-  status: {
-    color: '#fff',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    alignItems: 'center',
-  },
-  btn: {
+  audioFallback: {
+    height: 140,
     alignItems: 'center',
     justifyContent: 'center',
-    width: 64,
+    gap: 8,
+    paddingHorizontal: 8,
+  },
+  avatar: {
+    width: 56,
     height: 56,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#262667',
   },
-  leave: {
-    backgroundColor: '#E53935',
+  connectionText: {
+    color: 'rgba(255,255,255,0.75)',
+    textAlign: 'center',
   },
-  label: {
+  meta: {
+    paddingHorizontal: 10,
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  typeLabel: {
+    color: 'rgba(255,255,255,0.7)',
+  },
+  name: {
     color: '#fff',
     marginTop: 2,
+  },
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingBottom: 8,
+    paddingTop: 4,
+    gap: 6,
+  },
+  iconBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
+  endButton: {
+    flex: 1,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E53935',
+  },
+  endLabel: {
+    color: '#fff',
   },
 });
 
