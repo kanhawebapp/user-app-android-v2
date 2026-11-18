@@ -338,7 +338,7 @@ export const CallNowPanel: React.FC<CallNowPanelProps> = ({
                   variant="body"
                   weight="semibold"
                   color={colors.text.primary}>
-                  Audio Co-host
+                  Audio Call
                 </Text>
                 <Text variant="caption" color={colors.text.secondary}>
                   {!pricing?.audioAvailable
@@ -388,7 +388,7 @@ export const CallNowPanel: React.FC<CallNowPanelProps> = ({
                   variant="body"
                   weight="semibold"
                   color={colors.text.primary}>
-                  Video Co-host
+                  Video Call
                 </Text>
                 <Text variant="caption" color={colors.text.secondary}>
                   {!pricing?.videoAvailable
