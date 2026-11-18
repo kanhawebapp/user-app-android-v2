@@ -7,6 +7,7 @@ import {
   FlatList,
   TextInput,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   ActivityIndicator,
 } from 'react-native';
@@ -94,6 +95,14 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
   const {submitLiveGift, loading: sendingGift} = useSendLiveGift();
   const [draft, setDraft] = useState('');
   const [isGiftPanelVisible, setIsGiftPanelVisible] = useState(false);
+  // Android 15+ edge-to-edge disables adjustResize. Lift the absolute
+  // composer in JS (same approach as ChatScreen). Android 14 keeps
+  // windowSoftInputMode=adjustResize from the manifest — do not pad there.
+  const isAndroid15Plus =
+    Platform.OS === 'android' && Platform.Version >= 35;
+  const [androidKeyboardHeight, setAndroidKeyboardHeight] = useState(0);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const chatInputRef = useRef<TextInput>(null);
   const sendInFlightRef = useRef(false);
   const leaveInFlightRef = useRef(false);
   const hostOfflineTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
@@ -216,6 +225,33 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
       }
     };
   }, []);
+
+  // Lift absolute composer above IME on Android 15+; track visibility on both
+  // platforms so bottom safe-area padding is not double-applied over the keyboard.
+  useEffect(() => {
+    const showEvent =
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent =
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const onShow = Keyboard.addListener(showEvent, event => {
+      setIsKeyboardVisible(true);
+      if (isAndroid15Plus) {
+        setAndroidKeyboardHeight(event.endCoordinates.height);
+      }
+    });
+    const onHide = Keyboard.addListener(hideEvent, () => {
+      setIsKeyboardVisible(false);
+      setAndroidKeyboardHeight(0);
+    });
+
+    return () => {
+      onShow.remove();
+      onHide.remove();
+      setAndroidKeyboardHeight(0);
+      setIsKeyboardVisible(false);
+    };
+  }, [isAndroid15Plus]);
 
   const endInteractionRef = useRef<() => Promise<unknown>>(async () => null);
 
@@ -781,6 +817,9 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
           response.message || `${response.giftName || gift.name} sent`,
         );
         setIsGiftPanelVisible(false);
+        requestAnimationFrame(() => {
+          chatInputRef.current?.focus();
+        });
       } catch (err: any) {
         showError(err?.message || 'Failed to send gift. Please try again.');
       } finally {
@@ -901,6 +940,17 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
 
   const localCohostDisplayName =
     useAuthStore(s => s.user?.name?.trim()) || 'You';
+
+  // RN keyboard height on Android edge-to-edge is typically IME minus
+  // system bars. Clear insets.bottom on the input row while the keyboard is
+  // open, and add it back here so the composer sits flush above the IME.
+  const androidKeyboardOffset =
+    isAndroid15Plus && androidKeyboardHeight > 0
+      ? androidKeyboardHeight + insets.bottom
+      : 0;
+  const inputRowPaddingBottom = isKeyboardVisible
+    ? 6
+    : insets.bottom + 8;
 
   const formatMessageTime = (timestamp?: number | string) => {
     if (timestamp == null) {
@@ -1172,124 +1222,146 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
         </View>
       )}
 
-      {isGiftPanelVisible ? (
+      {/*
+        Keep the composer mounted under the gift overlay so the TextInput is
+        not remounted (which drops focus/keyboard). Android 15+ needs an
+        explicit bottom pad because edge-to-edge disables adjustResize.
+        Android 14: rely on manifest adjustResize only (offset stays 0).
+        iOS: KeyboardAvoidingView padding — do not also apply Android offset.
+      */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={[
+          styles.chatContainer,
+          androidKeyboardOffset > 0
+            ? {paddingBottom: androidKeyboardOffset}
+            : null,
+        ]}
+        pointerEvents={isGiftPanelVisible ? 'none' : 'auto'}>
+        <FlatList
+          data={reversedMessages}
+          keyExtractor={item => item.id}
+          renderItem={renderMessage}
+          inverted
+          style={styles.messageList}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        />
+
+        {!!chatNotice && (
+          <View style={styles.chatNotice}>
+            <Text
+              variant="captionSmall"
+              style={[styles.chatNoticeText, {color: colors.common.white}]}>
+              {chatNotice}
+            </Text>
+            {!chatCredentialError && chat.status === 'failed' && (
+              <TouchableOpacity onPress={chat.retry}>
+                <Text
+                  variant="captionSmall"
+                  weight="bold"
+                  style={{color: colors.primary.light}}>
+                  Retry
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        <View style={[styles.inputRow, {paddingBottom: inputRowPaddingBottom}]}>
+          <TouchableOpacity
+            onPress={() => setIsGiftPanelVisible(true)}
+            style={[
+              styles.giftButton,
+              {backgroundColor: colors.primary.main},
+            ]}
+            accessibilityLabel="Open gifts"
+            testID="live-gift-button">
+            <Icon
+              name="card-giftcard"
+              size={20}
+              color={colors.primary.contrastText}
+              library="MaterialIcons"
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={liveInteraction.openCallNow}
+            disabled={
+              liveInteraction.isWaiting || liveInteraction.isInCallPhase
+            }
+            style={[
+              styles.callNowButton,
+              {
+                backgroundColor: colors.primary.main,
+                opacity:
+                  liveInteraction.isWaiting || liveInteraction.isInCallPhase
+                    ? 0.5
+                    : 1,
+              },
+            ]}
+            accessibilityLabel="Join live as co-host"
+            testID="live-call-now-button">
+            <Icon
+              name="call"
+              size={18}
+              color={colors.common.white}
+              library="MaterialIcons"
+            />
+          </TouchableOpacity>
+          <TextInput
+            ref={chatInputRef}
+            value={draft}
+            onChangeText={setDraft}
+            placeholder={
+              isChatReady
+                ? 'Say something...'
+                : chat.status === 'connecting'
+                ? 'Connecting to chat...'
+                : 'Chat unavailable'
+            }
+            placeholderTextColor="rgba(255, 255, 255, 0.6)"
+            editable={isChatReady}
+            style={[styles.input, {color: colors.common.white}]}
+            maxLength={500}
+            returnKeyType="send"
+            onSubmitEditing={handleSend}
+          />
+          <TouchableOpacity
+            onPress={handleSend}
+            disabled={!isChatReady || !draft.trim()}
+            style={[
+              styles.sendButton,
+              {
+                backgroundColor: colors.primary.main,
+                opacity: isChatReady && draft.trim() ? 1 : 0.5,
+              },
+            ]}
+            accessibilityLabel="Send message">
+            <Icon
+              name="send"
+              size={18}
+              color={colors.primary.contrastText}
+              library="MaterialIcons"
+            />
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+
+      {isGiftPanelVisible && (
         <View style={styles.giftPanelAnchor} pointerEvents="box-none">
           <LiveGiftPanel
-            onClose={() => setIsGiftPanelVisible(false)}
+            onClose={() => {
+              setIsGiftPanelVisible(false);
+              // Gift overlay no longer unmounts the composer; restore focus
+              // after the overlay closes so the keyboard can reopen.
+              requestAnimationFrame(() => {
+                chatInputRef.current?.focus();
+              });
+            }}
             onSend={handleSendLiveGift}
             sending={sendingGift}
           />
         </View>
-      ) : (
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.chatContainer}>
-          <FlatList
-            data={reversedMessages}
-            keyExtractor={item => item.id}
-            renderItem={renderMessage}
-            inverted
-            style={styles.messageList}
-            showsVerticalScrollIndicator={false}
-          />
-
-          {!!chatNotice && (
-            <View style={styles.chatNotice}>
-              <Text
-                variant="captionSmall"
-                style={[styles.chatNoticeText, {color: colors.common.white}]}>
-                {chatNotice}
-              </Text>
-              {!chatCredentialError && chat.status === 'failed' && (
-                <TouchableOpacity onPress={chat.retry}>
-                  <Text
-                    variant="captionSmall"
-                    weight="bold"
-                    style={{color: colors.primary.light}}>
-                    Retry
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
-
-          <View style={[styles.inputRow, {paddingBottom: insets.bottom + 8}]}>
-            <TouchableOpacity
-              onPress={() => setIsGiftPanelVisible(true)}
-              style={[
-                styles.giftButton,
-                {backgroundColor: colors.primary.main},
-              ]}
-              accessibilityLabel="Open gifts"
-              testID="live-gift-button">
-              <Icon
-                name="card-giftcard"
-                size={20}
-                color={colors.primary.contrastText}
-                library="MaterialIcons"
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={liveInteraction.openCallNow}
-              disabled={
-                liveInteraction.isWaiting || liveInteraction.isInCallPhase
-              }
-              style={[
-                styles.callNowButton,
-                {
-                  backgroundColor: colors.primary.main,
-                  opacity:
-                    liveInteraction.isWaiting || liveInteraction.isInCallPhase
-                      ? 0.5
-                      : 1,
-                },
-              ]}
-              accessibilityLabel="Join live as co-host"
-              testID="live-call-now-button">
-              <Icon
-                name="call"
-                size={18}
-                color={colors.common.white}
-                library="MaterialIcons"
-              />
-            </TouchableOpacity>
-            <TextInput
-              value={draft}
-              onChangeText={setDraft}
-              placeholder={
-                isChatReady
-                  ? 'Say something...'
-                  : chat.status === 'connecting'
-                  ? 'Connecting to chat...'
-                  : 'Chat unavailable'
-              }
-              placeholderTextColor="rgba(255, 255, 255, 0.6)"
-              editable={isChatReady}
-              style={[styles.input, {color: colors.common.white}]}
-              maxLength={500}
-              returnKeyType="send"
-              onSubmitEditing={handleSend}
-            />
-            <TouchableOpacity
-              onPress={handleSend}
-              disabled={!isChatReady || !draft.trim()}
-              style={[
-                styles.sendButton,
-                {
-                  backgroundColor: colors.primary.main,
-                  opacity: isChatReady && draft.trim() ? 1 : 0.5,
-                },
-              ]}
-              accessibilityLabel="Send message">
-              <Icon
-                name="send"
-                size={18}
-                color={colors.primary.contrastText}
-                library="MaterialIcons"
-              />
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
       )}
 
       <CallNowPanel
