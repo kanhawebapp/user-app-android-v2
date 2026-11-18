@@ -1296,16 +1296,6 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
             : null,
         ]}
         pointerEvents={isGiftPanelVisible ? 'none' : 'auto'}>
-        <FlatList
-          data={reversedMessages}
-          keyExtractor={item => item.id}
-          renderItem={renderMessage}
-          inverted
-          style={styles.messageList}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        />
-
         {!!chatNotice && (
           <View style={styles.chatNotice}>
             <Text
@@ -1326,46 +1316,57 @@ const LiveStreamScreen: React.FC<LiveStreamScreenProps> = ({
           </View>
         )}
 
-        <View style={styles.actionButtonsRow}>
-          <TouchableOpacity
-            onPress={() => setIsGiftPanelVisible(true)}
-            style={[
-              styles.giftButton,
-              {backgroundColor: colors.primary.main},
-            ]}
-            accessibilityLabel="Open gifts"
-            testID="live-gift-button">
-            <Icon
-              name="card-giftcard"
-              size={20}
-              color={colors.primary.contrastText}
-              library="MaterialIcons"
-            />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={liveInteraction.openCallNow}
-            disabled={
-              liveInteraction.isWaiting || liveInteraction.isInCallPhase
-            }
-            style={[
-              styles.callNowButton,
-              {
-                backgroundColor: colors.primary.main,
-                opacity:
-                  liveInteraction.isWaiting || liveInteraction.isInCallPhase
-                    ? 0.5
-                    : 1,
-              },
-            ]}
-            accessibilityLabel="Join live as co-host"
-            testID="live-call-now-button">
-            <Icon
-              name="call"
-              size={18}
-              color={colors.common.white}
-              library="MaterialIcons"
-            />
-          </TouchableOpacity>
+        <View style={styles.chatContentRow}>
+          <FlatList
+            data={reversedMessages}
+            keyExtractor={item => item.id}
+            renderItem={renderMessage}
+            inverted
+            style={styles.messageList}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          />
+          <View style={styles.actionButtonsColumn}>
+            <TouchableOpacity
+              onPress={() => setIsGiftPanelVisible(true)}
+              style={[
+                styles.giftButton,
+                {backgroundColor: colors.primary.main},
+              ]}
+              accessibilityLabel="Open gifts"
+              testID="live-gift-button">
+              <Icon
+                name="card-giftcard"
+                size={20}
+                color={colors.primary.contrastText}
+                library="MaterialIcons"
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={liveInteraction.openCallNow}
+              disabled={
+                liveInteraction.isWaiting || liveInteraction.isInCallPhase
+              }
+              style={[
+                styles.callNowButton,
+                {
+                  backgroundColor: colors.primary.main,
+                  opacity:
+                    liveInteraction.isWaiting || liveInteraction.isInCallPhase
+                      ? 0.5
+                      : 1,
+                },
+              ]}
+              accessibilityLabel="Join live as co-host"
+              testID="live-call-now-button">
+              <Icon
+                name="call"
+                size={18}
+                color={colors.common.white}
+                library="MaterialIcons"
+              />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={[styles.inputRow, {paddingBottom: inputRowPaddingBottom}]}>
@@ -1572,9 +1573,24 @@ const styles = StyleSheet.create({
     zIndex: 20,
     elevation: 20,
   },
-  messageList: {
+  chatContentRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
     maxHeight: 260,
     paddingHorizontal: 12,
+  },
+  messageList: {
+    flex: 1,
+    maxHeight: 260,
+    minWidth: 0,
+    paddingRight: 8,
+  },
+  actionButtonsColumn: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 8,
+    paddingBottom: 4,
   },
   messageHeader: {
     flexDirection: 'row',
@@ -1606,13 +1622,6 @@ const styles = StyleSheet.create({
   chatNoticeText: {
     flex: 1,
     marginRight: 8,
-  },
-  actionButtonsRow: {
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    paddingHorizontal: 12,
-    paddingBottom: 8,
-    gap: 8,
   },
   inputRow: {
     flexDirection: 'row',
