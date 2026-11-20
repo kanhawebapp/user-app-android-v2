@@ -37,6 +37,8 @@
     <uses-feature android:name="android.hardware.wifi" android:required="false" />
 
 
+
+
     <application
       android:name=".MainApplication"
       android:label="@string/app_name"
