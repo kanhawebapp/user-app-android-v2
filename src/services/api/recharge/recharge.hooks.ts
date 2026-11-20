@@ -5,6 +5,7 @@ import {RechargePack} from './recharge.types';
 export const useRechargePacks = () => {
   const [data, setData] = useState<RechargePack[]>([]);
   const [loading, setLoading] = useState(false);
+  const [hasReceivedResponse, setHasReceivedResponse] = useState(false);
 
   const fetchRechargePacks = async () => {
     try {
@@ -13,6 +14,7 @@ export const useRechargePacks = () => {
       const res = await getRechargePacks();
 
       setData(res.data);
+      setHasReceivedResponse(true);
     } catch (error) {
       console.log('RECHARGE HOOK ERROR:', error);
     } finally {
@@ -27,6 +29,7 @@ export const useRechargePacks = () => {
   return {
     data,
     loading,
+    hasReceivedResponse,
     refresh: fetchRechargePacks,
   };
 };
