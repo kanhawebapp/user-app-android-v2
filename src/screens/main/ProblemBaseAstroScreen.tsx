@@ -41,6 +41,7 @@ const mapAstrologer = (item: any): Astrologer => {
     languages: item.languages || [],
     skills: item.skills || [],
     image: item.profilePic,
+    profilePic: item.profilePic,
     availability: 'online',
     // isAvailableForChat: true,
     // isAvailableForCall: true,
