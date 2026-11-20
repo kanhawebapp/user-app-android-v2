@@ -27,10 +27,13 @@ export const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     justifyContent: 'center',
-    resizeMode: 'contain',
+    resizeMode: 'stretch',
   },
   imageStyle: {
     borderRadius: 16,
+    resizeMode: 'stretch',
+    width: '100%',
+    height: '100%',
   },
   overlay: {
     flex: 1,
