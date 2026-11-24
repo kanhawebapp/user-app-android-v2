@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import type { AstrologerProfileScreenProps } from '../types';
 import { colors, useTheme } from '../../../../theme';
 
@@ -9,6 +9,7 @@ type ProfileSectionProps = {
   indicatorColor: any;
   status: any;
   isFollowing: boolean;
+  followLoading: boolean;
   onFollowPress: () => void;
 };
 
@@ -27,6 +28,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
   imageUrl,
   indicatorColor,
   isFollowing,
+  followLoading,
   onFollowPress,
 }) => {
   const theme = useTheme();
@@ -68,6 +70,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
       <TouchableOpacity
         activeOpacity={0.8}
         onPress={onFollowPress}
+        disabled={followLoading}
         style={[
           styles.followButton,
           {
@@ -77,17 +80,28 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             borderColor: themeColors.primary.main,
           },
         ]}>
-        <Text
-          style={[
-            styles.followButtonText,
-            {
-              color: isFollowing
+        {followLoading ? (
+          <ActivityIndicator
+            size="small"
+            color={
+              isFollowing
                 ? themeColors.primary.contrastText
-                : themeColors.primary.main,
-            },
-          ]}>
-          {isFollowing ? 'Following' : 'Follow'}
-        </Text>
+                : themeColors.primary.main
+            }
+          />
+        ) : (
+          <Text
+            style={[
+              styles.followButtonText,
+              {
+                color: isFollowing
+                  ? themeColors.primary.contrastText
+                  : themeColors.primary.main,
+              },
+            ]}>
+            {isFollowing ? 'Following' : 'Follow'}
+          </Text>
+        )}
       </TouchableOpacity>
 
       <Text style={[styles.name, { color: themeColors.text.primary }]}>

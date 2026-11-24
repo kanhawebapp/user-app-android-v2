@@ -124,7 +124,8 @@ const AstrologerProfileScreen: React.FC<AstrologerProfileScreenProps> = ({
     isFollowing,
     follow,
     unfollow,
-    checkFollowStatus
+    checkFollowStatus,
+    loading: followLoading,
   } = useFollowAstrologer();
   const {
     followersCount,
@@ -320,6 +321,7 @@ const AstrologerProfileScreen: React.FC<AstrologerProfileScreenProps> = ({
             indicatorColor={displayIndicatorColor}
             status={status}
             isFollowing={isFollowing}
+            followLoading={followLoading}
             onFollowPress={handleFollow}
           />
 
