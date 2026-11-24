@@ -28,6 +28,9 @@ export const useAstrologers = () => {
   const canFetchAstrologers =
     !isInitializing && (!isAuthenticated || !!accessToken);
 
+  // Sync guard: FlatList onEndReached can fire before loading state commits.
+  const isFetchingRef = useRef(false);
+
   const filtersRef = useRef<FiltersState>({
     sortField: 'RATING',
     sortOrder: 'DESC',
@@ -40,6 +43,11 @@ export const useAstrologers = () => {
 
   const fetchAstrologers = useCallback(
     async (pageNumber = 1, currentFilters?: FiltersState) => {
+      if (isFetchingRef.current) {
+        return;
+      }
+      isFetchingRef.current = true;
+
       const usedFilters = currentFilters ?? filtersRef.current;
 
       setLoading(true);
@@ -71,7 +79,13 @@ export const useAstrologers = () => {
         if (pageNumber === 1) {
           setData(res.data || []);
         } else {
-          setData(prev => [...prev, ...(res.data || [])]);
+          setData(prev => {
+            const existingIds = new Set(prev.map(item => item.id));
+            return [
+              ...prev,
+              ...(res.data || []).filter(item => !existingIds.has(item.id)),
+            ];
+          });
         }
 
         setPage(pageNumber);
@@ -79,6 +93,7 @@ export const useAstrologers = () => {
       } catch (error) {
         console.log('ASTROLOGER ERROR:', error);
       } finally {
+        isFetchingRef.current = false;
         setLoading(false);
       }
     },
