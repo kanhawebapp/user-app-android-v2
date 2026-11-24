@@ -28,7 +28,7 @@ const TransactionItem = ({
   const isCASHBACK = item.type === 'CASHBACK';
   // Generate/display 8-digit transaction ID from UUID
   const transactionId = item.id
-    ? item.id.replace(/-/g, '').slice(0, 8).toUpperCase()
+    ? item.id.replace(/-/g, '').slice(0, 8).toLowerCase()
     : 'N/A';
 
   const isRecharge = item.description === 'Recharge successful';
