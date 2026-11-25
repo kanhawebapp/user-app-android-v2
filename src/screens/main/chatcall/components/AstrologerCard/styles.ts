@@ -193,7 +193,7 @@ export const styles = StyleSheet.create({
   currentPrice: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#2D1B4E',
+    color: 'red',
   },
   oldPrice: {
     fontSize: 13,
