@@ -49,67 +49,78 @@ export const useChatCall = (
 
   // Filter astrologers based on current filters and search
   const filteredAstrologers = useMemo(() => {
-    return astrologers.filter(astrologer => {
-      // Search filter
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        const matchesSearch =
-          astrologer.name.toLowerCase().includes(query) ||
-          astrologer.skills.some(skill =>
-            skill.toLowerCase().includes(query),
-          ) ||
-          astrologer.languages.some(lang => lang.toLowerCase().includes(query));
-        if (!matchesSearch) {
-          return false;
+    return astrologers
+      .filter(astrologer => {
+        // Search filter
+        if (searchQuery) {
+          const query = searchQuery.toLowerCase();
+          const matchesSearch =
+            astrologer.name.toLowerCase().includes(query) ||
+            astrologer.skills.some(skill =>
+              skill.toLowerCase().includes(query),
+            ) ||
+            astrologer.languages.some(lang =>
+              lang.toLowerCase().includes(query),
+            );
+          if (!matchesSearch) {
+            return false;
+          }
         }
-      }
 
-      // Availability filter
-      if (filters.availability !== 'all') {
+        // Availability filter
+        if (filters.availability !== 'all') {
+          if (
+            filters.availability === 'online' &&
+            astrologer.availability !== 'online'
+          ) {
+            return false;
+          }
+          if (
+            filters.availability === 'offline' &&
+            astrologer.availability !== 'offline'
+          ) {
+            return false;
+          }
+        }
+
+        // Price filter
+        const currentRate =
+          activeTab === 'chat' ? astrologer.chatRate : astrologer.callRate;
         if (
-          filters.availability === 'online' &&
-          astrologer.availability !== 'online'
+          currentRate < filters.priceRange.min ||
+          currentRate > filters.priceRange.max
         ) {
           return false;
         }
-        if (
-          filters.availability === 'offline' &&
-          astrologer.availability !== 'offline'
-        ) {
-          return false;
+
+        // Rating filter
+        if (filters.rating !== 'all') {
+          const minRating = filters.rating === '4+' ? 4 : 3;
+          if (astrologer.rating < minRating) {
+            return false;
+          }
         }
-      }
 
-      // Price filter
-      const currentRate =
-        activeTab === 'chat' ? astrologer.chatRate : astrologer.callRate;
-      if (
-        currentRate < filters.priceRange.min ||
-        currentRate > filters.priceRange.max
-      ) {
-        return false;
-      }
-
-      // Rating filter
-      if (filters.rating !== 'all') {
-        const minRating = filters.rating === '4+' ? 4 : 3;
-        if (astrologer.rating < minRating) {
-          return false;
+        // Language filter
+        if (filters.languages.length > 0) {
+          const hasMatchingLanguage = astrologer.languages.some(lang =>
+            filters.languages.includes(lang),
+          );
+          if (!hasMatchingLanguage) {
+            return false;
+          }
         }
-      }
 
-      // Language filter
-      if (filters.languages.length > 0) {
-        const hasMatchingLanguage = astrologer.languages.some(lang =>
-          filters.languages.includes(lang),
-        );
-        if (!hasMatchingLanguage) {
-          return false;
-        }
-      }
-
-      return true;
-    });
+        return true;
+      })
+      // Online (can chat or call) first; offline (!canChat && !canCall) last
+      .sort((a, b) => {
+        const aOffline =
+          !(a.isOnline && a.isChatActive) && !(a.isOnline && a.isCallActive);
+        const bOffline =
+          !(b.isOnline && b.isChatActive) && !(b.isOnline && b.isCallActive);
+        return Number(aOffline) - Number(bOffline);
+      });
   }, [astrologers, filters, searchQuery, activeTab]);
 
   // Count online astrologers
