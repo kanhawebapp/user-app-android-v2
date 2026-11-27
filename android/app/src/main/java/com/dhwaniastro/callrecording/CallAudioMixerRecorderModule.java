@@ -14,11 +14,7 @@ import com.facebook.react.bridge.ReactMethod;
 import org.webrtc.audio.JavaAudioDeviceModule;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -30,7 +26,8 @@ import java.util.concurrent.atomic.AtomicLong;
  *  1) Local mic PCM from WebRTC SamplesReadyCallback
  *  2) Remote decoded PCM from WebRTC playout tee ({@link TeeingAudioTrack})
  *
- * Does NOT use UNPROCESSED AudioRecord / loudspeaker capture.
+ * Encodes the mixed PCM as AAC-LC in an MPEG-4 (.mp4) container via
+ * {@link AacMp4Encoder}. Does NOT use UNPROCESSED AudioRecord / loudspeaker capture.
  */
 public class CallAudioMixerRecorderModule extends ReactContextBaseJavaModule
         implements CallRecordingAudioTap.SampleListener {
@@ -38,6 +35,7 @@ public class CallAudioMixerRecorderModule extends ReactContextBaseJavaModule
     private static final String TAG = "CallAudioMixerRecorder";
     private static final int TARGET_SAMPLE_RATE = 48000;
     private static final int CHANNEL_COUNT = 1;
+    private static final int AAC_BIT_RATE = 128_000;
     private static final int QUEUE_CAPACITY = 128;
 
     private final AtomicBoolean recording = new AtomicBoolean(false);
@@ -45,7 +43,7 @@ public class CallAudioMixerRecorderModule extends ReactContextBaseJavaModule
     private final ArrayBlockingQueue<PcmChunk> remoteQueue = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
 
     @Nullable private Thread mixThread;
-    @Nullable private FileOutputStream wavOut;
+    @Nullable private AacMp4Encoder aacEncoder;
     @Nullable private File outputFile;
     private long pcmBytesWritten = 0;
     private int outputSampleRate = TARGET_SAMPLE_RATE;
@@ -91,7 +89,7 @@ public class CallAudioMixerRecorderModule extends ReactContextBaseJavaModule
             // Ensure playout tee is installed if WebRTC audio already started.
             WebRtcPlayoutTeeInstaller.installIfNeeded();
 
-            File file = new File(path.replace("file://", ""));
+            File file = new File(normalizeMp4Path(path.replace("file://", "")));
             File parent = file.getParentFile();
             if (parent != null && !parent.exists() && !parent.mkdirs()) {
                 promise.reject("IO_ERROR", "Unable to create recording directory");
@@ -102,8 +100,7 @@ public class CallAudioMixerRecorderModule extends ReactContextBaseJavaModule
             }
 
             outputFile = file;
-            wavOut = new FileOutputStream(file);
-            writeWavHeaderPlaceholder(wavOut);
+            aacEncoder = new AacMp4Encoder(file, TARGET_SAMPLE_RATE, CHANNEL_COUNT, AAC_BIT_RATE);
             pcmBytesWritten = 0;
             outputSampleRate = TARGET_SAMPLE_RATE;
             resetDiagnostics();
@@ -117,11 +114,11 @@ public class CallAudioMixerRecorderModule extends ReactContextBaseJavaModule
             mixThread = new Thread(this::mixLoop, "CallRec-Mix");
             mixThread.start();
 
-            Log.i(TAG, "Two-way digital mixer started path=" + file.getAbsolutePath());
+            Log.i(TAG, "Two-way digital mixer started (AAC/MP4) path=" + file.getAbsolutePath());
             promise.resolve(file.getAbsolutePath());
         } catch (Exception e) {
             Log.e(TAG, "startRecorder failed", e);
-            stopInternal();
+            stopInternal(false);
             promise.reject("START_FAILED", e.getMessage(), e);
         }
     }
@@ -134,8 +131,10 @@ public class CallAudioMixerRecorderModule extends ReactContextBaseJavaModule
         }
 
         try {
-            stopInternal();
+            stopInternal(true);
             String path = outputFile != null ? outputFile.getAbsolutePath() : null;
+            long fileBytes =
+                    outputFile != null && outputFile.exists() ? outputFile.length() : 0;
             double durationSec =
                     outputSampleRate > 0 ? (pcmBytesWritten / 2.0) / outputSampleRate : 0;
             Log.i(
@@ -143,8 +142,10 @@ public class CallAudioMixerRecorderModule extends ReactContextBaseJavaModule
                     "Two-way digital mixer stopped"
                             + " path="
                             + path
-                            + " bytes="
+                            + " pcmBytes="
                             + pcmBytesWritten
+                            + " fileBytes="
+                            + fileBytes
                             + " durationSec="
                             + String.format("%.2f", durationSec)
                             + " localCb="
@@ -184,6 +185,14 @@ public class CallAudioMixerRecorderModule extends ReactContextBaseJavaModule
             }
             if (localCallbacks.get() == 0 || localNonZero.get() == 0) {
                 Log.e(TAG, "Local PCM missing or silent — SamplesReadyCallback may be inactive.");
+            }
+
+            if (path == null
+                    || outputFile == null
+                    || !outputFile.exists()
+                    || outputFile.length() == 0) {
+                promise.reject("STOP_FAILED", "AAC/MP4 recording file missing or empty");
+                return;
             }
 
             promise.resolve(path);
@@ -316,21 +325,27 @@ public class CallAudioMixerRecorderModule extends ReactContextBaseJavaModule
                 Thread.currentThread().interrupt();
                 break;
             } catch (IOException e) {
-                Log.e(TAG, "mix write failed", e);
+                Log.e(TAG, "mix encode failed", e);
+                break;
+            } catch (RuntimeException e) {
+                Log.e(TAG, "mix encode failed", e);
                 break;
             }
         }
     }
 
     private synchronized void writePcm(byte[] pcm) throws IOException {
-        if (wavOut == null || pcm.length == 0) {
+        if (aacEncoder == null || pcm.length == 0) {
             return;
         }
-        wavOut.write(pcm);
+        aacEncoder.encodePcm(pcm);
         pcmBytesWritten += pcm.length;
     }
 
-    private void stopInternal() {
+    /**
+     * @param finalizeEncoder when true, EOS+muxer stop; when false (start failure), quiet release.
+     */
+    private void stopInternal(boolean finalizeEncoder) {
         recording.set(false);
         CallRecordingAudioTap.getInstance().stopCapturing();
         CallRecordingAudioTap.getInstance().setListener(null);
@@ -340,17 +355,29 @@ public class CallAudioMixerRecorderModule extends ReactContextBaseJavaModule
         localQueue.clear();
         remoteQueue.clear();
 
+        AacMp4Encoder encoder = aacEncoder;
+        aacEncoder = null;
+        if (encoder == null) {
+            return;
+        }
+
         try {
-            if (wavOut != null) {
-                wavOut.flush();
-                wavOut.close();
-                wavOut = null;
+            if (finalizeEncoder) {
+                encoder.finish();
+            } else {
+                encoder.releaseQuietly();
+                deleteOutputQuietly();
             }
-            if (outputFile != null && outputFile.exists()) {
-                patchWavHeader(outputFile, pcmBytesWritten, outputSampleRate, CHANNEL_COUNT);
-            }
-        } catch (IOException e) {
-            Log.e(TAG, "finalize wav failed", e);
+        } catch (Exception e) {
+            Log.e(TAG, "finalize AAC/MP4 failed", e);
+            encoder.releaseQuietly();
+            deleteOutputQuietly();
+        }
+    }
+
+    private void deleteOutputQuietly() {
+        if (outputFile != null && outputFile.exists() && !outputFile.delete()) {
+            Log.w(TAG, "Could not delete incomplete recording: " + outputFile.getAbsolutePath());
         }
     }
 
@@ -369,6 +396,21 @@ public class CallAudioMixerRecorderModule extends ReactContextBaseJavaModule
         lastRemoteSampleRate = 0;
         lastRemoteChannels = 0;
         lastRemoteBufferBytes = 0;
+    }
+
+    private static String normalizeMp4Path(String path) {
+        if (path == null) {
+            return "call_recording.mp4";
+        }
+        String lower = path.toLowerCase();
+        if (lower.endsWith(".mp4")) {
+            return path;
+        }
+        if (lower.endsWith(".wav") || lower.endsWith(".m4a") || lower.endsWith(".aac")) {
+            int dot = path.lastIndexOf('.');
+            return path.substring(0, dot) + ".mp4";
+        }
+        return path + ".mp4";
     }
 
     private static String formatRms(long absSum, long samples) {
@@ -465,41 +507,13 @@ public class CallAudioMixerRecorderModule extends ReactContextBaseJavaModule
         return new Stats(samples, absSum, peak, nonZero);
     }
 
-    private static void writeWavHeaderPlaceholder(FileOutputStream out) throws IOException {
-        out.write(new byte[44]);
-    }
-
-    private static void patchWavHeader(File file, long pcmBytes, int sampleRate, int channels)
-            throws IOException {
-        long totalDataLen = pcmBytes + 36;
-        long byteRate = (long) sampleRate * channels * 16 / 8;
-        ByteBuffer header = ByteBuffer.allocate(44).order(ByteOrder.LITTLE_ENDIAN);
-        header.put("RIFF".getBytes());
-        header.putInt((int) totalDataLen);
-        header.put("WAVE".getBytes());
-        header.put("fmt ".getBytes());
-        header.putInt(16);
-        header.putShort((short) 1);
-        header.putShort((short) channels);
-        header.putInt(sampleRate);
-        header.putInt((int) byteRate);
-        header.putShort((short) (channels * 16 / 8));
-        header.putShort((short) 16);
-        header.put("data".getBytes());
-        header.putInt((int) pcmBytes);
-
-        try (RandomAccessFile raf = new RandomAccessFile(file, "rw")) {
-            raf.seek(0);
-            raf.write(header.array());
-        }
-    }
-
     private static void joinQuietly(@Nullable Thread thread) {
         if (thread == null) {
             return;
         }
         try {
-            thread.join(1500);
+            // Allow time for the mix thread to flush remaining PCM into the AAC encoder.
+            thread.join(3000);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }

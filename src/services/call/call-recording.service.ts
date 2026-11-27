@@ -53,6 +53,7 @@ type StreamPair = {
  *   1) Local WebRTC mic PCM (SamplesReadyCallback)
  *   2) Remote decoded playout PCM (TeeingAudioTrack — AudioTrackSink is absent
  *      in org.jitsi:webrtc:124.0.0)
+ *   Then encodes AAC-LC mono 48 kHz @ 128 kbps into MPEG-4 (.mp4 / audio/mp4).
  *
  * iOS falls back to audio-recorder-player in measurement mode after remote audio
  * is available.
@@ -303,12 +304,12 @@ class CallRecordingService {
       }
 
       const dirs = ReactNativeBlobUtil.fs.dirs;
-      const requestedPath = `${dirs.CacheDir}/call_recording_${Date.now()}.wav`;
+      const requestedPath = `${dirs.CacheDir}/call_recording_${Date.now()}.mp4`;
       const startedPath = await CallAudioMixerRecorder.startRecorder(requestedPath);
       // Keep the exact native path so upload uses the same file that was written.
       this.recordingPath = startedPath || requestedPath;
       this.usingNativeMixer = true;
-      console.log('[CallRecording] Native two-way mixer started:', this.recordingPath);
+      console.log('[CallRecording] Native two-way mixer started (AAC/MP4):', this.recordingPath);
       return true;
     } catch (error) {
       console.log('[CallRecording] Native mixer unavailable, falling back:', error);
@@ -447,6 +448,14 @@ class CallRecordingService {
           ? 'audio/m4a'
           : 'audio/mp4';
 
+      let fileSizeBytes: number | undefined;
+      try {
+        const stat = await ReactNativeBlobUtil.fs.stat(normalizedPath);
+        fileSizeBytes = Number(stat.size) || undefined;
+      } catch {
+        // best-effort size log only
+      }
+
       // Use the real on-disk basename — do not invent a new timestamped name.
       const finalized = {
         uri,
@@ -461,6 +470,7 @@ class CallRecordingService {
         name: finalized.name,
         type: finalized.type,
         durationSec: finalized.durationSec,
+        fileSizeBytes,
         uri: finalized.uri,
         path: normalizedPath,
         mode: this.usingNativeMixer ? 'native-mixer' : 'fallback-recorder',
