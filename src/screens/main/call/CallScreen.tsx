@@ -23,6 +23,8 @@ import {useCall} from '../../../services/call/call.hooks';
 import {useNavigation, useRoute, useFocusEffect} from '@react-navigation/native';
 import {useCallStore} from '../../../services/call/call.store';
 import {webRTCService} from '../../../services/call/webrtc.service';
+import {socketService} from '../../../services/socket/socket.service';
+import {SOCKET_EVENTS} from '../../../services/socket/socket.events';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 type CallScreenRouteParams = {
@@ -50,6 +52,7 @@ export const CallScreen = () => {
     status,
     isMuted,
     endCall,
+    cleanupCall,
     toggleMute,
     startCall,
     remoteStream,
@@ -200,13 +203,26 @@ export const CallScreen = () => {
     if (!isIncoming && status === 'calling') {
       console.log('[CallScreen] Starting unanswered call timer (60s)');
 
+      if (unansweredCallTimerRef.current) {
+        clearTimeout(unansweredCallTimerRef.current);
+        unansweredCallTimerRef.current = null;
+      }
+
       unansweredCallTimerRef.current = setTimeout(() => {
         console.log('[CallScreen] Call not answered within 60s, ending call');
+        unansweredCallTimerRef.current = null;
 
-        endCall({
-          roomId: useCallStore.getState().roomId,
-          astroId: participant.id,
+        const emitted = socketService.emit(SOCKET_EVENTS.AUTO_DISCONNECT, {
+          room_id: useCallStore.getState().roomId,
+          astroid: participant.id,
+          type: 'call',
         });
+
+        // Mirror endCall local teardown (sets status 'ended') only after a
+        // successful emit so the existing status→goBack effect can navigate.
+        if (emitted) {
+          void cleanupCall();
+        }
       }, 60000);
     }
 
@@ -228,7 +244,7 @@ export const CallScreen = () => {
         unansweredCallTimerRef.current = null;
       }
     };
-  }, [status, isIncoming, participant.id, callId, autoCallReject, endCall]);
+  }, [status, isIncoming, participant.id, callId, autoCallReject, cleanupCall]);
 
   const isCallConnected = status === 'connected';
 

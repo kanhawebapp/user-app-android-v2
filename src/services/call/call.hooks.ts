@@ -923,6 +923,7 @@ export const useCall = () => {
     acceptCall,
     rejectCall,
     endCall,
+    cleanupCall: performCallCleanup,
     toggleMute,
     cancelCallRequest,
     autoCallReject,
